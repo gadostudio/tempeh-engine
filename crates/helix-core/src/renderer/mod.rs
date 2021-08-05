@@ -85,6 +85,7 @@ pub struct Renderer {
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     uniform_bind_group: BindGroup,
+    clear_color: Color,
 }
 
 impl Renderer {
@@ -212,6 +213,12 @@ impl Renderer {
             render_pipeline,
             vertex_buffer,
             uniform_bind_group,
+            clear_color: Color {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+                a: 1.0,
+            },
         }
     }
 
@@ -234,12 +241,7 @@ impl Renderer {
                 color_attachments: &[RenderPassColorAttachment {
                     ops: Operations {
                         store: true,
-                        load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.1,
-                            b: 0.1,
-                            a: 1.0,
-                        }),
+                        load: LoadOp::Clear(self.clear_color),
                     },
                     resolve_target: None,
                     view: &swapchain_texture.view,
@@ -255,5 +257,9 @@ impl Renderer {
         self.queue.submit(iter::once(command_buffer));
 
         Ok(())
+    }
+
+    pub fn set_clear_color(&mut self, clear_color: Color) {
+        self.clear_color = clear_color;
     }
 }

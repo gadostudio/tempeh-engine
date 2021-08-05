@@ -1,7 +1,6 @@
-use log::info;
-use wgpu_playground;
+// use log::info;
+use helix_core;
 
 fn main() {
-    info!("main");
-    wgpu_playground::main();
+    sample::main();
 }

@@ -1,37 +1,23 @@
 [package]
-name = "wgpu-playground"
+name = "sample"
 version = "0.1.0"
 authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
-[lib]
-crate-type = ["lib", "cdylib"]
-name = "wgpu_playground"
-path = "src/lib.rs"
-
 [[bin]]
-name = "wgpu_playground"
+name = "sample"
 path = "src/main.rs"
 
+[lib]
+name = "sample"
+path = "src/lib.rs"
+crate-type = ["cdylib", "lib"]
+
+[workspace]
+members = ["crates/*"]
+
 [dependencies]
-wgpu = "0.9.0"
-winit = "0.25.0"
-nalgebra = "0.28.0"
-async-std = "1.9.0"
-bytemuck = { version = "1.7.2", features = ["derive"] }
-log = "0.4.14"
-rapier2d = "0.10.1"
-rodio = { version = "0.14.0", default-features = false }
-#kira = "0.5.3"
+helix-core = { version = "0.1.0", path = "crates/helix-core" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 ndk-glue = { version = "0.3.0", features = ["logger"] }
-#ndk = "0.3.0"
-
-[build-dependencies]
-shaderc = "0.7.2"
-glob = "0.3.0"
-
-[package.metadata.android]
-build_targets = ["aarch64-linux-android"] #"armv7-linux-androideabi", , "x86_64-linux-android"
-assets = "assets"
