@@ -1,12 +1,11 @@
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 fn main() {
-    #[cfg(not(target_os = "android"))]
+    #[cfg(all(not(target_os = "android"), not(target_arch = "wasm32")))]
     env_logger::init();
     #[cfg(target_arch = "wasm32")]
-    console_log::init_with_level(console_log::Level::Debug);
+    {
+        console_log::init_with_level(log::Level::Debug);
+        log::debug!("test");
+    }
 
     sample::main();
 }

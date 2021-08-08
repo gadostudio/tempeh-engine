@@ -96,7 +96,11 @@ impl Renderer {
         window: &impl raw_window_handle::HasRawWindowHandle,
         screen_size: ScreenSize,
     ) -> Self {
-        let instance = Instance::new(BackendBit::PRIMARY);
+        let instance = Instance::new(if cfg!(target_arch = "wasm32") {
+            BackendBit::all()
+        } else {
+            BackendBit::PRIMARY
+        });
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
