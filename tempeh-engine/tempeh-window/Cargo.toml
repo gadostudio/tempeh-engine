@@ -1,0 +1,9 @@
+[package]
+name = "tempeh-window"
+version = "0.1.0"
+authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+tempeh-core = { version = "0.1.0", path = "../tempeh-core" }
+nalgebra = "0.28.0"

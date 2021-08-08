@@ -14,10 +14,26 @@ path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 
 [workspace]
-members = ["crates/*"]
+members = ["tempeh-engine/*"]
 
 [dependencies]
-helix-core = { version = "0.1.0", path = "crates/helix-core" }
+tempeh-core = { version = "0.1.0", path = "tempeh-engine/tempeh-core" }
+tempeh-renderer = { version = "0.1.0", path = "tempeh-engine/tempeh-renderer" }
+tempeh-window-winit = { version = "0.1.0", path = "tempeh-engine/tempeh-window-winit" }
+tempeh-window = { version = "0.1.0", path = "tempeh-engine/tempeh-window" }
+log = "0.4.14"
 
 [target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.10.1"
 ndk-glue = { version = "0.3.0", features = ["logger"] }
+
+[target.'cfg(all(not(target_os = "android"), not(target_arch = "wasm32")))'.dependencies]
+env_logger = "0.9.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_log = "0.2.0"
+legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
+wasm-bindgen = "0.2.75"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+legion = "0.4.0"

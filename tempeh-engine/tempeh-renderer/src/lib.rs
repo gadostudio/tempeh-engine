@@ -1,6 +1,6 @@
 mod camera;
 
-use crate::renderer::camera::Camera2D;
+use crate::camera::Camera2D;
 use nalgebra::{Point3, Vector3};
 use std::iter;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
@@ -16,8 +16,6 @@ use wgpu::{
     ShaderSource, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
     TextureFormat, TextureUsage, VertexBufferLayout, VertexState,
 };
-use winit::dpi::PhysicalSize;
-use winit::window::Window;
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -38,6 +36,11 @@ impl Uniform {
             transform_matrix: camera.get_matrix().into(),
         }
     }
+}
+
+pub struct ScreenSize {
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Vertex {
@@ -89,8 +92,10 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub async fn new(window: &Window) -> Self {
-        let size = window.inner_size();
+    pub async fn new(
+        window: &impl raw_window_handle::HasRawWindowHandle,
+        screen_size: ScreenSize,
+    ) -> Self {
         let instance = Instance::new(BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
@@ -121,15 +126,15 @@ impl Renderer {
                 .unwrap_or(TextureFormat::EtcRgUnorm),
             present_mode: PresentMode::Fifo,
             usage: TextureUsage::RENDER_ATTACHMENT,
-            width: size.width,
-            height: size.height,
+            width: screen_size.width,
+            height: screen_size.height,
         };
         let shader_vertex =
             device.create_shader_module(&wgpu::include_spirv!("./shaders/test.vert.spv"));
         let shader_fragment =
             device.create_shader_module(&wgpu::include_spirv!("./shaders/test.frag.spv"));
 
-        let camera = Camera2D::new(size);
+        let camera = Camera2D::new(screen_size);
         let camera_uniform = Uniform::new(&camera);
         let uniform_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -222,7 +227,7 @@ impl Renderer {
         }
     }
 
-    pub fn resize(&mut self, size: PhysicalSize<u32>) {
+    pub fn resize(&mut self, size: ScreenSize) {
         self.swapchain_descriptor.width = size.width;
         self.swapchain_descriptor.height = size.height;
         self.swapchain = self

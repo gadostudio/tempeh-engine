@@ -1,11 +1,11 @@
-use crate::renderer::VERTICES;
+use crate::{ScreenSize, VERTICES};
 
 pub struct Camera2D {
-    dimension_viewport: winit::dpi::PhysicalSize<u32>,
+    dimension_viewport: ScreenSize,
 }
 
 impl Camera2D {
-    pub fn new(dimension_viewport: winit::dpi::PhysicalSize<u32>) -> Self {
+    pub fn new(dimension_viewport: ScreenSize) -> Self {
         Self { dimension_viewport }
     }
 
