@@ -1,0 +1,8 @@
+[package]
+name = "tempeh-window-filesystem"
+version = "0.1.0"
+authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+

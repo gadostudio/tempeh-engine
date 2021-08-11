@@ -9,6 +9,8 @@
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-renderer/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-window-winit/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-window/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-filesystem/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tempeh-editor/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
