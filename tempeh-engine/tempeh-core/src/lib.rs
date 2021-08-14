@@ -6,7 +6,7 @@ use std::ffi::{CStr, CString};
 use std::io::{BufReader, Cursor, Read};
 use std::sync::{Arc, Mutex};
 use tempeh_renderer;
-use tempeh_renderer::Renderer;
+use tempeh_renderer::state::State;
 
 pub fn main() {
     // #[cfg(target_os = "android")]

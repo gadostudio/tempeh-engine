@@ -2582,8 +2582,8 @@ dependencies = [
  "bytemuck",
  "legion",
  "log",
- "nalgebra",
  "rapier2d",
+ "tempeh-math",
  "tempeh-renderer",
  "wgpu",
 ]
@@ -2605,6 +2605,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tempeh-math"
+version = "0.1.0"
+dependencies = [
+ "nalgebra",
+]
+
+[[package]]
 name = "tempeh-renderer"
 version = "0.1.0"
 dependencies = [
@@ -2613,9 +2620,9 @@ dependencies = [
  "glob",
  "image",
  "log",
- "nalgebra",
  "raw-window-handle",
  "shaderc",
+ "tempeh-math",
  "web-sys",
  "wgpu",
 ]
@@ -2624,8 +2631,8 @@ dependencies = [
 name = "tempeh-window"
 version = "0.1.0"
 dependencies = [
- "nalgebra",
  "tempeh-core",
+ "tempeh-math",
 ]
 
 [[package]]
@@ -2639,8 +2646,8 @@ dependencies = [
  "instant",
  "legion",
  "log",
- "nalgebra",
  "tempeh-core",
+ "tempeh-math",
  "tempeh-renderer",
  "tempeh-window",
  "web-sys",

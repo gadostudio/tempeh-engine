@@ -4,17 +4,16 @@ version = "0.1.0"
 authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
-[[bin]]
-name = "sample"
-path = "src/main.rs"
-
-[lib]
-name = "sample"
-path = "src/lib.rs"
-crate-type = ["cdylib", "lib"]
-
 [workspace]
-members = ["tempeh-engine/*", "tempeh-editor"]
+members = [
+    "tempeh-engine/tempeh-core",
+    "tempeh-engine/tempeh-window-winit",
+    "tempeh-engine/tempeh-window",
+    "tempeh-engine/tempeh-renderer",
+    "tempeh-engine/tempeh-math",
+    "tempeh-engine/tempeh-filesystem",
+    "tempeh-editor"
+]
 
 [dependencies]
 tempeh-core = { version = "0.1.0", path = "tempeh-engine/tempeh-core" }
@@ -37,3 +36,16 @@ legion = { version = "0.4.0", default-features = false, features = ["wasm-bindge
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 legion = "0.4.0"
+
+[package.metadata.android]
+build_targets = ["aarch64-linux-android"] #"armv7-linux-androideabi", , "x86_64-linux-android"
+assets = "assets"
+
+[[example]]
+name = "sample"
+path = "examples/sample.rs"
+
+[[example]]
+name = "sample_android"
+path = "examples/sample.rs"
+crate-type = ["cdylib"]

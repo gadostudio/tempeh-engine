@@ -1,17 +1,12 @@
-use instant::{Duration, Instant};
-use legion::{Resources, Schedule, World};
-use log::info;
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::io::{BufReader, Cursor, Read};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use tempeh_core::game::Engine;
-use tempeh_renderer;
-use tempeh_renderer::{Renderer, ScreenSize};
-use tempeh_window::input::touch::TouchPhase as TouchPhaseTempeh;
-use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, Input, KeyState};
-use tempeh_window::{Runner, TempehWindow};
+
+use instant::{Duration, Instant};
+use legion::{Resources, Schedule, World};
+use log::info;
 use wgpu::SwapChainError;
 use winit::event::{TouchPhase, VirtualKeyCode};
 use winit::window::{UserAttentionType, Window};
@@ -22,8 +17,16 @@ use winit::{
     window::WindowBuilder,
 };
 
-mod blocking_future {
+use blocking_future::BlockingFuture;
+use tempeh_core::game::Engine;
+use tempeh_renderer;
+use tempeh_renderer::state::State;
+use tempeh_renderer::ScreenSize;
+use tempeh_window::input::touch::TouchPhase as TouchPhaseTempeh;
+use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, Input, KeyState};
+use tempeh_window::{Runner, TempehWindow};
 
+mod blocking_future {
     use std::future::*;
     use std::task::*;
 
@@ -63,8 +66,6 @@ mod blocking_future {
 
     impl<F: Future + Sized> BlockingFuture for F {}
 }
-
-use blocking_future::BlockingFuture;
 
 pub struct WinitWindow {
     event_loop: Option<EventLoop<()>>,
@@ -113,10 +114,10 @@ impl TempehWindow for WinitWindow {
 impl Runner for WinitWindow {
     fn run(mut self, mut engine: Engine) {
         let mut size = self.window.inner_size();
-        let mut renderer: Option<tempeh_renderer::Renderer> = None;
+        let mut renderer: Option<tempeh_renderer::state::State> = None;
         if cfg!(not(target_os = "android")) {
             renderer = Some(
-                tempeh_renderer::Renderer::new(
+                tempeh_renderer::state::State::new(
                     &self.window,
                     ScreenSize {
                         width: size.width,
@@ -128,10 +129,8 @@ impl Runner for WinitWindow {
         }
 
         let mut time = Instant::now();
-        self.event_loop
-            .take()
-            .unwrap()
-            .run(move |event, even_loop_window_target, control_flow| {
+        self.event_loop.take().unwrap().run(
+            move |event, _even_loop_window_target, control_flow| {
                 *control_flow = ControlFlow::Poll;
                 time = Instant::now();
 
@@ -140,7 +139,7 @@ impl Runner for WinitWindow {
                         if cfg!(target_os = "android") {
                             size = self.window.inner_size();
                             renderer = Some(
-                                tempeh_renderer::Renderer::new(
+                                tempeh_renderer::state::State::new(
                                     &self.window,
                                     ScreenSize {
                                         width: size.width,
@@ -188,7 +187,7 @@ impl Runner for WinitWindow {
                             WindowEvent::Touch(touch) => {
                                 engine.resources.insert(Input::TouchInput {
                                     id: touch.id,
-                                    logical_position: nalgebra::Point2::<f64>::new(
+                                    logical_position: tempeh_math::Point2::<f64>::new(
                                         touch.location.x,
                                         touch.location.y,
                                     ),
@@ -229,6 +228,7 @@ impl Runner for WinitWindow {
                 engine
                     .schedule
                     .execute(&mut engine.world, &mut engine.resources);
-            });
+            },
+        );
     }
 }

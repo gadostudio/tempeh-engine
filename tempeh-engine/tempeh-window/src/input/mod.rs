@@ -1,5 +1,6 @@
 use crate::input::mouse::MouseButton;
 use crate::input::touch::TouchPhase;
+use tempeh_math::prelude::*;
 
 mod keyboard;
 pub mod mouse;
@@ -15,7 +16,7 @@ pub enum KeyState {
 pub enum Input {
     TouchInput {
         id: u64,
-        logical_position: nalgebra::Point2<f64>,
+        logical_position: Point2<f64>,
         phase: TouchPhase,
     },
     MouseInput {

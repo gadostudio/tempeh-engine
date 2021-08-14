@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 tempeh-core = { version = "0.1.0", path = "../tempeh-core" }
-nalgebra = "0.28.0"
+tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
