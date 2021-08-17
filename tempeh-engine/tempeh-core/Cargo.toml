@@ -5,15 +5,8 @@ authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bytemuck = { version = "1.7.2", features = ["derive"] }
-log = "0.4.14"
-rapier2d = "0.10.1"
 tempeh-renderer = { version = "0.1.0", path = "../tempeh-renderer" }
 tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
-wgpu = "0.9.0"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-legion = "0.4.0"
+tempeh-ecs = { version = "0.1.0", path = "../tempeh-ecs" }
+log = "0.4.14"
+rapier2d = "0.10.1"

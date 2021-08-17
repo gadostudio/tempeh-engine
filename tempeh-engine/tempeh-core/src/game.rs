@@ -1,5 +1,6 @@
-use legion::{Resources, Schedule, World};
 use rapier2d::prelude::*;
+use tempeh_ecs::systems::ParallelRunnable;
+use tempeh_ecs::{Resources, Schedule, World};
 
 pub struct Physic {
     pub physic_pipeline: PhysicsPipeline,
@@ -22,13 +23,18 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(title: String) -> Self {
+    pub fn new<T: ParallelRunnable + 'static>(title: String, systems: Vec<T>) -> Self {
+        let mut schedule_builder = Schedule::builder();
+        for system in systems.into_iter() {
+            schedule_builder.add_system(system);
+        }
+        let schedule = schedule_builder.build();
         Self {
             title,
             engine: Engine {
                 world: World::default(),
                 resources: Resources::default(),
-                schedule: Schedule::builder().build(),
+                schedule,
                 physic: Physic {
                     physic_pipeline: PhysicsPipeline::new(),
                     query_pipeline: QueryPipeline::new(),

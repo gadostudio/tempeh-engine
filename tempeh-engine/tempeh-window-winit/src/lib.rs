@@ -1,3 +1,5 @@
+mod event;
+
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::io::{BufReader, Cursor, Read};
@@ -17,13 +19,13 @@ use winit::{
     window::WindowBuilder,
 };
 
+use crate::event::InputProcessor;
 use blocking_future::BlockingFuture;
 use tempeh_core::game::Engine;
-use tempeh_renderer;
 use tempeh_renderer::state::State;
 use tempeh_renderer::ScreenSize;
 use tempeh_window::input::touch::TouchPhase as TouchPhaseTempeh;
-use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, Input, KeyState};
+use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, InputManager, KeyState};
 use tempeh_window::{Runner, TempehWindow};
 
 mod blocking_future {
@@ -128,11 +130,13 @@ impl Runner for WinitWindow {
             );
         }
 
+        let mut input_processor = InputProcessor::new();
         let mut time = Instant::now();
         self.event_loop.take().unwrap().run(
             move |event, _even_loop_window_target, control_flow| {
                 *control_flow = ControlFlow::Poll;
                 time = Instant::now();
+                input_processor.reset();
 
                 match event {
                     Event::Resumed => {
@@ -162,46 +166,9 @@ impl Runner for WinitWindow {
                                     height: size.height,
                                 });
                             }
-                            WindowEvent::KeyboardInput { input, .. } => {
-                                log::info!(
-                                    "Keyboard key {:?} state {:?}",
-                                    input.virtual_keycode.unwrap_or(VirtualKeyCode::Escape),
-                                    input.state
-                                );
-                            }
-                            WindowEvent::MouseInput { button, state, .. } => {
-                                engine.resources.insert(Input::MouseInput {
-                                    state: match state {
-                                        ElementState::Pressed => KeyState::Pressed,
-                                        ElementState::Released => KeyState::Released,
-                                    },
-                                    button: match button {
-                                        MouseButton::Left => MouseButtonTempeh::Left,
-                                        MouseButton::Right => MouseButtonTempeh::Right,
-                                        MouseButton::Middle => MouseButtonTempeh::Middle,
-                                        MouseButton::Other(x) => MouseButtonTempeh::Other(x),
-                                    },
-                                });
-                                log::info!("Mouse input button {:?} state {:?}", button, state);
-                            }
-                            WindowEvent::Touch(touch) => {
-                                engine.resources.insert(Input::TouchInput {
-                                    id: touch.id,
-                                    logical_position: tempeh_math::Point2::<f64>::new(
-                                        touch.location.x,
-                                        touch.location.y,
-                                    ),
-                                    phase: match touch.phase {
-                                        TouchPhase::Started => TouchPhaseTempeh::Started,
-                                        TouchPhase::Moved => TouchPhaseTempeh::Moved,
-                                        TouchPhase::Ended => TouchPhaseTempeh::Ended,
-                                        TouchPhase::Cancelled => TouchPhaseTempeh::Cancelled,
-                                    },
-                                });
-                                log::info!("Touch on {:?}", touch.location);
-                            }
                             _ => {}
-                        }
+                        };
+                        input_processor.handle_input(&event);
                     }
                     Event::RedrawRequested(window_id) => {
                         match renderer.as_ref().unwrap().render() {
@@ -224,7 +191,11 @@ impl Runner for WinitWindow {
                     }
                     _ => {}
                 };
-                engine.resources.insert(Instant::now().duration_since(time));
+
+                engine
+                    .resources
+                    .insert(input_processor.input_manager.clone());
+                engine.resources.insert(time.elapsed());
                 engine
                     .schedule
                     .execute(&mut engine.world, &mut engine.resources);

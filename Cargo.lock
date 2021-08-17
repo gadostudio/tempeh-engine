@@ -2294,10 +2294,10 @@ dependencies = [
  "android_logger 0.10.1",
  "console_log",
  "env_logger 0.9.0",
- "legion",
  "log",
  "ndk-glue 0.3.0",
  "tempeh-core",
+ "tempeh-ecs",
  "tempeh-renderer",
  "tempeh-window",
  "tempeh-window-winit",
@@ -2579,13 +2579,18 @@ dependencies = [
 name = "tempeh-core"
 version = "0.1.0"
 dependencies = [
- "bytemuck",
- "legion",
  "log",
  "rapier2d",
+ "tempeh-ecs",
  "tempeh-math",
  "tempeh-renderer",
- "wgpu",
+]
+
+[[package]]
+name = "tempeh-ecs"
+version = "0.1.0"
+dependencies = [
+ "legion",
 ]
 
 [[package]]

@@ -12,6 +12,8 @@
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-filesystem/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tempeh-editor/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-math/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-ecs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-input/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

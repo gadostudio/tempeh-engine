@@ -72,32 +72,32 @@ type BuildScriptResult<T> = Result<T, BuildScriptError>;
 
 #[derive(Debug)]
 enum BuildScriptError {
-    ShaderInputError(std::io::Error),
-    GlobPatternError(PatternError),
-    GlobError(GlobError),
-    ShadercError(shaderc::Error),
+    ShaderInput(std::io::Error),
+    GlobPattern(PatternError),
+    Glob(GlobError),
+    Shaderc(shaderc::Error),
 }
 
 impl From<std::io::Error> for BuildScriptError {
     fn from(error: std::io::Error) -> Self {
-        BuildScriptError::ShaderInputError(error)
+        BuildScriptError::ShaderInput(error)
     }
 }
 
 impl From<PatternError> for BuildScriptError {
     fn from(error: PatternError) -> Self {
-        BuildScriptError::GlobPatternError(error)
+        BuildScriptError::GlobPattern(error)
     }
 }
 
 impl From<GlobError> for BuildScriptError {
     fn from(error: GlobError) -> Self {
-        BuildScriptError::GlobError(error)
+        BuildScriptError::Glob(error)
     }
 }
 
 impl From<shaderc::Error> for BuildScriptError {
     fn from(error: shaderc::Error) -> Self {
-        BuildScriptError::ShadercError(error)
+        BuildScriptError::Shaderc(error)
     }
 }
