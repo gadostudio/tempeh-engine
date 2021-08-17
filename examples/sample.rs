@@ -1,4 +1,5 @@
 use std::time::Duration;
+use tempeh_ecs as legion;
 use tempeh_ecs::prelude::*;
 use tempeh_window::input::keyboard::VirtualKeyCode;
 use tempeh_window::input::InputManager;

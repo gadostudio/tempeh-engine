@@ -8,6 +8,7 @@ edition = "2018"
 wgpu = "0.9.0"
 log = "0.4.14"
 tempeh-window = { version = "0.1.0", path = "../tempeh-window" }
+tempeh-ecs = { version = "0.1.0", path = "../tempeh-ecs" }
 tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
 tempeh-renderer = { version = "0.1.0", path = "../tempeh-renderer" }
 tempeh-core = { version = "0.1.0", path = "../tempeh-core" }
@@ -16,8 +17,8 @@ instant = "0.1" # TODO apply this dependency directly
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = "0.3.50"
 winit = { version = "0.25.0", features = ["web-sys"] }
-legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
+# legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit = "0.25.0"
-legion = "0.4.0"
+# legion = "0.4.0"

@@ -15,6 +15,7 @@ use wgpu::{
 use tempeh_math::prelude::*;
 
 pub mod camera;
+pub mod component_system;
 pub mod state;
 pub mod texture;
 pub mod uniform;

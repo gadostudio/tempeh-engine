@@ -11,6 +11,7 @@ members = [
     "tempeh-engine/tempeh-window",
     "tempeh-engine/tempeh-renderer",
     "tempeh-engine/tempeh-ecs",
+    "tempeh-engine/tempeh-ecs/codegen",
     "tempeh-engine/tempeh-math",
     "tempeh-engine/tempeh-filesystem",
     "tempeh-editor"
@@ -34,6 +35,10 @@ env_logger = "0.9.0"
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = "0.3.50"
 console_log = "0.2.0"
+#legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
+
+#[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+#legion = "0.4.0"
 
 [package.metadata.android]
 build_targets = ["aarch64-linux-android"] #"armv7-linux-androideabi", , "x86_64-linux-android"

@@ -7,8 +7,8 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use instant::{Duration, Instant};
-use legion::{Resources, Schedule, World};
 use log::info;
+use tempeh_ecs::{Resources, Schedule, World};
 use wgpu::SwapChainError;
 use winit::event::{TouchPhase, VirtualKeyCode};
 use winit::window::{UserAttentionType, Window};
