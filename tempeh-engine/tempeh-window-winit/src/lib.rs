@@ -1,14 +1,22 @@
 mod event;
+mod mini_block;
 
+use crate::event::InputProcessor;
+use instant::{Duration, Instant};
+use log::info;
+use mini_block::BlockingFuture;
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::io::{BufReader, Cursor, Read};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-
-use instant::{Duration, Instant};
-use log::info;
+use tempeh_core::app::Engine;
 use tempeh_ecs::{Resources, Schedule, World};
+use tempeh_renderer::state::State;
+use tempeh_renderer::ScreenSize;
+use tempeh_window::input::touch::TouchPhase as TouchPhaseTempeh;
+use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, InputManager, KeyState};
+use tempeh_window::{Runner, TempehWindow};
 use wgpu::SwapChainError;
 use winit::event::{TouchPhase, VirtualKeyCode};
 use winit::window::{UserAttentionType, Window};
@@ -18,56 +26,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-
-use crate::event::InputProcessor;
-use blocking_future::BlockingFuture;
-use tempeh_core::game::Engine;
-use tempeh_renderer::state::State;
-use tempeh_renderer::ScreenSize;
-use tempeh_window::input::touch::TouchPhase as TouchPhaseTempeh;
-use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, InputManager, KeyState};
-use tempeh_window::{Runner, TempehWindow};
-
-mod blocking_future {
-    use std::future::*;
-    use std::task::*;
-
-    const PENDING_SLEEP_MS: u64 = 10;
-
-    unsafe fn rwclone(_p: *const ()) -> RawWaker {
-        make_raw_waker()
-    }
-    unsafe fn rwwake(_p: *const ()) {}
-    unsafe fn rwwakebyref(_p: *const ()) {}
-    unsafe fn rwdrop(_p: *const ()) {}
-
-    static VTABLE: RawWakerVTable = RawWakerVTable::new(rwclone, rwwake, rwwakebyref, rwdrop);
-
-    fn make_raw_waker() -> RawWaker {
-        static DATA: () = ();
-        RawWaker::new(&DATA, &VTABLE)
-    }
-
-    pub trait BlockingFuture: Future + Sized {
-        fn block(self) -> <Self as Future>::Output {
-            let mut boxed = Box::pin(self);
-            let waker = unsafe { Waker::from_raw(make_raw_waker()) };
-            let mut ctx = Context::from_waker(&waker);
-            loop {
-                match boxed.as_mut().poll(&mut ctx) {
-                    Poll::Ready(x) => {
-                        return x;
-                    }
-                    Poll::Pending => {
-                        std::thread::sleep(std::time::Duration::from_millis(PENDING_SLEEP_MS))
-                    }
-                }
-            }
-        }
-    }
-
-    impl<F: Future + Sized> BlockingFuture for F {}
-}
 
 pub struct WinitWindow {
     event_loop: Option<EventLoop<()>>,

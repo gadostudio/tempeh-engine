@@ -18,8 +18,8 @@ use syn::{
 /// By default, the wrapped function is called once each time the system runs.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::Schedule;
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::Schedule;
 /// #[system]
 /// fn hello_world() {
 ///    println!("hello world");
@@ -34,8 +34,8 @@ use syn::{
 /// the `#[resource]` attribute.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::Schedule;
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::Schedule;
 /// # struct Person { name: String }
 /// #[system]
 /// fn hello_world(#[resource] person: &Person) {
@@ -46,8 +46,8 @@ use syn::{
 /// Systems can also request a world or command buffer.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::{Schedule, systems::CommandBuffer, world::SubWorld};
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::{Schedule, systems::CommandBuffer, world::SubWorld};
 /// # struct Person { name: &'static str }
 /// #[system]
 /// fn create_entity(cmd: &mut CommandBuffer) {
@@ -59,8 +59,8 @@ use syn::{
 /// `#[write_component]` attributes.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::{Schedule, world::SubWorld, Read, Write, IntoQuery};
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::{Schedule, world::SubWorld, Read, Write, IntoQuery};
 /// # struct Time;
 /// #[system]
 /// #[read_component(usize)]
@@ -76,8 +76,8 @@ use syn::{
 /// Systems can declare queries. The above can also be written as:
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::{Schedule, world::SubWorld, Read, Write, IntoQuery, Query};
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::{Schedule, world::SubWorld, Read, Write, IntoQuery, Query};
 /// # struct Time;
 /// #[system]
 /// fn run_query(world: &mut SubWorld, query: &mut Query<(&usize, &mut bool)>) {
@@ -93,7 +93,7 @@ use syn::{
 /// request the entity ID via a `&Entity` parameter.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
+/// # use tempeh_ecs_codegen::system;
 /// # struct Position { x: f32 }
 /// # struct Velocity { x: f32 }
 /// # struct Time { seconds: f32 }
@@ -107,8 +107,8 @@ use syn::{
 /// `#[filter]` attribute.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::maybe_changed;
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::maybe_changed;
 /// # struct Position { x: f32 }
 /// # struct Velocity { x: f32 }
 /// # struct Time { seconds: f32 }
@@ -123,8 +123,8 @@ use syn::{
 /// your function. This state will be initialized when you construct the system.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::Schedule;
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::Schedule;
 /// #[system]
 /// fn stateful(#[state] counter: &mut usize) {
 ///     *counter += 1;
@@ -140,8 +140,8 @@ use syn::{
 /// Systems can contain generic parameters.
 ///
 /// ```ignore
-/// # use legion_codegen::system;
-/// # use legion::{storage::Component, Schedule};
+/// # use tempeh_ecs_codegen::system;
+/// # use tempeh_ecs::{storage::Component, Schedule};
 /// # use std::fmt::Debug;
 /// # #[derive(Debug)]
 /// # struct Position;
@@ -357,8 +357,8 @@ impl Sig {
                     }
                     Type::Path(ty_path)
                         if path_match(ty_path, &["Query"])
-                            || path_match(ty_path, &["legion", "Query"])
-                            || path_match(ty_path, &["legion", "query", "Query"]) =>
+                            || path_match(ty_path, &["tempeh_ecs", "Query"])
+                            || path_match(ty_path, &["tempeh_ecs", "query", "Query"]) =>
                     {
                         return Err(Error::QueryShouldBeMutableReference(ty_path.span()));
                     }
@@ -369,8 +369,8 @@ impl Sig {
                     }
                     Type::Reference(ty)
                         if is_type(&ty.elem, &["CommandBuffer"])
-                            || is_type(&ty.elem, &["legion", "CommandBuffer"])
-                            || is_type(&ty.elem, &["legion", "systems", "CommandBuffer"]) =>
+                            || is_type(&ty.elem, &["tempeh_ecs", "CommandBuffer"])
+                            || is_type(&ty.elem, &["tempeh_ecs", "systems", "CommandBuffer"]) =>
                     {
                         if ty.mutability.is_some() {
                             parameters.push(Parameter::CommandBufferMut);
@@ -380,8 +380,8 @@ impl Sig {
                     }
                     Type::Reference(ty)
                         if is_type(&ty.elem, &["SubWorld"])
-                            || is_type(&ty.elem, &["legion", "SubWorld"])
-                            || is_type(&ty.elem, &["legion", "world", "SubWorld"]) =>
+                            || is_type(&ty.elem, &["tempeh_ecs", "SubWorld"])
+                            || is_type(&ty.elem, &["tempeh_ecs", "world", "SubWorld"]) =>
                     {
                         if ty.mutability.is_some() {
                             parameters.push(Parameter::SubWorldMut);
@@ -391,16 +391,16 @@ impl Sig {
                     }
                     Type::Reference(ty)
                         if is_type(&ty.elem, &["Entity"])
-                            || is_type(&ty.elem, &["legion", "Entity"])
-                            || is_type(&ty.elem, &["legion", "world", "Entity"]) =>
+                            || is_type(&ty.elem, &["tempeh_ecs", "Entity"])
+                            || is_type(&ty.elem, &["tempeh_ecs", "world", "Entity"]) =>
                     {
                         parameters.push(Parameter::Component(query.len()));
                         query.push(parse_quote!(::tempeh_ecs::Entity));
                     }
                     Type::Reference(ty)
                         if is_type(&ty.elem, &["Query"])
-                            || is_type(&ty.elem, &["legion", "Query"])
-                            || is_type(&ty.elem, &["legion", "query", "Query"]) =>
+                            || is_type(&ty.elem, &["tempeh_ecs", "Query"])
+                            || is_type(&ty.elem, &["tempeh_ecs", "query", "Query"]) =>
                     {
                         if ty.mutability.is_none() {
                             return Err(Error::QueryShouldBeMutableReference(ty.span()));
@@ -828,7 +828,7 @@ impl Config {
         let read_resources = &signature.read_resources;
         let write_resources = &signature.write_resources;
         let builder = quote! {
-            use legion::IntoQuery;
+            use tempeh_ecs::IntoQuery;
             #generic_parameter_names
             ::tempeh_ecs::systems::SystemBuilder::new(format!("{}{}", #system_name, generic_names))
                 #(.read_component::<#read_components>())*

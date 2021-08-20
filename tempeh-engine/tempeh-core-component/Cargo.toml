@@ -1,0 +1,8 @@
+[package]
+name = "tempeh-core-component"
+version = "0.1.0"
+authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+tempeh-math = { path = "../tempeh-math", version = "0.1.0" }

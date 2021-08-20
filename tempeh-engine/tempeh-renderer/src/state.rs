@@ -18,8 +18,8 @@ use crate::{uniform::Uniform, ScreenSize, Vertex, VERTICES};
 pub struct State {
     device: Device,
     surface: Surface,
-    swapchain: SwapChain,
-    swapchain_descriptor: SwapChainDescriptor,
+    pub(crate) swapchain: SwapChain,
+    pub(crate) swapchain_descriptor: SwapChainDescriptor,
     queue: Queue,
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
@@ -85,11 +85,7 @@ impl State {
         let res = crate::texture::Texture::from_image(
             &device,
             &queue,
-            &image::load(
-                std::io::BufReader::new(std::fs::File::open("assets/image/tree.png").unwrap()),
-                image::ImageFormat::Png,
-            )
-            .unwrap(),
+            &image::load_from_memory(include_bytes!("../../../assets/image/tree.png")).unwrap(),
         );
         let texture_bind_group_layout =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
@@ -218,14 +214,6 @@ impl State {
         }
     }
 
-    pub fn resize(&mut self, size: ScreenSize) {
-        self.swapchain_descriptor.width = size.width;
-        self.swapchain_descriptor.height = size.height;
-        self.swapchain = self
-            .device
-            .create_swap_chain(&self.surface, &self.swapchain_descriptor)
-    }
-
     pub fn render(&self) -> Result<(), SwapChainError> {
         let swapchain_texture = self.swapchain.get_current_frame()?.output;
         let mut command_encoder = self
@@ -254,6 +242,14 @@ impl State {
         self.queue.submit(iter::once(command_buffer));
 
         Ok(())
+    }
+
+    pub fn resize(&mut self, size: ScreenSize) {
+        self.swapchain_descriptor.width = size.width;
+        self.swapchain_descriptor.height = size.height;
+        self.swapchain = self
+            .device
+            .create_swap_chain(&self.surface, &self.swapchain_descriptor)
     }
 
     pub fn set_clear_color(&mut self, clear_color: Color) {

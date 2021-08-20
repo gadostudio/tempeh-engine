@@ -1,6 +1,6 @@
 pub mod input;
 
-use tempeh_core::game::Engine;
+use tempeh_core::app::Engine;
 
 pub trait TempehWindow {
     fn focus(&mut self);

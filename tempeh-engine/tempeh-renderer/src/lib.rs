@@ -16,6 +16,8 @@ use tempeh_math::prelude::*;
 
 pub mod camera;
 pub mod component_system;
+pub mod plugins;
+pub mod renderer;
 pub mod state;
 pub mod texture;
 pub mod uniform;
@@ -73,5 +75,6 @@ const VERTICES: &[Vertex] = &[
 ];
 
 pub mod prelude {
+    pub use crate::plugins::RendererPlugin;
     pub use crate::state::State;
 }

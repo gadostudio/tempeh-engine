@@ -7,11 +7,11 @@ edition = "2018"
 [workspace]
 members = [
     "tempeh-engine/tempeh-core",
+    "tempeh-engine/tempeh-core-component",
     "tempeh-engine/tempeh-window-winit",
     "tempeh-engine/tempeh-window",
     "tempeh-engine/tempeh-renderer",
     "tempeh-engine/tempeh-ecs",
-    "tempeh-engine/tempeh-ecs/codegen",
     "tempeh-engine/tempeh-math",
     "tempeh-engine/tempeh-filesystem",
     "tempeh-editor"
@@ -19,26 +19,18 @@ members = [
 
 [dependencies]
 tempeh-core = { version = "0.1.0", path = "tempeh-engine/tempeh-core" }
+tempeh-core-component = { version = "0.1.0", path = "tempeh-engine/tempeh-core-component" }
 tempeh-renderer = { version = "0.1.0", path = "tempeh-engine/tempeh-renderer" }
 tempeh-ecs = { version = "0.1.0", path = "tempeh-engine/tempeh-ecs" }
 tempeh-window-winit = { version = "0.1.0", path = "tempeh-engine/tempeh-window-winit" }
 tempeh-window = { version = "0.1.0", path = "tempeh-engine/tempeh-window" }
-log = "0.4.14"
+tempeh-log = { version = "0.1.0", path = "tempeh-engine/tempeh-log" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-android_logger = "0.10.1"
 ndk-glue = { version = "0.3.0", features = ["logger"] }
-
-[target.'cfg(all(not(target_os = "android"), not(target_arch = "wasm32")))'.dependencies]
-env_logger = "0.9.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = "0.3.50"
-console_log = "0.2.0"
-#legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
-
-#[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-#legion = "0.4.0"
 
 [package.metadata.android]
 build_targets = ["aarch64-linux-android"] #"armv7-linux-androideabi", , "x86_64-linux-android"

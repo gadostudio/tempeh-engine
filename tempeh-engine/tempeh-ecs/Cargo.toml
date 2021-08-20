@@ -11,4 +11,4 @@ legion_codegen = { path = "codegen", version = "0.4.0" }
 legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-legion = { version = "0.4.0", default-features = false, features = ["parallel", "serialize", "crossbeam-events"] }
+legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }

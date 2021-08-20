@@ -5,7 +5,6 @@ authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-tempeh-renderer = { version = "0.1.0", path = "../tempeh-renderer" }
 tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
 tempeh-ecs = { version = "0.1.0", path = "../tempeh-ecs" }
 log = "0.4.14"
