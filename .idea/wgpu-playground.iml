@@ -17,6 +17,7 @@
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-ecs/codegen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-core-component/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-log/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tempeh-engine/tempeh-engine/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

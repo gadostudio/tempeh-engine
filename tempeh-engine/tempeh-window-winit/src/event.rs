@@ -198,7 +198,7 @@ impl InputProcessor {
                             VirtualKeyCode::Asterisk => VirtualKeyCodeTempeh::Asterisk,
                             VirtualKeyCode::Plus => VirtualKeyCodeTempeh::Plus,
                         });
-                // log::info!("Keypress {:?}", input);
+                log::info!("Keypress {:?}", input);
                 self.input_manager.keyboard_presses.insert(KeyboardInput {
                     state: match input.state {
                         ElementState::Pressed => KeyState::Pressed,

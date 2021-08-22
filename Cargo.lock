@@ -2279,6 +2279,7 @@ dependencies = [
  "tempeh-core-component",
  "tempeh-ecs",
  "tempeh-log",
+ "tempeh-math",
  "tempeh-renderer",
  "tempeh-window",
  "tempeh-window-winit",
@@ -2556,8 +2557,11 @@ version = "0.1.0"
 dependencies = [
  "log",
  "rapier2d",
+ "raw-window-handle",
  "tempeh-ecs",
+ "tempeh-engine",
  "tempeh-math",
+ "tempeh-window",
 ]
 
 [[package]]
@@ -2592,6 +2596,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tempeh-engine"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "rapier2d",
+ "raw-window-handle",
+ "tempeh-ecs",
+ "tempeh-math",
+]
+
+[[package]]
 name = "tempeh-log"
 version = "0.1.0"
 dependencies = [
@@ -2618,12 +2633,12 @@ dependencies = [
  "glob",
  "image",
  "log",
- "raw-window-handle",
  "shaderc",
  "tempeh-core",
  "tempeh-core-component",
  "tempeh-ecs",
  "tempeh-math",
+ "tempeh-window",
  "web-sys",
  "wgpu",
 ]
@@ -2632,7 +2647,8 @@ dependencies = [
 name = "tempeh-window"
 version = "0.1.0"
 dependencies = [
- "tempeh-core",
+ "raw-window-handle",
+ "tempeh-engine",
  "tempeh-math",
 ]
 
@@ -2646,8 +2662,10 @@ version = "0.1.0"
 dependencies = [
  "instant",
  "log",
+ "raw-window-handle",
  "tempeh-core",
  "tempeh-ecs",
+ "tempeh-engine",
  "tempeh-math",
  "tempeh-renderer",
  "tempeh-window",

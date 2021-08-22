@@ -15,9 +15,12 @@ use wgpu::{
 use tempeh_math::prelude::*;
 
 pub mod camera;
+pub mod command_encoder;
 pub mod component_system;
+mod mini_block;
 pub mod plugins;
 pub mod renderer;
+pub mod sprite;
 pub mod state;
 pub mod texture;
 pub mod uniform;
@@ -27,11 +30,6 @@ pub mod uniform;
 struct Vertex {
     position: [f32; 3],
     tex_coord: [f32; 2],
-}
-
-pub struct ScreenSize {
-    pub width: u32,
-    pub height: u32,
 }
 
 impl Vertex {
