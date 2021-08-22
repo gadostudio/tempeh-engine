@@ -32,18 +32,19 @@ pub fn sprite_renderer_initialization(
     sprite_renderer: &mut SpriteRenderer,
     #[resource] renderer: &Renderer,
 ) {
-    println!("Once");
+    log::warn!("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     command.add_component(*entity, SpriteRendererPipeline::new(renderer));
     command.remove_component::<SpriteRenderer>(*entity);
+    log::warn!("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-FINISH");
 }
 
 #[system(for_each)]
 pub fn sprite_render_queue(
     sprite_renderer: &SpriteRendererPipeline,
     transform: &mut Transform,
-    #[resource] input_manager: &InputManager,
     #[resource] renderer: &mut Renderer,
 ) {
+    log::warn!("render_queue");
     renderer.state.queue.write_buffer(
         &sprite_renderer.vertex_buffer,
         0,

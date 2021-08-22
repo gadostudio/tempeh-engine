@@ -6,6 +6,7 @@ use tempeh_ecs::{Resources, Schedule, World};
 use tempeh_engine::{Engine, Physic};
 
 struct Systems {
+    startup_system: Vec<Box<dyn ParallelRunnable + 'static>>,
     preupdate_system: Vec<Box<dyn ParallelRunnable + 'static>>,
     update_system: Vec<Box<dyn ParallelRunnable + 'static>>,
     postupdate_system: Vec<Box<dyn ParallelRunnable + 'static>>,
@@ -29,6 +30,7 @@ impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
             resources: Resources::default(),
             window: Some(window),
             systems: Systems {
+                startup_system: vec![],
                 preupdate_system: vec![],
                 update_system: vec![],
                 postupdate_system: vec![],
@@ -37,8 +39,17 @@ impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
     }
 
     pub fn run(&mut self) {
-        let _world = std::mem::replace(&mut self.world, World::default());
-        let _resources = std::mem::replace(&mut self.resources, Resources::default());
+        let mut _world = std::mem::replace(&mut self.world, World::default());
+        let mut _resources = std::mem::replace(&mut self.resources, Resources::default());
+
+        let mut startup_schedule_steps = Vec::new();
+        if self.systems.startup_system.len() > 0 {
+            let mut systems_consumer = Vec::new();
+            std::mem::swap(&mut self.systems.startup_system, &mut systems_consumer);
+            startup_schedule_steps.push(Step::Systems(Executor::new(systems_consumer)));
+            startup_schedule_steps.push(Step::FlushCmdBuffers);
+            Schedule::from(startup_schedule_steps).execute(&mut _world, &mut _resources);
+        }
 
         let mut schedule_steps = Vec::new();
         if self.systems.preupdate_system.len() > 0 {
@@ -103,7 +114,7 @@ impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
     }
 
     pub fn add_startup_system<T: ParallelRunnable + 'static>(&mut self, system: T) -> &mut Self {
-        self.systems.update_system.push(Box::new(system));
+        self.systems.startup_system.push(Box::new(system));
         self
     }
 

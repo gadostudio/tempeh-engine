@@ -2,12 +2,12 @@ use tempeh_math::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct TouchInput {
-    id: u64,
-    logical_position: Point2<f64>,
-    phase: TouchPhase,
+    pub id: u64,
+    pub logical_position: Point2<f64>,
+    pub phase: TouchPhase,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
 pub enum TouchPhase {
     Started,
     Moved,

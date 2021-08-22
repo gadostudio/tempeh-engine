@@ -6,6 +6,7 @@ use tempeh_ecs::prelude::*;
 use tempeh_log::warn;
 use tempeh_renderer::prelude::*;
 use tempeh_window::input::keyboard::VirtualKeyCode;
+use tempeh_window::input::mouse::MouseButton;
 use tempeh_window::input::InputManager;
 use tempeh_window::Runner;
 use tempeh_window_winit::WinitWindow;
@@ -16,31 +17,37 @@ fn update_positions(
     #[resource] input_manager: &InputManager,
     #[resource] delta_time: &Duration,
 ) {
-    if input_manager.is_key_pressed(VirtualKeyCode::A) {
+    tempeh_log::warn!("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
+    if input_manager.is_key_pressed(&VirtualKeyCode::A) {
         transform.position = transform.position.add(tempeh_math::Vector2::<f32>::new(
             -10000.0 * delta_time.as_secs_f32(),
             0.0,
         ));
-    } else if input_manager.is_key_pressed(VirtualKeyCode::D) {
+    }
+    if input_manager.is_key_pressed(&VirtualKeyCode::D) {
         transform.position = transform.position.add(tempeh_math::Vector2::<f32>::new(
             10000.0 * delta_time.as_secs_f32(),
             0.0,
         ));
-    } else if input_manager.is_key_pressed(VirtualKeyCode::W) {
+    }
+    if input_manager.is_key_pressed(&VirtualKeyCode::W)
+        || input_manager.is_mouse_pressed(&MouseButton::Left)
+        || input_manager.touch_presses.len() > 0
+    {
         transform.position = transform.position.add(tempeh_math::Vector2::<f32>::new(
             0.0,
             10000.0 * delta_time.as_secs_f32(),
         ));
-    } else if input_manager.is_key_pressed(VirtualKeyCode::S) {
+    }
+    if input_manager.is_key_pressed(&VirtualKeyCode::S)
+        || input_manager.is_mouse_pressed(&MouseButton::Right)
+    {
         transform.position = transform.position.add(tempeh_math::Vector2::<f32>::new(
             0.0,
             -10000.0 * delta_time.as_secs_f32(),
         ));
     }
 }
-
-#[system(for_each)]
-fn dummy(transform: &mut Transform) {}
 
 #[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on"))]
 pub fn main() {

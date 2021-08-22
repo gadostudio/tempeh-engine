@@ -106,14 +106,31 @@ impl Runner for WinitWindow {
 
         let mut input_processor = InputProcessor::new();
         let mut time = Instant::now();
+        #[cfg(target_os = "android")]
+        let mut is_ready = false;
         self.event_loop.take().unwrap().run(
             move |event, _even_loop_window_target, control_flow| {
                 *control_flow = ControlFlow::Poll;
                 time = Instant::now();
 
+                let mut update = || {
+                    engine
+                        .resources
+                        .insert(input_processor.input_manager.clone());
+                    engine.resources.insert(time.elapsed());
+                    engine
+                        .schedule
+                        .execute(&mut engine.world, &mut engine.resources);
+                    input_processor.reset();
+                };
+
                 match event {
                     Event::Resumed => {
-                        if cfg!(target_os = "android") {
+                        //
+                        #[cfg(target_os = "android")]
+                        {
+                            log::warn!("STARTED");
+                            is_ready = true;
                             size = self.window.inner_size();
                             engine
                                 .resources
@@ -151,14 +168,8 @@ impl Runner for WinitWindow {
                         input_processor.handle_input(&event);
                     }
                     Event::RedrawRequested(window_id) => {
-                        engine
-                            .resources
-                            .insert(input_processor.input_manager.clone());
-                        engine.resources.insert(time.elapsed());
-                        engine
-                            .schedule
-                            .execute(&mut engine.world, &mut engine.resources);
-                        input_processor.reset();
+                        update();
+
                         // match engine.resources.get::<Renderer>().unwrap().render() {
                         //     Ok(_) => {}
                         //     Err(SwapChainError::Lost) => engine
@@ -177,7 +188,12 @@ impl Runner for WinitWindow {
                         // }
                     }
                     Event::MainEventsCleared => {
+                        #[cfg(not(target_os = "android"))]
                         self.window.request_redraw();
+                        #[cfg(target_os = "android")]
+                        if is_ready {
+                            update();
+                        }
                     }
                     _ => {}
                 };
