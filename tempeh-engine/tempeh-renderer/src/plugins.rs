@@ -22,7 +22,7 @@ impl<W: tempeh_window::TempehWindow + tempeh_window::Runner> Plugin<W> for Rende
         app.add_system(sprite_renderer_initialization_system());
         app.add_system(sprite_render_queue_system());
         // app.add_resource::<Option<Renderer>>(None);
-        app.add_system(render_system());
+        app.add_postupdate_system(render_system());
 
         app.add_component((
             SpriteRenderer {

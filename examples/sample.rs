@@ -39,6 +39,9 @@ fn update_positions(
     }
 }
 
+#[system(for_each)]
+fn dummy(transform: &mut Transform) {}
+
 #[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on"))]
 pub fn main() {
     tempeh_log::init();
@@ -47,8 +50,4 @@ pub fn main() {
         .add_plugin(RendererPlugin::default())
         .add_system(update_positions_system())
         .run();
-    // app.engine
-    //     .world
-    //     .push((Transform::default(), Velocity { dx: 0.0, dy: 0.0 }));
-    // app.run();
 }

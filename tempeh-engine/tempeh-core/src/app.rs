@@ -1,17 +1,23 @@
 use crate::plugins::Plugin;
 use rapier2d::prelude::*;
 use tempeh_ecs::storage::IntoComponentSource;
-use tempeh_ecs::systems::{Builder as ScheduleBuilder, ParallelRunnable, Resource};
+use tempeh_ecs::systems::{Executor, ParallelRunnable, Resource, Step};
 use tempeh_ecs::{Resources, Schedule, World};
 use tempeh_engine::{Engine, Physic};
+
+struct Systems {
+    preupdate_system: Vec<Box<dyn ParallelRunnable + 'static>>,
+    update_system: Vec<Box<dyn ParallelRunnable + 'static>>,
+    postupdate_system: Vec<Box<dyn ParallelRunnable + 'static>>,
+}
 
 pub struct AppBuilder<W: tempeh_window::TempehWindow + tempeh_window::Runner> {
     name: Option<String>,
     plugins: Vec<Box<dyn Plugin<W>>>,
-    schedule_builder: ScheduleBuilder,
     world: World,
     resources: Resources,
     pub window: Option<W>,
+    systems: Systems,
 }
 
 impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
@@ -19,10 +25,14 @@ impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
         Self {
             name: None,
             plugins: vec![],
-            schedule_builder: Schedule::builder(),
             world: World::default(),
             resources: Resources::default(),
             window: Some(window),
+            systems: Systems {
+                preupdate_system: vec![],
+                update_system: vec![],
+                postupdate_system: vec![],
+            },
         }
     }
 
@@ -30,10 +40,30 @@ impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
         let _world = std::mem::replace(&mut self.world, World::default());
         let _resources = std::mem::replace(&mut self.resources, Resources::default());
 
+        let mut schedule_steps = Vec::new();
+        if self.systems.preupdate_system.len() > 0 {
+            let mut systems_consumer = Vec::new();
+            std::mem::swap(&mut self.systems.preupdate_system, &mut systems_consumer);
+            schedule_steps.push(Step::Systems(Executor::new(systems_consumer)));
+            schedule_steps.push(Step::FlushCmdBuffers);
+        }
+        if self.systems.update_system.len() > 0 {
+            let mut systems_consumer = Vec::new();
+            std::mem::swap(&mut self.systems.update_system, &mut systems_consumer);
+            schedule_steps.push(Step::Systems(Executor::new(systems_consumer)));
+            schedule_steps.push(Step::FlushCmdBuffers);
+        }
+        if self.systems.postupdate_system.len() > 0 {
+            let mut systems_consumer = Vec::new();
+            std::mem::swap(&mut self.systems.postupdate_system, &mut systems_consumer);
+            schedule_steps.push(Step::Systems(Executor::new(systems_consumer)));
+            schedule_steps.push(Step::FlushCmdBuffers);
+        }
+
         self.window.take().unwrap().run(tempeh_engine::Engine {
             world: _world,
             resources: _resources,
-            schedule: self.schedule_builder.build(),
+            schedule: Schedule::from(schedule_steps),
             physic: Physic {
                 physic_pipeline: PhysicsPipeline::new(),
                 query_pipeline: QueryPipeline::new(),
@@ -72,8 +102,23 @@ impl<'a, W: tempeh_window::TempehWindow + tempeh_window::Runner> AppBuilder<W> {
         self
     }
 
+    pub fn add_startup_system<T: ParallelRunnable + 'static>(&mut self, system: T) -> &mut Self {
+        self.systems.update_system.push(Box::new(system));
+        self
+    }
+
+    pub fn add_preupdate_system<T: ParallelRunnable + 'static>(&mut self, system: T) -> &mut Self {
+        self.systems.preupdate_system.push(Box::new(system));
+        self
+    }
+
     pub fn add_system<T: ParallelRunnable + 'static>(&mut self, system: T) -> &mut Self {
-        self.schedule_builder.add_system(system);
+        self.systems.update_system.push(Box::new(system));
+        self
+    }
+
+    pub fn add_postupdate_system<T: ParallelRunnable + 'static>(&mut self, system: T) -> &mut Self {
+        self.systems.postupdate_system.push(Box::new(system));
         self
     }
 
