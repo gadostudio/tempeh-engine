@@ -5,11 +5,11 @@ authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-raw-window-handle = "0.3.3"
 async-std = "1.9.0"
 bytemuck = { version = "1.7.2", features = ["derive"] }
 log = "0.4.14"
 tempeh-core-component = { version = "0.1.0", path = "../tempeh-core-component" }
+tempeh-window = { version = "0.1.0", path = "../tempeh-window" }
 tempeh-ecs = { version = "0.1.0", path = "../tempeh-ecs" }
 tempeh-core = { version = "0.1.0", path = "../tempeh-core" }
 tempeh-math = { version = "0.1.0", path = "../tempeh-math" }

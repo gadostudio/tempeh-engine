@@ -1,5 +1,6 @@
-use crate::{ScreenSize, VERTICES};
+use crate::VERTICES;
 use tempeh_math::prelude::*;
+use tempeh_window::ScreenSize;
 
 pub struct Camera2D {
     dimension_viewport: ScreenSize,

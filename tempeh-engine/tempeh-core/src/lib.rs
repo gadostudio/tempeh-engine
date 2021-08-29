@@ -1,8 +1,8 @@
 pub mod app;
 pub mod plugins;
 
-pub use app::{App, AppBuilder};
+pub use app::AppBuilder;
 
 pub mod prelude {
-    pub use crate::{App, AppBuilder};
+    pub use crate::AppBuilder;
 }

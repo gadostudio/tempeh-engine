@@ -1,12 +1,12 @@
 use crate::input::KeyState;
 
-#[derive(Clone)]
-struct MouseInput {
-    state: KeyState,
-    button: MouseButton,
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
+pub struct MouseInput {
+    pub state: KeyState,
+    pub button: MouseButton,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
 pub enum MouseButton {
     Left,
     Right,

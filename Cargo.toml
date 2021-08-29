@@ -8,6 +8,7 @@ edition = "2018"
 members = [
     "tempeh-engine/tempeh-core",
     "tempeh-engine/tempeh-core-component",
+    "tempeh-engine/tempeh-engine",
     "tempeh-engine/tempeh-window-winit",
     "tempeh-engine/tempeh-window",
     "tempeh-engine/tempeh-renderer",
@@ -21,6 +22,7 @@ members = [
 tempeh-core = { version = "0.1.0", path = "tempeh-engine/tempeh-core" }
 tempeh-core-component = { version = "0.1.0", path = "tempeh-engine/tempeh-core-component" }
 tempeh-renderer = { version = "0.1.0", path = "tempeh-engine/tempeh-renderer" }
+tempeh-math = { version = "0.1.0", path = "tempeh-engine/tempeh-math" }
 tempeh-ecs = { version = "0.1.0", path = "tempeh-engine/tempeh-ecs" }
 tempeh-window-winit = { version = "0.1.0", path = "tempeh-engine/tempeh-window-winit" }
 tempeh-window = { version = "0.1.0", path = "tempeh-engine/tempeh-window" }

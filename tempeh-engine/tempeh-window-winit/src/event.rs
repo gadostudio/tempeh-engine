@@ -1,4 +1,6 @@
 use tempeh_window::input::keyboard::KeyboardInput;
+use tempeh_window::input::mouse::MouseInput;
+use tempeh_window::input::touch::TouchInput;
 use tempeh_window::input::{
     keyboard::VirtualKeyCode as VirtualKeyCodeTempeh, mouse::MouseButton as MouseButtonTempeh,
     touch::TouchPhase as TouchPhaseTempeh,
@@ -198,46 +200,79 @@ impl InputProcessor {
                             VirtualKeyCode::Asterisk => VirtualKeyCodeTempeh::Asterisk,
                             VirtualKeyCode::Plus => VirtualKeyCodeTempeh::Plus,
                         });
-                // log::info!("Keypress {:?}", input);
+                let keypress_state = match input.state {
+                    ElementState::Pressed => KeyState::Pressed,
+                    ElementState::Released => KeyState::Released,
+                };
+                match keypress_state {
+                    KeyState::Pressed => self
+                        .input_manager
+                        .keyboard_key_presses
+                        .insert(virtual_keycode.as_ref().unwrap().clone()),
+                    KeyState::Released => self
+                        .input_manager
+                        .keyboard_key_presses
+                        .remove(virtual_keycode.as_ref().unwrap()),
+                };
                 self.input_manager.keyboard_presses.insert(KeyboardInput {
-                    state: match input.state {
-                        ElementState::Pressed => KeyState::Pressed,
-                        ElementState::Released => KeyState::Released,
-                    },
+                    state: keypress_state,
                     scancode: input.scancode,
                     virtual_keycode,
                 });
+                log::info!("Keypress {:?}", input);
             }
             WindowEvent::MouseInput { button, state, .. } => {
-                // engine.resources.insert(Input::MouseInput {
-                //     state: match state {
-                //         ElementState::Pressed => KeyState::Pressed,
-                //         ElementState::Released => KeyState::Released,
-                //     },
-                //     button: match button {
-                //         MouseButton::Left => MouseButtonTempeh::Left,
-                //         MouseButton::Right => MouseButtonTempeh::Right,
-                //         MouseButton::Middle => MouseButtonTempeh::Middle,
-                //         MouseButton::Other(x) => MouseButtonTempeh::Other(x),
-                //     },
-                // });
+                let button = match button {
+                    MouseButton::Left => MouseButtonTempeh::Left,
+                    MouseButton::Right => MouseButtonTempeh::Right,
+                    MouseButton::Middle => MouseButtonTempeh::Middle,
+                    MouseButton::Other(x) => MouseButtonTempeh::Other(*x),
+                };
+                let press_state = match state {
+                    ElementState::Pressed => KeyState::Pressed,
+                    ElementState::Released => KeyState::Released,
+                };
+
+                match state {
+                    ElementState::Pressed => self.input_manager.mouse_button.insert(button.clone()),
+                    ElementState::Released => self.input_manager.mouse_button.remove(&button),
+                };
                 log::info!("Mouse input button {:?} state {:?}", button, state);
+                self.input_manager.mouse_presses.insert(MouseInput {
+                    state: press_state,
+                    button,
+                });
             }
             WindowEvent::Touch(touch) => {
-                // engine.resources.insert(Input::TouchInput {
-                //     id: touch.id,
-                //     logical_position: tempeh_math::Point2::<f64>::new(
-                //         touch.location.x,
-                //         touch.location.y,
-                //     ),
-                //     phase: match touch.phase {
-                //         TouchPhase::Started => TouchPhaseTempeh::Started,
-                //         TouchPhase::Moved => TouchPhaseTempeh::Moved,
-                //         TouchPhase::Ended => TouchPhaseTempeh::Ended,
-                //         TouchPhase::Cancelled => TouchPhaseTempeh::Cancelled,
-                //     },
-                // });
-                log::info!("Touch on {:?}", touch.location);
+                match touch.phase {
+                    TouchPhase::Started => {
+                        self.input_manager.touch_presses.insert(
+                            touch.id,
+                            tempeh_math::Point2::<f64>::new(touch.location.x, touch.location.y),
+                        );
+                    }
+                    TouchPhase::Ended | TouchPhase::Cancelled => {
+                        self.input_manager.touch_presses.remove(&touch.id);
+                    }
+                    _ => {}
+                };
+                self.input_manager.touches.insert(
+                    touch.id,
+                    TouchInput {
+                        id: touch.id,
+                        logical_position: tempeh_math::Point2::<f64>::new(
+                            touch.location.x,
+                            touch.location.y,
+                        ),
+                        phase: match touch.phase {
+                            TouchPhase::Started => TouchPhaseTempeh::Started,
+                            TouchPhase::Moved => TouchPhaseTempeh::Moved,
+                            TouchPhase::Ended => TouchPhaseTempeh::Ended,
+                            TouchPhase::Cancelled => TouchPhaseTempeh::Cancelled,
+                        },
+                    },
+                );
+                log::info!("Touch on {:?} {:?}", touch.location, touch.phase);
             }
             _ => {}
         }
