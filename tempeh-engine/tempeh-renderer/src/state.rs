@@ -36,6 +36,8 @@ impl State {
     ) -> Self {
         let instance = Instance::new(if cfg!(target_arch = "wasm32") {
             BackendBit::all()
+        } else if cfg!(target_os = "android") {
+            BackendBit::GL
         } else {
             BackendBit::PRIMARY
         });
