@@ -8,10 +8,10 @@ This is just an experimental game engine for a learning purpose
 
 Platform compatibility is our priority. For now, the supported and planned platforms are
 
-- [x] Android (Tested on Android Pie Asus X00TD)
-- [x] Windows (Tested on Windows 10)
-- [ ] Linux
-- [ ] Web
+- [x] Android - Via OpenGL. Tested on Android Pie Asus X00TD
+- [x] Windows - Tested on Windows 10
+- [x] Web - Via WebGL. Tested on Chrome
+- [ ] Linux - Not tested yet, but should works fine
 
 ## Features
 
