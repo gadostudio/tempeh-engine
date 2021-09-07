@@ -1,0 +1,21 @@
+[package]
+name = "hello-world"
+version = "0.1.0"
+authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "hello-world"
+
+[dependencies]
+tempeh-core = { version = "0.1.0", path = "../../tempeh-engine/tempeh-core" }
+tempeh-core-component = { version = "0.1.0", path = "../../tempeh-engine/tempeh-core-component" }
+tempeh-renderer = { version = "0.1.0", path = "../../tempeh-engine/tempeh-renderer" }
+tempeh-math = { version = "0.1.0", path = "../../tempeh-engine/tempeh-math" }
+tempeh-ecs = { version = "0.1.0", path = "../../tempeh-engine/tempeh-ecs" }
+tempeh-window-winit = { version = "0.1.0", path = "../../tempeh-engine/tempeh-window-winit" }
+tempeh-window = { version = "0.1.0", path = "../../tempeh-engine/tempeh-window" }
+tempeh-log = { version = "0.1.0", path = "../../tempeh-engine/tempeh-log" }
