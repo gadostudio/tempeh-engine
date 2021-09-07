@@ -1,10 +1,28 @@
+mod app;
 mod file;
+mod logger;
+mod message;
+mod misc;
+mod project;
+mod renderer;
+mod scene;
+mod toolchain;
+mod trace;
 mod ui;
 
+use crate::app::{App, AppState};
 use crate::file::open_file;
+use crate::message::Message;
+use crate::misc::clipboard::Clipboard;
+use crate::project::Project;
+use crate::renderer::{Renderer, SceneEditorRendererPipeline, WindowSize};
+use crate::scene::run_game;
+use crate::toolchain::Toolchain;
 use crate::ui::filetree::{imgui_file_tree, FileTree};
+use async_std::channel;
+use async_std::prelude::*;
+use async_std::task;
 use imgui::*;
-use imgui_wgpu::{Renderer, RendererConfig};
 use pollster::block_on;
 use simplelog::*;
 use simplelog::{CombinedLogger, Config, LevelFilter, WriteLogger};
@@ -13,6 +31,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use wgpu::TextureViewDescriptor;
 use winit::monitor::VideoMode;
 use winit::window::Fullscreen;
 use winit::{
@@ -22,45 +41,28 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-fn main() {
-    // env_logger::init();
-    let mut log_messages = Arc::new(Mutex::new(Vec::new()));
-    let mut l = Arc::clone(&log_messages);
-    env_logger::builder()
-        .format(move |buf, record| {
-            l.lock()
-                .unwrap()
-                .push(format!("{}: {}", record.level(), record.args()));
-            writeln!(buf, "{}: {}", record.level(), record.args())
-        })
-        .init();
-    // open_file(PathBuf::from(
-    //     "C:\\Users\\andra\\Projects\\color-joy\\canvas_fill.gd",
-    // ));
-    let file_tree = FileTree::from(PathBuf::from(
-        "C:\\Users\\andra\\Projects\\wgpu-playground\\tempeh-editor",
-    ));
-    // CombinedLogger::init(vec![
-    //     TermLogger::new(
-    //         LevelFilter::Warn,
-    //         Config::default(),
-    //         TerminalMode::Mixed,
-    //         ColorChoice::Auto,
-    //     ),
-    //     WriteLogger::new(
-    //         LevelFilter::Info,
-    //         Config::default(),
-    //         ,
-    //     ),
-    // ])
-    // .unwrap();
+const REPOSITORY_URL: &str = "https://github.com/shaderboi/tempeh-engine";
+
+#[cfg(windows)]
+const LINE_ENDING: &'static str = "\r\n";
+#[cfg(not(windows))]
+const LINE_ENDING: &'static str = "\n";
+
+#[async_std::main]
+async fn main() {
+    logger::init();
+    let mut project = Project::new();
+    let project_path =
+        PathBuf::from("C:\\Users\\andra\\Projects\\tempeh-engine\\examples\\hello-world");
+    project.open(&project_path);
+    let file_tree = FileTree::from(&project_path);
+
+    let toolchain = Arc::new(Toolchain::from().await);
 
     // Set up window and GPU
     let event_loop = EventLoop::new();
 
-    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
-
-    let (window, size, surface) = {
+    let (window, mut physical_size) = {
         let window = WindowBuilder::new()
             .with_title("Tempeh Editor")
             .with_inner_size(LogicalSize {
@@ -71,100 +73,162 @@ fn main() {
             .unwrap();
         let size = window.inner_size();
 
-        let surface = unsafe { instance.create_surface(&window) };
-
-        (window, size, surface)
+        (window, size)
     };
 
     let hidpi_factor = window.scale_factor();
 
-    let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::HighPerformance,
-        compatible_surface: Some(&surface),
-    }))
-    .unwrap();
+    // Set up swap
+    // let sc_desc = wgpu::SwapChainDescriptor {
+    //     usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+    //     format: wgpu::TextureFormat::Bgra8UnormSrgb,
+    //     width: physical_size.width as u32,
+    //     height: physical_size.height as u32,
+    //     present_mode: wgpu::PresentMode::Mailbox,
+    // };
 
-    let (device, queue) =
-        block_on(adapter.request_device(&wgpu::DeviceDescriptor::default(), None)).unwrap();
-
-    // Set up swap chain
-    let sc_desc = wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8UnormSrgb,
-        width: size.width as u32,
-        height: size.height as u32,
-        present_mode: wgpu::PresentMode::Mailbox,
-    };
-
-    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
+    // let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
     // Set up dear imgui
-    let mut imgui = imgui::Context::create();
+    let mut imgui_context = imgui::Context::create();
 
-    let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
+    let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui_context);
     platform.attach_window(
-        imgui.io_mut(),
+        imgui_context.io_mut(),
         &window,
         imgui_winit_support::HiDpiMode::Default,
     );
-    imgui.set_ini_filename(None);
+    imgui_context.set_clipboard_backend(Box::new(Clipboard::new().unwrap()));
+    imgui_context.set_ini_filename(None);
+    {
+        let mut style = imgui_context.style_mut();
+        style.use_light_colors();
+    }
 
     let font_size = (13.0 * hidpi_factor) as f32;
-    imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
+    imgui_context.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
 
-    imgui.fonts().add_font(&[FontSource::DefaultFontData {
-        config: Some(imgui::FontConfig {
-            oversample_h: 1,
-            pixel_snap_h: true,
-            size_pixels: font_size,
-            ..Default::default()
-        }),
-    }]);
+    imgui_context
+        .fonts()
+        .add_font(&[FontSource::DefaultFontData {
+            config: Some(imgui::FontConfig {
+                oversample_h: 1,
+                pixel_snap_h: true,
+                size_pixels: font_size,
+                ..Default::default()
+            }),
+        }]);
 
-    //
-    // Set up dear imgui wgpu renderer
-    //
-    let clear_color = wgpu::Color {
-        r: 0.1,
-        g: 0.2,
-        b: 0.3,
-        a: 1.0,
-    };
+    let mut renderer = Renderer::new(&window, &mut imgui_context, &physical_size);
 
-    let renderer_config = RendererConfig {
-        texture_format: sc_desc.format,
-        ..Default::default()
-    };
-
-    let mut renderer = Renderer::new(&mut imgui, &device, &queue, renderer_config);
+    // let tex = Texture::new(
+    //     &device,
+    //     &renderer,
+    //     TextureConfig {
+    //         format: Some(sc_desc.format),
+    //         label: Some("scene"),
+    //         size: Extent3d {
+    //             height: 300,
+    //             width: 300,
+    //             depth_or_array_layers: 1,
+    //         },
+    //         dimension: TextureDimension::D2,
+    //         mip_level_count: 1,
+    //         sample_count: 1,
+    //         usage: TextureUsage::COPY_DST | TextureUsage::COPY_SRC | TextureUsage::SAMPLED,
+    //     },
+    // );
+    // let mut d = Vec::new();
+    // for i in 0..90000 {
+    //     d.push(u8::MIN);
+    //     d.push(u8::MIN);
+    //     d.push(u8::MAX);
+    //     d.push(u8::MAX);
+    // }
+    // queue.write_texture(
+    //     ImageCopyTexture {
+    //         texture: &tex.texture(),
+    //         mip_level: 0,
+    //         origin: wgpu::Origin3d::ZERO,
+    //     },
+    //     &d,
+    //     ImageDataLayout {
+    //         offset: 0,
+    //         bytes_per_row: Some(std::num::NonZeroU32::new(300 * 4).unwrap()),
+    //         rows_per_image: Some(std::num::NonZeroU32::new(300).unwrap()),
+    //     },
+    //     Extent3d {
+    //         height: 300,
+    //         width: 300,
+    //         depth_or_array_layers: 1,
+    //     },
+    // );
+    // let tex_id = renderer.textures.insert(tex);
+    let scene_editor = SceneEditorRendererPipeline::new(
+        &mut renderer,
+        &WindowSize {
+            width: 1,
+            height: 1,
+        },
+    );
+    let mut scene_editor_size = [0f32, 0f32];
 
     let mut last_frame = Instant::now();
 
     let mut last_cursor = None;
+    let (sender, receiver) = channel::unbounded::<String>();
+    let sender = Arc::new(sender);
+
+    let mut app = App::new();
 
     // Event loop
-    event_loop.run(move |event, _, control_flow| {
-        *control_flow = if cfg!(feature = "metal-auto-capture") {
-            ControlFlow::Exit
-        } else {
-            ControlFlow::Poll
+    event_loop.run(move |event, _window_target, control_flow| {
+        *control_flow = ControlFlow::Poll;
+
+        for message in app.message_queue.iter() {
+            match message {
+                Message::Play => {
+                    app.ui_state.play_log.clear();
+                    let toolchain_ = Arc::clone(&toolchain);
+                    let mut sender_ = Arc::clone(&sender);
+                    task::spawn(async move {
+                        toolchain_
+                            .compile_and_record(
+                                &sender_,
+                                "C:\\Users\\andra\\Projects\\tempeh-engine\\examples\\hello-world",
+                            )
+                            .await;
+                        println!("Done");
+                        run_game();
+                    });
+                }
+                Message::ClearLogger => {
+                    let mut logger = logger::LOG_MESSAGES.lock().unwrap();
+                    logger.clear();
+                }
+                Message::QuiToProjectSelection => app.state = AppState::ProjectSelection,
+                Message::ProjectSettings => {}
+                Message::ProjectExport => {
+                    app.ui_state.display_export_setup_window = true;
+                }
+            }
+        }
+        app.message_queue.clear();
+
+        match receiver.try_recv() {
+            Ok(line) => {
+                app.ui_state.play_log.push_str(&line);
+                app.ui_state.play_log.push('\n');
+            }
+            Err(_) => {}
         };
+
         match event {
             Event::WindowEvent {
-                event: WindowEvent::Resized(_),
+                event: WindowEvent::Resized(size_),
                 ..
             } => {
-                let size = window.inner_size();
-
-                let sc_desc = wgpu::SwapChainDescriptor {
-                    usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-                    format: wgpu::TextureFormat::Bgra8UnormSrgb,
-                    width: size.width as u32,
-                    height: size.height as u32,
-                    present_mode: wgpu::PresentMode::Mailbox,
-                };
-
-                swap_chain = device.create_swap_chain(&surface, &sc_desc);
+                physical_size = size_;
             }
             Event::WindowEvent {
                 event:
@@ -187,156 +251,336 @@ fn main() {
             }
             Event::MainEventsCleared => window.request_redraw(),
             Event::RedrawEventsCleared => {
-                let delta_s = last_frame.elapsed();
+                // let delta_s = last_frame.elapsed();
                 let now = Instant::now();
-                imgui.io_mut().update_delta_time(now - last_frame);
+                imgui_context.io_mut().update_delta_time(now - last_frame);
                 last_frame = now;
 
-                let frame = match swap_chain.get_current_frame() {
-                    Ok(frame) => frame,
-                    Err(e) => {
-                        eprintln!("dropped frame: {:?}", e);
-                        return;
-                    }
-                };
+                let frame = renderer.surface.get_current_frame().unwrap();
                 platform
-                    .prepare_frame(imgui.io_mut(), &window)
+                    .prepare_frame(imgui_context.io_mut(), &window)
                     .expect("Failed to prepare frame");
-                let ui = imgui.frame();
+                let imgui_ui = imgui_context.frame();
 
-                {
-                    if let Some(menu_bar) = ui.begin_main_menu_bar() {
-                        if let Some(menu) = ui.begin_menu(im_str!("Project"), true) {
-                            MenuItem::new(im_str!("Main menu bar")).build(&ui);
-                            MenuItem::new(im_str!("Quit to Project Menu")).build(&ui);
-                            menu.end(&ui);
-                        }
-                        if let Some(menu) = ui.begin_menu(im_str!("Help"), true) {
-                            MenuItem::new(im_str!("About")).build(&ui);
-                            MenuItem::new(im_str!("Repository")).build(&ui);
-                            menu.end(&ui);
-                        }
-                        menu_bar.end(&ui);
-                    }
-
-                    let window = imgui::Window::new(im_str!("a"));
-                    window
-                        .size([300.0, 500.0], Condition::FirstUseEver)
-                        .position([0.0, 16.0], Condition::FirstUseEver)
-                        .menu_bar(true)
-                        .build(&ui, || {
-                            if let Some(listbox) = ListBox::new(im_str!("Entities")).begin(&ui) {
-                                for i in 0..10 {
-                                    if Selectable::new(im_str!("test")).selected(i == 8).build(&ui)
-                                    {
-                                    }
+                match app.state {
+                    AppState::ProjectSelection => {}
+                    AppState::Workspace => {
+                        let mut logger = logger::LOG_MESSAGES.lock().unwrap();
+                        let mut log_messages =
+                            logger.iter().fold(ImString::new(""), |mut acc, val| {
+                                if val
+                                    .message
+                                    .to_lowercase()
+                                    .contains(app.ui_state.log_filter.to_str())
+                                {
+                                    acc.push('[');
+                                    acc.push_str(&val.target);
+                                    acc.push_str("] ");
+                                    acc.push_str(&val.message);
+                                    acc.push('\n');
                                 }
-                                listbox.end(&ui);
+                                acc
+                            });
+
+                        {
+                            if let Some(menu_bar) = imgui_ui.begin_main_menu_bar() {
+                                if let Some(menu) = imgui_ui.begin_menu(im_str!("File"), true) {
+                                    let mut project_settings = false;
+                                    MenuItem::new(im_str!("Project Settings"))
+                                        .build_with_ref(&imgui_ui, &mut project_settings);
+                                    if project_settings {
+                                        app.add_message(Message::ProjectSettings);
+                                    }
+                                    imgui_ui.separator();
+                                    let mut build = false;
+                                    MenuItem::new(im_str!("Export"))
+                                        .build_with_ref(&imgui_ui, &mut build);
+                                    if build {
+                                        app.add_message(Message::ProjectExport);
+                                    }
+                                    let mut settings = false;
+                                    MenuItem::new(im_str!("Settings"))
+                                        .build_with_ref(&imgui_ui, &mut settings);
+                                    if settings {
+                                        app.add_message(Message::Settings);
+                                    }
+                                    imgui_ui.separator();
+                                    let mut quit_to_project_menu = false;
+                                    MenuItem::new(im_str!("Quit to Project Selection"))
+                                        .build_with_ref(&imgui_ui, &mut quit_to_project_menu);
+                                    if quit_to_project_menu {
+                                        app.add_message(Message::QuiToProjectSelection);
+                                    }
+                                    menu.end(&imgui_ui);
+                                }
+                                if let Some(menu) = imgui_ui.begin_menu(im_str!("Help"), true) {
+                                    MenuItem::new(im_str!("About")).build(&imgui_ui);
+                                    let mut is_select_repository = false;
+                                    MenuItem::new(im_str!("Repository"))
+                                        .build_with_ref(&imgui_ui, &mut is_select_repository);
+                                    if is_select_repository {
+                                        webbrowser::open(REPOSITORY_URL).unwrap();
+                                    }
+                                    menu.end(&imgui_ui);
+                                }
+
+                                menu_bar.end(&imgui_ui);
                             }
 
-                            ui.separator();
+                            if let Some(menu_bar) = imgui_ui.begin_main_menu_bar() {
+                                let mut play = false;
+                                MenuItem::new(im_str!("Play")).build_with_ref(&imgui_ui, &mut play);
+                                if play {
+                                    app.add_message(Message::Play);
+                                }
+                                menu_bar.end(&imgui_ui);
+                            }
 
-                            ui.text(im_str!("Hello world!"));
-                            ui.text(im_str!("This...is...imgui-rs on WGPU!"));
-                            ui.separator();
-                            let mouse_pos = ui.io().mouse_pos;
-                            ui.text(im_str!(
-                                "Mouse Position: ({:.1},{:.1})",
-                                mouse_pos[0],
-                                mouse_pos[1]
-                            ));
-                            ui.separator();
-
-                            let mut path = PathBuf::new();
-                            imgui_file_tree(&ui, &file_tree, &mut path);
-                        });
-
-                    let window = imgui::Window::new(im_str!("b"));
-                    window
-                        .size([300.0, 500.0], Condition::FirstUseEver)
-                        .position([700.0, 16.0], Condition::FirstUseEver)
-                        .menu_bar(true)
-                        .build(&ui, || {
-                            let mut name = imgui::ImString::from(String::from("sample"));
-                            ui.input_text(im_str!("Name"), &mut name);
-
-                            let mut arr2 = [0f32; 2];
-                            let mut arr3 = [0f32; 3];
-                            ui.input_float2(im_str!("Position"), &mut arr2).build();
-                            ui.input_float3(im_str!("Rotation"), &mut arr3).build();
-                            ui.input_float3(im_str!("Scale"), &mut arr3).build();
-                        });
-
-                    let window = imgui::Window::new(im_str!("c"));
-                    window
-                        .size([1000.0, 300.0], Condition::FirstUseEver)
-                        .position([0.0, 500.0], Condition::FirstUseEver)
-                        .menu_bar(true)
-                        .build(&ui, || {
-                            TabBar::new(im_str!("Bar")).build(&ui, || {
-                                let mut open_storage = true;
-                                TabItem::new(im_str!("Storage"))
-                                    .opened(&mut open_storage)
-                                    .build(&ui, || {
-                                        if let Some(listbox) =
-                                            ListBox::new(im_str!("Storage")).begin(&ui)
-                                        {
-                                            // filetree();
-                                            listbox.end(&ui);
+                            let mut w1 = imgui_ui.window_size();
+                            imgui::Window::new(im_str!("##ToolBox"))
+                                .collapsible(false)
+                                .size(
+                                    [
+                                        300.0,
+                                        physical_size
+                                            .to_logical::<f64>(window.scale_factor())
+                                            .height as f32,
+                                    ],
+                                    Condition::Always,
+                                )
+                                .position([0.0, 16.0], Condition::Always)
+                                .menu_bar(true)
+                                .build(&imgui_ui, || {
+                                    if let Some(listbox) =
+                                        ListBox::new(im_str!("Entities")).begin(&imgui_ui)
+                                    {
+                                        for i in 0..10 {
+                                            if Selectable::new(im_str!("test"))
+                                                .selected(i == 8)
+                                                .build(&imgui_ui)
+                                            {
+                                            }
                                         }
+                                        listbox.end(&imgui_ui);
+                                    }
+
+                                    imgui_ui.separator();
+
+                                    imgui_ui.text(im_str!("Hello world!"));
+                                    imgui_ui.text(im_str!("This...is...imgui-rs on WGPU!"));
+                                    imgui_ui.separator();
+                                    let mouse_pos = imgui_ui.io().mouse_pos;
+                                    imgui_ui.text(im_str!(
+                                        "Mouse Position: ({:.1},{:.1})",
+                                        mouse_pos[0],
+                                        mouse_pos[1]
+                                    ));
+                                    imgui_ui.separator();
+
+                                    let mut path = PathBuf::new();
+                                    imgui_file_tree(&imgui_ui, &file_tree, &mut path);
+
+                                    w1 = imgui_ui.window_size();
+                                });
+
+                            let mut w2 = imgui_ui.window_size();
+                            imgui::Window::new(im_str!("##Inspector"))
+                                .collapsible(false)
+                                .size(
+                                    [
+                                        300.0,
+                                        physical_size
+                                            .to_logical::<f64>(window.scale_factor())
+                                            .height as f32,
+                                    ],
+                                    Condition::Always,
+                                )
+                                .position_pivot([1.0, 0.0])
+                                .position(
+                                    [
+                                        physical_size.to_logical::<f64>(window.scale_factor()).width
+                                            as f32,
+                                        16.0,
+                                    ],
+                                    Condition::Always,
+                                )
+                                .menu_bar(true)
+                                .build(&imgui_ui, || {
+                                    let mut name = imgui::ImString::from(String::from("sample"));
+                                    imgui_ui.input_text(im_str!("Name"), &mut name);
+
+                                    let mut arr2 = [0f32; 2];
+                                    let mut arr3 = [0f32; 3];
+                                    imgui_ui
+                                        .input_float2(im_str!("Position"), &mut arr2)
+                                        .build();
+                                    imgui_ui
+                                        .input_float3(im_str!("Rotation"), &mut arr3)
+                                        .build();
+                                    imgui_ui.input_float3(im_str!("Scale"), &mut arr3).build();
+
+                                    w2 = imgui_ui.window_size();
+                                });
+
+                            if let Some(window) = imgui::Window::new(im_str!("##Scene"))
+                                .size(
+                                    [
+                                        physical_size.to_logical::<f64>(window.scale_factor()).width
+                                            as f32
+                                            - w1[0]
+                                            - w2[0],
+                                        physical_size
+                                            .to_logical::<f64>(window.scale_factor())
+                                            .height as f32
+                                            - 300f32,
+                                    ],
+                                    Condition::Always,
+                                )
+                                .position_pivot([0.0, 0.0])
+                                .position([w1[0], 16f32], Condition::Always)
+                                .title_bar(false)
+                                .scroll_bar(false)
+                                .scrollable(false)
+                                .begin(&imgui_ui)
+                            {
+                                let window_size = imgui_ui.window_size();
+                                if window_size != scene_editor_size {
+                                    scene_editor.resize(
+                                        &mut renderer,
+                                        &WindowSize {
+                                            width: window_size[0] as u32,
+                                            height: window_size[1] as u32,
+                                        },
+                                    );
+                                    scene_editor_size = window_size;
+                                }
+                                Image::new(scene_editor.texture_id, scene_editor_size)
+                                    .build(&imgui_ui);
+                                window.end(&imgui_ui);
+                            }
+
+                            if let Some(window) = imgui::Window::new(im_str!("##Reports"))
+                                .title_bar(false)
+                                .collapsible(false)
+                                .size(
+                                    [
+                                        physical_size.to_logical::<f64>(window.scale_factor()).width
+                                            as f32
+                                            - w1[0]
+                                            - w2[0],
+                                        300.0,
+                                    ],
+                                    Condition::Always,
+                                )
+                                .position_pivot([0.0, 1.0])
+                                .position(
+                                    [
+                                        w1[0],
+                                        physical_size
+                                            .to_logical::<f64>(window.scale_factor())
+                                            .height as f32,
+                                    ],
+                                    Condition::Always,
+                                )
+                                .begin(&imgui_ui)
+                            {
+                                TabBar::new(im_str!("##Tab Bar")).build(&imgui_ui, || {
+                                    TabItem::new(im_str!("Log")).build(&imgui_ui, || {
+                                        if imgui_ui.button(im_str!("Clear"), [0.0, 0.0]) {
+                                            app.add_message(Message::ClearLogger);
+                                        }
+                                        imgui_ui.same_line(0.0);
+                                        if imgui_ui.button(im_str!("Copy"), [0.0, 0.0]) {
+                                            imgui_ui.set_clipboard_text(&log_messages);
+                                        }
+                                        imgui_ui.same_line(0.0);
+                                        imgui_ui
+                                            .input_text(
+                                                im_str!("Filter"),
+                                                &mut app.ui_state.log_filter,
+                                            )
+                                            .resize_buffer(true)
+                                            .build();
+                                        imgui_ui
+                                            .input_text_multiline(
+                                                im_str!("##Log"),
+                                                &mut log_messages,
+                                                [-1f32, -1f32],
+                                            )
+                                            .read_only(true)
+                                            .build();
                                     });
 
-                                let mut open_log = true;
-                                TabItem::new(im_str!("Log")).opened(&mut open_log).build(
-                                    &ui,
-                                    || {
-                                        if let Some(listbox) =
-                                            ListBox::new(im_str!("Log")).begin(&ui)
-                                        {
-                                            for message in log_messages.lock().unwrap().iter().rev()
-                                            {
-                                                ui.text(message);
-                                            }
-                                            listbox.end(&ui);
-                                        }
-                                    },
-                                );
-                            });
-                        });
+                                    TabItem::new(im_str!("Build")).build(&imgui_ui, || {
+                                        imgui_ui
+                                            .input_text_multiline(
+                                                im_str!("##Build Log"),
+                                                &mut app.ui_state.play_log,
+                                                [-1f32, -1f32],
+                                            )
+                                            .read_only(true)
+                                            .build();
+                                    });
+                                });
+                                window.end(&imgui_ui);
+                            }
+                        }
+
+                        ui::export_setup::export_setup(&imgui_ui, &mut app.ui_state);
+                        ui::settings::settings(&imgui_ui, &mut app.ui_state);
+                    }
+                };
+
+                let mut encoder: wgpu::CommandEncoder = renderer
+                    .state
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+                if last_cursor != Some(imgui_ui.mouse_cursor()) {
+                    last_cursor = Some(imgui_ui.mouse_cursor());
+                    platform.prepare_render(&imgui_ui, &window);
                 }
 
-                let mut encoder: wgpu::CommandEncoder =
-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                scene_editor.command_buffer(&renderer);
+                let output_view = frame
+                    .output
+                    .texture
+                    .create_view(&TextureViewDescriptor::default());
+                {
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: None,
+                        color_attachments: &[wgpu::RenderPassColorAttachment {
+                            view: &output_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.7,
+                                    g: 0.7,
+                                    b: 0.6,
+                                    a: 1.0,
+                                }),
+                                store: true,
+                            },
+                        }],
+                        depth_stencil_attachment: None,
+                    });
 
-                if last_cursor != Some(ui.mouse_cursor()) {
-                    last_cursor = Some(ui.mouse_cursor());
-                    platform.prepare_render(&ui, &window);
+                    renderer
+                        .imgui_renderer
+                        .render(
+                            imgui_ui.render(),
+                            &renderer.state.queue,
+                            &renderer.state.device,
+                            &mut rpass,
+                        )
+                        .expect("Rendering failed");
                 }
 
-                let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: &frame.output.view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(clear_color),
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                });
-
-                renderer
-                    .render(ui.render(), &queue, &device, &mut rpass)
-                    .expect("Rendering failed");
-
-                drop(rpass);
-
-                queue.submit(Some(encoder.finish()));
+                renderer.state.queue.submit(Some(encoder.finish()));
             }
             _ => (),
         }
 
-        platform.handle_event(imgui.io_mut(), &window, &event);
+        platform.handle_event(imgui_context.io_mut(), &window, &event);
     });
 }

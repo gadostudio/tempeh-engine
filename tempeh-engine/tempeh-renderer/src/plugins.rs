@@ -4,7 +4,6 @@ use tempeh_core::AppBuilder;
 use crate::component_system::{
     render_system, sprite_render_queue_system, sprite_renderer_initialization_system,
 };
-use crate::renderer::Renderer;
 use crate::sprite::SpriteRenderer;
 use tempeh_core_component::Transform;
 

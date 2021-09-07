@@ -9,6 +9,7 @@ tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
 tempeh-ecs = { version = "0.1.0", path = "../tempeh-ecs" }
 tempeh-window = { version = "0.1.0", path = "../tempeh-window" }
 tempeh-engine = { version = "0.1.0", path = "../tempeh-engine" }
+tempeh-core-codegen = { version = "0.1.0", path = "codegen" }
 raw-window-handle = "0.3.3"
 log = "0.4.14"
 rapier2d = "0.10.1"

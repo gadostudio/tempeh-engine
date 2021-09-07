@@ -1,13 +1,4 @@
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{
-    include_spirv, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer, BufferBindingType,
-    BufferUsage, ColorTargetState, ColorWrite, CommandBuffer, CommandEncoderDescriptor, Face,
-    FragmentState, FrontFace, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor,
-    PolygonMode, PrimitiveState, PrimitiveTopology, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderStage, TextureSampleType,
-    TextureViewDimension, VertexState,
-};
 
 use tempeh_window::ScreenSize;
 
@@ -24,28 +15,23 @@ pub struct SpriteRenderer {
 }
 
 pub struct SpriteRendererPipeline {
-    render_pipeline: RenderPipeline,
-    pub(crate) vertex_buffer: Buffer,
-    uniform_bind_group: BindGroup,
-    texture_bind_group: BindGroup,
+    render_pipeline: wgpu::RenderPipeline,
+    pub(crate) vertex_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+    texture_bind_group: wgpu::BindGroup,
 }
 
 impl SpriteRendererPipeline {
     pub fn new(renderer: &Renderer) -> Self {
         let Renderer {
-            state:
-                State {
-                    queue,
-                    device,
-                    swapchain_descriptor,
-                    ..
-                },
+            state: State { queue, device, .. },
             ..
         } = renderer;
 
-        let shader_vertex = device.create_shader_module(&include_spirv!("./shaders/test.vert.spv"));
+        let shader_vertex =
+            device.create_shader_module(&wgpu::include_spirv!("./shaders/test.vert.spv"));
         let shader_fragment =
-            device.create_shader_module(&include_spirv!("./shaders/test.frag.spv"));
+            device.create_shader_module(&wgpu::include_spirv!("./shaders/test.frag.spv"));
 
         let camera = Camera2D::new(ScreenSize {
             width: 720,
@@ -54,7 +40,7 @@ impl SpriteRendererPipeline {
         let camera_uniform = Uniform::new(&camera);
         let uniform_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
-            usage: BufferUsage::UNIFORM | BufferUsage::COPY_SRC,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_SRC,
             contents: bytemuck::cast_slice(&[camera_uniform]),
         });
 
@@ -65,23 +51,23 @@ impl SpriteRendererPipeline {
         );
 
         let texture_bind_group_layout =
-            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
                 entries: &[
-                    BindGroupLayoutEntry {
+                    wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: ShaderStage::FRAGMENT,
-                        ty: BindingType::Texture {
-                            sample_type: TextureSampleType::Float { filterable: true },
-                            view_dimension: TextureViewDimension::D2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
                         },
                         count: None,
                     },
-                    BindGroupLayoutEntry {
+                    wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: ShaderStage::FRAGMENT,
-                        ty: BindingType::Sampler {
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler {
                             filtering: true,
                             comparison: false,
                         },
@@ -89,86 +75,87 @@ impl SpriteRendererPipeline {
                     },
                 ],
             });
-        let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
+        let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &texture_bind_group_layout,
             entries: &[
-                BindGroupEntry {
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: BindingResource::TextureView(&res.texture_view),
+                    resource: wgpu::BindingResource::TextureView(&res.texture_view),
                 },
-                BindGroupEntry {
+                wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::Sampler(&res.sampler),
+                    resource: wgpu::BindingResource::Sampler(&res.sampler),
                 },
             ],
         });
 
         let uniform_bind_group_layout =
-            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                entries: &[BindGroupLayoutEntry {
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Uniform,
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
-                    visibility: ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX,
                     binding: 0,
                 }],
             });
-        let uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &uniform_bind_group_layout,
-            entries: &[BindGroupEntry {
+            entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: uniform_buffer.as_entire_binding(),
             }],
         });
 
-        let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[&uniform_bind_group_layout, &texture_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: None,
+                bind_group_layouts: &[&uniform_bind_group_layout, &texture_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             depth_stencil: None,
-            multisample: MultisampleState {
+            multisample: wgpu::MultisampleState {
                 alpha_to_coverage_enabled: false,
                 count: 1,
                 mask: !0,
             },
-            fragment: Some(FragmentState {
+            fragment: Some(wgpu::FragmentState {
                 entry_point: "main",
                 module: &shader_fragment,
-                targets: &[ColorTargetState {
+                targets: &[wgpu::ColorTargetState {
                     format: swapchain_descriptor.format,
-                    blend: Some(BlendState::REPLACE),
-                    write_mask: ColorWrite::ALL,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
-            vertex: VertexState {
+            vertex: wgpu::VertexState {
                 module: &shader_vertex,
                 entry_point: "main",
                 buffers: &[Vertex::desc()],
             },
-            primitive: PrimitiveState {
-                topology: PrimitiveTopology::TriangleStrip,
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
                 clamp_depth: false,
-                polygon_mode: PolygonMode::Fill,
+                polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
-                cull_mode: Some(Face::Back),
-                front_face: FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                front_face: wgpu::FrontFace::Ccw,
                 strip_index_format: None,
             },
         });
 
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
-            usage: BufferUsage::VERTEX | BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             contents: bytemuck::cast_slice(VERTICES),
         });
 
@@ -183,21 +170,27 @@ impl SpriteRendererPipeline {
 
 impl CommandBufferGenerator for SpriteRendererPipeline {
     fn command_buffer(&self, renderer: &Renderer) -> bool {
-        let swapchain_texture = renderer.state.swapchain.get_current_frame().unwrap().output;
+        let view = &renderer
+            .state
+            .swapchain
+            .get_current_frame()
+            .unwrap()
+            .output
+            .view;
         let mut command_encoder = renderer
             .state
             .device
-            .create_command_encoder(&CommandEncoderDescriptor { label: None });
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
-            let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
+            let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[RenderPassColorAttachment {
-                    ops: Operations {
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    ops: wgpu::Operations {
                         store: true,
-                        load: LoadOp::Clear(renderer.clear_color),
+                        load: wgpu::LoadOp::Clear(renderer.clear_color),
                     },
                     resolve_target: None,
-                    view: &swapchain_texture.view,
+                    view,
                 }],
                 depth_stencil_attachment: None,
             });
@@ -207,8 +200,10 @@ impl CommandBufferGenerator for SpriteRendererPipeline {
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.draw(0..VERTICES.len() as u32, 0..1);
         }
-        let a = command_encoder.finish();
-        renderer.state.queue.submit(iter::once(a));
+        renderer
+            .state
+            .queue
+            .submit(iter::once(command_encoder.finish()));
         true
     }
 }

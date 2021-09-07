@@ -1,32 +1,20 @@
 use std::iter;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{
-    include_spirv, BackendBit, BindGroup, BindGroupDescriptor, BindGroupEntry,
-    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState,
-    Buffer, BufferBindingType, BufferUsage, Color, ColorTargetState, ColorWrite,
-    CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState, FrontFace,
-    Instance, Limits, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor, PolygonMode,
-    PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    RequestAdapterOptions, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    TextureFormat, TextureSampleType, TextureUsage, TextureViewDimension, VertexState,
-};
 
 use crate::camera::Camera2D;
 use crate::{uniform::Uniform, Vertex, VERTICES};
 use tempeh_window::ScreenSize;
 
 pub struct State {
-    pub(crate) device: Device,
-    pub(crate) surface: Surface,
-    pub(crate) swapchain: SwapChain,
-    pub(crate) swapchain_descriptor: SwapChainDescriptor,
-    pub(crate) queue: Queue,
+    pub(crate) device: wgpu::Device,
+    pub(crate) surface: wgpu::Surface,
+    pub(crate) queue: wgpu::Queue,
+    // pub(crate) swapchain_texture_view: wgpu::TextureView,
     // pub(crate) render_pipeline: RenderPipeline,
     // pub(crate) vertex_buffer: Buffer,
     // pub(crate) uniform_bind_group: BindGroup,
     // pub(crate) texture_bind_group: BindGroup,
-    clear_color: Color,
+    clear_color: wgpu::Color,
 }
 
 impl State {
@@ -34,31 +22,31 @@ impl State {
         window: &impl tempeh_window::HasRawWindowHandle,
         screen_size: ScreenSize,
     ) -> Self {
-        let instance = Instance::new(if cfg!(target_arch = "wasm32") {
-            BackendBit::all()
+        let instance = wgpu::Instance::new(if cfg!(target_arch = "wasm32") {
+            wgpu::Backends::all()
         } else if cfg!(target_os = "android") {
-            BackendBit::GL
+            wgpu::Backends::GL
         } else {
-            BackendBit::PRIMARY
+            wgpu::Backends::PRIMARY
         });
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
-            .request_adapter(&RequestAdapterOptions {
+            .request_adapter(&wgpu::RequestAdapterOptions {
                 compatible_surface: Some(&surface),
-                power_preference: PowerPreference::LowPower,
+                power_preference: wgpu::PowerPreference::LowPower,
             })
             .await
             .unwrap();
         let (device, queue) = adapter
             .request_device(
-                &DeviceDescriptor {
+                &wgpu::DeviceDescriptor {
                     label: Some("WGPU Playground"),
                     features: if cfg!(android) {
-                        Features::TEXTURE_COMPRESSION_ETC2
+                        wgpu::Features::TEXTURE_COMPRESSION_ETC2
                     } else {
-                        Features::empty()
+                        wgpu::Features::empty()
                     },
-                    limits: Limits::default(),
+                    limits: wgpu::Limits::default(),
                 },
                 None,
             )
@@ -67,9 +55,9 @@ impl State {
         let swapchain_descriptor = SwapChainDescriptor {
             format: adapter
                 .get_swap_chain_preferred_format(&surface)
-                .unwrap_or(TextureFormat::EtcRgUnorm),
-            present_mode: PresentMode::Fifo,
-            usage: TextureUsage::RENDER_ATTACHMENT,
+                .unwrap_or(wgpu::TextureFormat::Etc2RgbA1Unorm),
+            present_mode: wgpu::PresentMode::Fifo,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             width: screen_size.width,
             height: screen_size.height,
         };
@@ -198,8 +186,11 @@ impl State {
         //     contents: bytemuck::cast_slice(VERTICES),
         // });
 
+        let swapchain = device.create_swap_chain(&surface, &swapchain_descriptor);
+
         Self {
-            swapchain: device.create_swap_chain(&surface, &swapchain_descriptor),
+            // swapchain_texture_view: swapchain.get_current_frame().unwrap().output.view,
+            swapchain,
             surface,
             swapchain_descriptor,
             device,
@@ -208,13 +199,17 @@ impl State {
             // vertex_buffer,
             // uniform_bind_group,
             // texture_bind_group,
-            clear_color: Color {
+            clear_color: wgpu::Color {
                 r: 0.0,
                 g: 0.0,
                 b: 0.0,
                 a: 1.0,
             },
         }
+    }
+
+    pub fn prepare_render(&mut self) {
+        // self.swapchain_texture_view = self.swapchain.get_current_frame().unwrap().output;
     }
 
     // pub fn render(&self) -> Result<(), SwapChainError> {
@@ -255,7 +250,7 @@ impl State {
             .create_swap_chain(&self.surface, &self.swapchain_descriptor)
     }
 
-    pub fn set_clear_color(&mut self, clear_color: Color) {
+    pub fn set_clear_color(&mut self, clear_color: wgpu::Color) {
         self.clear_color = clear_color;
     }
 }

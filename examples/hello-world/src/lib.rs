@@ -49,7 +49,12 @@ fn update_positions(
     }
 }
 
-#[tempeh_core::main]
+#[no_mangle]
+pub extern "C" fn entry_scene() {
+    println!("Hello world");
+}
+
+#[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on"))]
 pub fn main() {
     tempeh_log::init();
 

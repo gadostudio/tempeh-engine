@@ -1,16 +1,4 @@
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{
-    Adapter, BackendBit, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState,
-    Buffer, BufferAddress, BufferBinding, BufferBindingType, BufferUsage, Color, ColorTargetState,
-    ColorWrite, CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState,
-    FrontFace, Instance, Limits, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor,
-    PolygonMode, PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    RequestAdapterOptions, RequestAdapterOptionsBase, ShaderFlags, ShaderModuleDescriptor,
-    ShaderSource, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    TextureFormat, TextureUsage, VertexBufferLayout, VertexState,
-};
 
 use tempeh_math::prelude::*;
 
@@ -33,10 +21,10 @@ struct Vertex {
 }
 
 impl Vertex {
-    fn desc<'a>() -> VertexBufferLayout<'a> {
-        VertexBufferLayout {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Vertex,
+            step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
                     offset: 0,

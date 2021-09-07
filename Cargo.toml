@@ -3,10 +3,12 @@ name = "sample"
 version = "0.1.0"
 authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
+resolver = "2"
 
 [workspace]
 members = [
     "tempeh-engine/tempeh-core",
+    "tempeh-engine/tempeh-core/codegen",
     "tempeh-engine/tempeh-core-component",
     "tempeh-engine/tempeh-engine",
     "tempeh-engine/tempeh-window-winit",
@@ -15,7 +17,10 @@ members = [
     "tempeh-engine/tempeh-ecs",
     "tempeh-engine/tempeh-math",
     "tempeh-engine/tempeh-filesystem",
-    "tempeh-editor"
+
+    "tempeh-editor",
+
+    "examples/hello-world"
 ]
 
 [dependencies]

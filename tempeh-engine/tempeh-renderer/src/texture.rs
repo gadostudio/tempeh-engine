@@ -1,8 +1,4 @@
 use image::{EncodableLayout, GenericImageView};
-use wgpu::{
-    Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, SamplerDescriptor, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsage, TextureViewDescriptor,
-};
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -23,43 +19,44 @@ impl Texture {
     ) -> Self {
         let rgba = img.as_rgba8().unwrap();
         let (width, height) = img.dimensions();
-        let size = Extent3d {
+        let size = wgpu::Extent3d {
             width,
             height,
             depth_or_array_layers: 1,
         };
 
-        let texture = device.create_texture(&TextureDescriptor {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size,
             mip_level_count: 1,
             sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba8UnormSrgb,
-            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::SAMPLED | wgpu::TextureUsages::COPY_DST,
         });
 
-        let texture_view = texture.create_view(&TextureViewDescriptor::default());
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let sampler = device.create_sampler(&SamplerDescriptor {
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
             address_mode_u: Default::default(),
             address_mode_v: Default::default(),
             address_mode_w: Default::default(),
-            mag_filter: FilterMode::Linear,
-            min_filter: FilterMode::Nearest,
-            mipmap_filter: FilterMode::Nearest,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
 
         queue.write_texture(
-            ImageCopyTexture {
+            wgpu::ImageCopyTexture {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::default(),
             },
             rgba,
-            ImageDataLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(std::num::NonZeroU32::new(width * 4).unwrap()),
                 rows_per_image: Some(std::num::NonZeroU32::new(height).unwrap()),

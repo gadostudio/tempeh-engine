@@ -13,9 +13,9 @@ impl FileTree {
         Self(HashMap::new())
     }
 
-    pub fn from(path: PathBuf) -> Self {
+    pub fn from<P: Into<PathBuf>>(path: P) -> Self {
         let mut queue = VecDeque::new();
-        queue.push_back(path.clone());
+        queue.push_back(PathBuf::from(path.into()));
 
         let mut filetree = FileTree::new();
 

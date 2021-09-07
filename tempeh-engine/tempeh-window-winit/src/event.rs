@@ -200,25 +200,28 @@ impl InputProcessor {
                             VirtualKeyCode::Asterisk => VirtualKeyCodeTempeh::Asterisk,
                             VirtualKeyCode::Plus => VirtualKeyCodeTempeh::Plus,
                         });
+
                 let keypress_state = match input.state {
                     ElementState::Pressed => KeyState::Pressed,
                     ElementState::Released => KeyState::Released,
                 };
-                match keypress_state {
-                    KeyState::Pressed => self
-                        .input_manager
-                        .keyboard_key_presses
-                        .insert(virtual_keycode.as_ref().unwrap().clone()),
-                    KeyState::Released => self
-                        .input_manager
-                        .keyboard_key_presses
-                        .remove(virtual_keycode.as_ref().unwrap()),
-                };
-                self.input_manager.keyboard_presses.insert(KeyboardInput {
-                    state: keypress_state,
-                    scancode: input.scancode,
-                    virtual_keycode,
-                });
+                if virtual_keycode.is_some() {
+                    match keypress_state {
+                        KeyState::Pressed => self
+                            .input_manager
+                            .keyboard_key_presses
+                            .insert(virtual_keycode.as_ref().unwrap().clone()),
+                        KeyState::Released => self
+                            .input_manager
+                            .keyboard_key_presses
+                            .remove(virtual_keycode.as_ref().unwrap()),
+                    };
+                    self.input_manager.keyboard_presses.insert(KeyboardInput {
+                        state: keypress_state,
+                        scancode: input.scancode,
+                        virtual_keycode,
+                    });
+                }
                 log::info!("Keypress {:?}", input);
             }
             WindowEvent::MouseInput { button, state, .. } => {

@@ -119,6 +119,12 @@ impl Runner for WinitWindow {
                         .insert(input_processor.input_manager.clone());
                     engine.resources.insert(time.elapsed());
                     engine
+                        .resources
+                        .get_mut::<Renderer>()
+                        .unwrap()
+                        .state
+                        .prepare_render();
+                    engine
                         .schedule
                         .execute(&mut engine.world, &mut engine.resources);
                     input_processor.reset();
@@ -156,12 +162,14 @@ impl Runner for WinitWindow {
                             }
                             WindowEvent::Resized(size_) => {
                                 size = size_;
-                                engine.resources.get_mut::<Renderer>().unwrap().resize(
-                                    ScreenSize {
-                                        width: size.width,
-                                        height: size.height,
-                                    },
-                                );
+                                if size.height != 0 && size.width != 0 {
+                                    engine.resources.get_mut::<Renderer>().unwrap().resize(
+                                        ScreenSize {
+                                            width: size.width,
+                                            height: size.height,
+                                        },
+                                    );
+                                }
                             }
                             _ => {}
                         };

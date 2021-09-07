@@ -1,0 +1,8 @@
+[package]
+name = "tempeh-core-codegen"
+version = "0.1.0"
+authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
