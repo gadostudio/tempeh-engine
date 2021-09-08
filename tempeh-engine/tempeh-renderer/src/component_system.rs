@@ -1,23 +1,23 @@
 use tempeh_core_component::prelude::*;
 use tempeh_ecs::prelude::*;
 use tempeh_ecs::Entity;
-use tempeh_window::ScreenSize;
 
-use crate::camera::Camera2D;
+
+
 use crate::command_encoder::CommandBufferGenerator;
 use crate::renderer::Renderer;
 use crate::sprite::{SpriteRenderer, SpriteRendererPipeline};
-use crate::state::State;
-use crate::texture::Texture;
-use crate::uniform::Uniform;
-use crate::{Vertex, VERTICES};
-use std::ops::Add;
+
+
+
+use crate::{Vertex};
+
 use tempeh_ecs::systems::CommandBuffer;
-use tempeh_window::input::keyboard::VirtualKeyCode;
-use tempeh_window::input::InputManager;
+
+
 
 #[system]
-pub fn render(#[resource] renderer: &mut Renderer) {
+pub fn render(#[resource] _renderer: &mut Renderer) {
     // renderer
     //     .state
     //     .queue
@@ -29,13 +29,11 @@ pub fn render(#[resource] renderer: &mut Renderer) {
 pub fn sprite_renderer_initialization(
     entity: &Entity,
     command: &mut CommandBuffer,
-    sprite_renderer: &mut SpriteRenderer,
+    _sprite_renderer: &mut SpriteRenderer,
     #[resource] renderer: &Renderer,
 ) {
-    log::warn!("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     command.add_component(*entity, SpriteRendererPipeline::new(renderer));
     command.remove_component::<SpriteRenderer>(*entity);
-    log::warn!("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-FINISH");
 }
 
 #[system(for_each)]
@@ -71,7 +69,7 @@ pub fn sprite_render_queue(
             },
         ]),
     );
-    let command_buffer = sprite_renderer.command_buffer(renderer);
+    sprite_renderer.command_buffer(renderer);
     // renderer
     //     .command_buffer_queue
     //     .as_mut()

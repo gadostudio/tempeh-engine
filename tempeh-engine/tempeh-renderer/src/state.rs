@@ -1,20 +1,13 @@
-use std::iter;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
-
-use crate::camera::Camera2D;
-use crate::{uniform::Uniform, Vertex, VERTICES};
 use tempeh_window::ScreenSize;
+use wgpu::SurfaceConfiguration;
 
 pub struct State {
     pub(crate) device: wgpu::Device,
     pub(crate) surface: wgpu::Surface,
+    pub(crate) surface_format: wgpu::TextureFormat,
     pub(crate) queue: wgpu::Queue,
-    // pub(crate) swapchain_texture_view: wgpu::TextureView,
-    // pub(crate) render_pipeline: RenderPipeline,
-    // pub(crate) vertex_buffer: Buffer,
-    // pub(crate) uniform_bind_group: BindGroup,
-    // pub(crate) texture_bind_group: BindGroup,
-    clear_color: wgpu::Color,
+    pub(crate) adapter: wgpu::Adapter,
+    pub(crate) clear_color: wgpu::Color,
 }
 
 impl State {
@@ -40,7 +33,7 @@ impl State {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    label: Some("WGPU Playground"),
+                    label: None,
                     features: if cfg!(android) {
                         wgpu::Features::TEXTURE_COMPRESSION_ETC2
                     } else {
@@ -52,15 +45,15 @@ impl State {
             )
             .await
             .unwrap();
-        let swapchain_descriptor = SwapChainDescriptor {
-            format: adapter
-                .get_swap_chain_preferred_format(&surface)
-                .unwrap_or(wgpu::TextureFormat::Etc2RgbA1Unorm),
-            present_mode: wgpu::PresentMode::Fifo,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            width: screen_size.width,
-            height: screen_size.height,
-        };
+        // let swapchain_descriptor = SwapChainDescriptor {
+        //     format: adapter
+        //         .get_swap_chain_preferred_format(&surface)
+        //         .unwrap_or(wgpu::TextureFormat::Etc2RgbA1Unorm),
+        //     present_mode: wgpu::PresentMode::Fifo,
+        //     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        //     width: screen_size.width,
+        //     height: screen_size.height,
+        // };
         // let shader_vertex = device.create_shader_module(&include_spirv!("./shaders/test.vert.spv"));
         // let shader_fragment =
         //     device.create_shader_module(&include_spirv!("./shaders/test.frag.spv"));
@@ -186,13 +179,30 @@ impl State {
         //     contents: bytemuck::cast_slice(VERTICES),
         // });
 
-        let swapchain = device.create_swap_chain(&surface, &swapchain_descriptor);
+        // let swapchain = device.create_swap_chain(&surface, &swapchain_descriptor);
+
+        let surface_format = surface
+            .get_preferred_format(&adapter)
+            .unwrap_or(wgpu::TextureFormat::Bgra8Unorm);
+
+        surface.configure(
+            &device,
+            &SurfaceConfiguration {
+                format: surface_format,
+                present_mode: wgpu::PresentMode::Mailbox,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                width: screen_size.width,
+                height: screen_size.height,
+            },
+        );
 
         Self {
             // swapchain_texture_view: swapchain.get_current_frame().unwrap().output.view,
-            swapchain,
+            // swapchain,
+            surface_format,
+            adapter,
             surface,
-            swapchain_descriptor,
+            // swapchain_descriptor,
             device,
             queue,
             // render_pipeline,
@@ -206,10 +216,6 @@ impl State {
                 a: 1.0,
             },
         }
-    }
-
-    pub fn prepare_render(&mut self) {
-        // self.swapchain_texture_view = self.swapchain.get_current_frame().unwrap().output;
     }
 
     // pub fn render(&self) -> Result<(), SwapChainError> {
@@ -242,12 +248,12 @@ impl State {
     //     Ok(())
     // }
 
-    pub fn resize(&mut self, size: ScreenSize) {
-        self.swapchain_descriptor.width = size.width;
-        self.swapchain_descriptor.height = size.height;
-        self.swapchain = self
-            .device
-            .create_swap_chain(&self.surface, &self.swapchain_descriptor)
+    pub fn resize(&mut self, _size: ScreenSize) {
+        // self.swapchain_descriptor.width = size.width;
+        // self.swapchain_descriptor.height = size.height;
+        // self.swapchain = self
+        //     .device
+        //     .create_swap_chain(&self.surface, &self.swapchain_descriptor)
     }
 
     pub fn set_clear_color(&mut self, clear_color: wgpu::Color) {

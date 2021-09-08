@@ -1,4 +1,5 @@
-use image::{EncodableLayout, GenericImageView};
+use image::{GenericImageView};
+
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -32,7 +33,7 @@ impl Texture {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::SAMPLED | wgpu::TextureUsages::COPY_DST,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         });
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());

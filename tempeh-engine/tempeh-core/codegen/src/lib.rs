@@ -1,4 +1,4 @@
-use proc_macro::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
+use proc_macro::TokenStream;
 use std::str::FromStr;
 
 #[proc_macro_attribute]

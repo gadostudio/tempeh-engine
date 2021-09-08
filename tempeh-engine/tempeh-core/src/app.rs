@@ -3,7 +3,7 @@ use rapier2d::prelude::*;
 use tempeh_ecs::storage::IntoComponentSource;
 use tempeh_ecs::systems::{Executor, ParallelRunnable, Resource, Step};
 use tempeh_ecs::{Resources, Schedule, World};
-use tempeh_engine::{Engine, Physic};
+use tempeh_engine::{Physic};
 
 struct Systems {
     startup_system: Vec<Box<dyn ParallelRunnable + 'static>>,

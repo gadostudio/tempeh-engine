@@ -1,6 +1,5 @@
-use crate::mini_block::BlockingFuture;
 use crate::state::State;
-use crate::VERTICES;
+use async_std::task;
 use tempeh_window::ScreenSize;
 
 pub struct Renderer {
@@ -16,15 +15,9 @@ impl Renderer {
         clear_color: wgpu::Color,
     ) -> Self {
         Self {
-            state: State::new(window, screen_size).block(),
+            state: task::block_on(State::new(window, screen_size)),
             clear_color,
             command_buffer_queue: Some(vec![]),
         }
-    }
-
-    pub fn resize(&mut self, size: ScreenSize) {}
-
-    pub fn set_clear_color(&mut self, clear_color: wgpu::Color) {
-        self.clear_color = clear_color;
     }
 }

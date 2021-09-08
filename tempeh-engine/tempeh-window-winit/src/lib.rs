@@ -1,26 +1,24 @@
 mod event;
-mod mini_block;
 
 use crate::event::InputProcessor;
-use instant::{Duration, Instant};
-use log::info;
-use mini_block::BlockingFuture;
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::RefCell;
-use std::ffi::{CStr, CString};
-use std::io::{BufReader, Cursor, Read};
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use tempeh_ecs::{Resources, Schedule, World};
+use instant::{Instant};
+
+
+
+
+use std::io::{Read};
+
+
+
 use tempeh_engine::Engine;
 use tempeh_renderer::renderer::Renderer;
-use tempeh_renderer::state::State;
-use tempeh_window::input::touch::TouchPhase as TouchPhaseTempeh;
-use tempeh_window::input::{mouse::MouseButton as MouseButtonTempeh, InputManager, KeyState};
-use tempeh_window::{HasRawWindowHandle, Runner, ScreenSize, TempehWindow};
-use wgpu::{Color, SwapChainError};
+
+
+
+use tempeh_window::{Runner, ScreenSize, TempehWindow};
+use wgpu::Color;
 use winit::dpi::PhysicalSize;
-use winit::event::{TouchPhase, VirtualKeyCode};
+
 use winit::window::{UserAttentionType, Window};
 use winit::{
     event::ElementState,
@@ -119,12 +117,6 @@ impl Runner for WinitWindow {
                         .insert(input_processor.input_manager.clone());
                     engine.resources.insert(time.elapsed());
                     engine
-                        .resources
-                        .get_mut::<Renderer>()
-                        .unwrap()
-                        .state
-                        .prepare_render();
-                    engine
                         .schedule
                         .execute(&mut engine.world, &mut engine.resources);
                     input_processor.reset();
@@ -163,19 +155,22 @@ impl Runner for WinitWindow {
                             WindowEvent::Resized(size_) => {
                                 size = size_;
                                 if size.height != 0 && size.width != 0 {
-                                    engine.resources.get_mut::<Renderer>().unwrap().resize(
-                                        ScreenSize {
+                                    engine
+                                        .resources
+                                        .get_mut::<Renderer>()
+                                        .unwrap()
+                                        .state
+                                        .resize(ScreenSize {
                                             width: size.width,
                                             height: size.height,
-                                        },
-                                    );
+                                        });
                                 }
                             }
                             _ => {}
                         };
                         input_processor.handle_input(&event);
                     }
-                    Event::RedrawRequested(window_id) => {
+                    Event::RedrawRequested(_window_id) => {
                         update();
 
                         // match engine.resources.get::<Renderer>().unwrap().render() {

@@ -5,7 +5,7 @@ authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-async-std = "1.9.0"
+async-std = "1.10.0"
 bytemuck = { version = "1.7.2", features = ["derive"] }
 log = "0.4.14"
 tempeh-core-component = { version = "0.1.0", path = "../tempeh-core-component" }
@@ -15,12 +15,12 @@ tempeh-core = { version = "0.1.0", path = "../tempeh-core" }
 tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wgpu = { version = "0.10.1", features = ["webgl"] }
+wgpu = { version = "0.10.1", features = ["webgl", "spirv"] }
 web-sys = { version = "0.3.50", features = ["Document", "Navigator", "Node", "NodeList", "Gpu", "GpuAdapter", "GpuAdapterFeatures", "GpuAdapterLimits", "GpuAddressMode", "GpuBindGroup", "GpuBindGroupDescriptor", "GpuBindGroupEntry", "GpuBindGroupLayout", "GpuBindGroupLayoutDescriptor", "GpuBindGroupLayoutEntry", "GpuBlendComponent", "GpuBlendFactor", "GpuBlendOperation", "GpuBlendState", "GpuBuffer", "GpuBufferBinding", "GpuBufferBindingLayout", "GpuBufferBindingType", "GpuBufferDescriptor", "GpuBufferUsage", "GpuCanvasContext", "GpuColorDict", "GpuColorTargetState", "GpuColorWrite", "GpuCommandBuffer", "GpuCommandBufferDescriptor", "GpuCommandEncoder", "GpuCommandEncoderDescriptor", "GpuCompareFunction", "GpuCompilationInfo", "GpuCompilationMessage", "GpuCompilationMessageType", "GpuComputePassDescriptor", "GpuComputePassEncoder", "GpuComputePipeline", "GpuComputePipelineDescriptor", "GpuCullMode", "GpuDepthStencilState", "GpuDevice", "GpuDeviceDescriptor", "GpuDeviceLostInfo", "GpuDeviceLostReason", "GpuErrorFilter", "GpuExtent3dDict", "GpuFeatureName", "GpuFilterMode", "GpuFragmentState", "GpuFrontFace", "GpuImageCopyBuffer", "GpuImageCopyImageBitmap", "GpuImageCopyTexture", "GpuImageDataLayout", "GpuIndexFormat", "GpuInputStepMode", "GpuLoadOp", "GpuMapMode", "GpuMultisampleState", "GpuObjectDescriptorBase", "GpuOrigin2dDict", "GpuOrigin3dDict", "GpuOutOfMemoryError", "GpuPipelineDescriptorBase", "GpuPipelineLayout", "GpuPipelineLayoutDescriptor", "GpuPipelineStatisticName", "GpuPowerPreference", "GpuPrimitiveState", "GpuPrimitiveTopology", "GpuProgrammableStage", "GpuQuerySet", "GpuQuerySetDescriptor", "GpuQueryType", "GpuQueue", "GpuRenderBundle", "GpuRenderBundleDescriptor", "GpuRenderBundleEncoder", "GpuRenderBundleEncoderDescriptor", "GpuRenderPassColorAttachment", "GpuRenderPassDepthStencilAttachment", "GpuRenderPassDescriptor", "GpuRenderPassEncoder", "GpuRenderPipeline", "GpuRenderPipelineDescriptor", "GpuRequestAdapterOptions", "GpuSampler", "GpuSamplerBindingLayout", "GpuSamplerBindingType", "GpuSamplerDescriptor", "GpuShaderModule", "GpuShaderModuleDescriptor", "GpuShaderStage", "GpuStencilFaceState", "GpuStencilOperation", "GpuStorageTextureAccess", "GpuStorageTextureBindingLayout", "GpuStoreOp", "GpuSwapChain", "GpuSwapChainDescriptor", "GpuTexture", "GpuTextureAspect", "GpuTextureBindingLayout", "GpuTextureDescriptor", "GpuTextureDimension", "GpuTextureFormat", "GpuTextureSampleType", "GpuTextureUsage", "GpuTextureView", "GpuTextureViewDescriptor", "GpuTextureViewDimension", "GpuUncapturedErrorEvent", "GpuUncapturedErrorEventInit", "GpuValidationError", "GpuVertexAttribute", "GpuVertexBufferLayout", "GpuVertexFormat", "GpuVertexState", "HtmlCanvasElement", "Window"] }
 image = { version = "0.23.14", default-features = false, features = ["gif", "jpeg", "ico", "png", "pnm", "tga", "tiff", "webp", "bmp", "hdr", "dxt", "dds", "farbfeld"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wgpu = "0.10.1"
+wgpu = { version = "0.10.1", features = ["spirv"] }
 image = "0.23.14"
 
 [build-dependencies]

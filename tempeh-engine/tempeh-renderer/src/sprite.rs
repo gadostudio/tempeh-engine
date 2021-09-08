@@ -8,7 +8,6 @@ use crate::prelude::State;
 use crate::renderer::Renderer;
 use crate::uniform::Uniform;
 use crate::{Vertex, VERTICES};
-use std::iter;
 
 pub struct SpriteRenderer {
     pub(crate) texture: image::DynamicImage,
@@ -132,7 +131,7 @@ impl SpriteRendererPipeline {
                 entry_point: "main",
                 module: &shader_fragment,
                 targets: &[wgpu::ColorTargetState {
-                    format: swapchain_descriptor.format,
+                    format: renderer.state.surface_format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
@@ -169,14 +168,11 @@ impl SpriteRendererPipeline {
 }
 
 impl CommandBufferGenerator for SpriteRendererPipeline {
-    fn command_buffer(&self, renderer: &Renderer) -> bool {
-        let view = &renderer
-            .state
-            .swapchain
-            .get_current_frame()
-            .unwrap()
-            .output
-            .view;
+    fn command_buffer(&self, renderer: &Renderer) {
+        let frame = &renderer.state.surface.get_current_frame().unwrap().output;
+        let view = &frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
         let mut command_encoder = renderer
             .state
             .device
@@ -200,10 +196,6 @@ impl CommandBufferGenerator for SpriteRendererPipeline {
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.draw(0..VERTICES.len() as u32, 0..1);
         }
-        renderer
-            .state
-            .queue
-            .submit(iter::once(command_encoder.finish()));
-        true
+        renderer.state.queue.submit(Some(command_encoder.finish()));
     }
 }
