@@ -211,6 +211,7 @@ async fn main() {
                 Message::ProjectExport => {
                     app.ui_state.display_export_setup_window = true;
                 }
+                Message::Settings => {}
             }
         }
         app.message_queue.clear();
