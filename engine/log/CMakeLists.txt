@@ -1,4 +1,6 @@
-add_library("tempeh_log" "src/logger.cpp" "include/tempeh/logger.hpp")
+add_library("tempeh_log" STATIC
+	"src/logger.cpp"
+	"include/tempeh/logger.hpp")
 
 target_include_directories("tempeh_log"
 	PUBLIC "include"

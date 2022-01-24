@@ -1,27 +1,41 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
+#include <utility>
 
 #include "window_glfw.hpp"
+#include "input_manager.hpp"
 
 namespace TempehEditor::Window {
 
-	WindowGLFW::WindowGLFW()
+	WindowGLFW::WindowGLFW(std::shared_ptr<InputManager> input_manager):
+		shared_state{std::move(input_manager)}
 	{
 		if (!glfwInit())
-			throw std::runtime_error("Failed to initialize glfw");
+			throw std::runtime_error("Failed to initialize GLFW");
 
 		window = glfwCreateWindow(640, 480, "Dawn window", nullptr, nullptr);
 		if (!window)
 			throw std::runtime_error("Error window creation");
+
+		glfwSetWindowUserPointer(window, static_cast<void*>(&shared_state));
+
+		//glfwSetWindowSizeCallback(window, [](GLFWwindow* window, i32 width, i32 height)
+		//	{
+		//		WindowGLFWSharedState& shared_state = *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+		//		shared_state.input_manager.
+		//	});
 	}
 
 	WindowGLFW::~WindowGLFW()
 	{
 		glfwDestroyWindow(window);
+		glfwTerminate();
 	}
 
-	void WindowGLFW::set_title(const char* str)
+	void WindowGLFW::process_input(InputManager& input_manager)
 	{
+		glfwPollEvents();
 	}
+
 
 }

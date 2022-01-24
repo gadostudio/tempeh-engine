@@ -5,17 +5,19 @@
 
 #include <memory>
 #include "../window/window.hpp"
-#include "../renderer/renderer.hpp"
+#include "../renderer/render_context.hpp"
+#include "../renderer/gui.hpp"
 
-namespace TempehEditor
+namespace TempehEditor::Core
 {
 
 	class Application
 	{
 	private:
-		std::unique_ptr<Window::Window> window;
-		//InputProcessor input_processor;
-		Renderer::Renderer renderer;
+		std::shared_ptr<TempehEditor::Window::InputManager> input_manager;
+		std::shared_ptr<Window::Window> window;
+		std::shared_ptr<Renderer::RenderContext> render_context;
+		std::shared_ptr<Renderer::GUI::GUIImGuiRenderer> gui;
 
 		bool is_running = true;
 	public:

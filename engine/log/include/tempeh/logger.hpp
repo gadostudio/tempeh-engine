@@ -1,5 +1,6 @@
 #include <vector>
 #include <memory>
+#include <spdlog/async_logger.h>
 #include <spdlog/spdlog.h>
 
 namespace Tempeh::Log
@@ -11,8 +12,8 @@ namespace Tempeh::Log
 		inline static std::vector<spdlog::sink_ptr> sinks;
 		inline static std::shared_ptr<spdlog::logger> logger;
 	public:
-		static void init();
-		static std::shared_ptr<spdlog::logger>& get_logger();
+		static void init(const char* logger_name);
+		static std::shared_ptr<spdlog::logger>& get_logger() { return logger; }
 	};
 
 	#define LOG_TRACE(...)    ::Tempeh::Log::Logger::get_logger()->trace(__VA_ARGS__)

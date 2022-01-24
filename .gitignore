@@ -33,3 +33,6 @@
 
 .vs/
 out/
+*.user
+cmake-*/
+.idea/

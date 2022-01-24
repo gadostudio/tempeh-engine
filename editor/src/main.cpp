@@ -1,12 +1,15 @@
 #include "core/application.hpp"
 
+#include <tempeh/scripting/Mono.hpp>
 #include <tempeh/logger.hpp>
 
-TempehEditor::Application::ApplicationReturn main()
+#include "renderer/editor_camera.hpp"
+
+TempehEditor::Core::Application::ApplicationReturn main()
 {
 	Tempeh::Log::Logger logger;
-	logger.init();
+	logger.init("Tempeh Engine");
 
-	TempehEditor::Application app;
+	TempehEditor::Core::Application app;
 	return app.run();
 }

@@ -16,3 +16,9 @@
 [submodule "external/sentry-native"]
 	path = external/sentry-native
 	url = https://github.com/getsentry/sentry-native.git
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb.git
+[submodule "external/predef"]
+	path = external/predef
+	url = https://github.com/boostorg/predef.git
