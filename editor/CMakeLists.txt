@@ -42,7 +42,10 @@ target_link_libraries("tempeh_engine_editor"
 	PUBLIC "spdlog::spdlog"
 	PUBLIC "sentry::sentry"
 	PUBLIC "webgpu_dawn"
-	PUBLIC "dawn_native"
-	PUBLIC "dawn_utils"
+	#PUBLIC "dawn_native"
+	#PUBLIC "dawn_utils"
+	#PUBLIC "dawn_proc"
 	PUBLIC "dawncpp"
-	PUBLIC "imgui")
+	#PUBLIC "dawncpp_headers"
+	PUBLIC "imgui"
+	)

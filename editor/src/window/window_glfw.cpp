@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <utility>
+#include <tempeh/logger.hpp>
 
 #include "window_glfw.hpp"
 #include "input_manager.hpp"
@@ -16,6 +17,11 @@ namespace TempehEditor::Window {
 		window = glfwCreateWindow(640, 480, "Dawn window", nullptr, nullptr);
 		if (!window)
 			throw std::runtime_error("Error window creation");
+
+		glfwSetErrorCallback([](int error, const char* description)
+			{
+				LOG_ERROR("GLFW error [{}]: {}", error, description);
+			});
 
 		glfwSetWindowUserPointer(window, static_cast<void*>(&shared_state));
 

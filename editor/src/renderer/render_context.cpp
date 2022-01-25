@@ -2,8 +2,6 @@
 
 #include <dawn/webgpu_cpp.h>
 #include <dawn_native/DawnNative.h>
-#include <dawn_wire/WireClient.h>
-#include <dawn_wire/WireServer.h>
 #include <tempeh/logger.hpp>
 #include <boost/predef.h>
 #include <BackendBinding.h>
@@ -18,7 +16,7 @@
 #	error
 #endif
 #include <GLFW/glfw3native.h>
-#include <dawn/dawn_wsi.h>
+#include <backends/imgui_impl_wgpu.h>
 #include <dawn_native/D3D12Backend.h>
 
 namespace TempehEditor::Renderer
@@ -28,7 +26,7 @@ namespace TempehEditor::Renderer
 	public:
 		D3D12Binding(GLFWwindow* window, WGPUDevice device): mWindow(window), mDevice(device) {
 		}
-
+	
 		uint64_t GetSwapChainImplementation() {
 			if (mSwapchainImpl.userData == nullptr) {
 				HWND win32Window = glfwGetWin32Window(mWindow);
@@ -37,11 +35,11 @@ namespace TempehEditor::Renderer
 			}
 			return reinterpret_cast<uint64_t>(&mSwapchainImpl);
 		}
-
+	
 		WGPUTextureFormat GetPreferredSwapChainTextureFormat() {
 			return dawn::native::d3d12::GetNativeSwapChainPreferredFormat(&mSwapchainImpl);
 		}
-
+	
 	private:
 		DawnSwapChainImplementation mSwapchainImpl = {};
 		GLFWwindow* mWindow;
@@ -50,6 +48,7 @@ namespace TempehEditor::Renderer
 
 	RenderContext::RenderContext(std::shared_ptr<Window::Window> window)
 	{
+
 		wgpu::BackendType backend = wgpu::BackendType::D3D12;
 		if (backend == wgpu::BackendType::OpenGL || backend == wgpu::BackendType::OpenGLES)
 		{
@@ -75,7 +74,7 @@ namespace TempehEditor::Renderer
 		};
 		main_surface = instance.CreateSurface(&surface_descriptor);
 
-		const auto adapter_options = wgpu::RequestAdapterOptions {
+		const wgpu::RequestAdapterOptions adapter_options {
 			.nextInChain = nullptr,
 			.compatibleSurface = main_surface,
 			.powerPreference = wgpu::PowerPreference::HighPerformance,
@@ -138,32 +137,56 @@ namespace TempehEditor::Renderer
 		};
 		device = adapter.CreateDevice(&device_descriptor);
 
+		auto uncaptured_error_callback = [](WGPUErrorType type, char const* message, void* userdata)
+		{
+			const char* error_type;
+			switch (type)
+			{
+			case WGPUErrorType_NoError:
+				error_type = "No error";
+				break;
+			case WGPUErrorType_Validation:
+				error_type = "Validation";
+				break;
+			case WGPUErrorType_OutOfMemory:
+				error_type = "Out of memory";
+				break;
+			case WGPUErrorType_Unknown:
+				error_type = "Unknown";
+				break;
+			case WGPUErrorType_DeviceLost:
+				error_type = "Device lost";
+				break;
+			case WGPUErrorType_Force32:
+				error_type = "Force32";
+				break;
+			default:
+				error_type = "Unreachable";
+			}
+			LOG_ERROR("wgpu Error [{}]: {}", error_type, message);
+		};
+		device.SetUncapturedErrorCallback(uncaptured_error_callback, nullptr);
+
 		// auto binding = utils::CreateBinding(backend, static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
 
 		D3D12Binding binding(static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
 
 		int w, h;
-		glfwGetWindowSize(static_cast<GLFWwindow*>(window->get_raw_handle()), &w, &h);
+		glfwGetFramebufferSize(static_cast<GLFWwindow*>(window->get_raw_handle()), &w, &h);
 		wgpu::SwapChainDescriptor swap_chain_descriptor{
 			.nextInChain = nullptr,
 			.label = "Main swap chain descriptor",
-			.usage = wgpu::TextureUsage::Present,
-			.format = wgpu::TextureFormat::BGRA8UnormSrgb,
+			.usage = wgpu::TextureUsage::RenderAttachment,
+			.format = wgpu::TextureFormat::BGRA8Unorm,
 			.width = (u32)w,
 			.height = (u32)h,
 			.presentMode = wgpu::PresentMode::Fifo,
-			.implementation = binding.GetSwapChainImplementation()
+			//.implementation = binding.GetSwapChainImplementation()
 			// .implementation = binding->GetSwapChainImplementation(),
 		};
 		ImGui_ImplWGPU_InvalidateDeviceObjects();
 		main_swap_chain = device.CreateSwapChain(main_surface, &swap_chain_descriptor);
 		ImGui_ImplWGPU_CreateDeviceObjects();
-
-		auto uncaptured_error_callback = [](WGPUErrorType type, char const* message, void* userdata)
-		{
-			LOG_ERROR("wgpu Error {}: {}", type, message);
-		};
-		device.SetUncapturedErrorCallback(uncaptured_error_callback, nullptr);
 
 		gui_renderer = std::make_shared<GUI::GUIImGuiRenderer>(window, this);
 	}

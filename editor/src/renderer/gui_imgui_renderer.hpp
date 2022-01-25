@@ -2,9 +2,6 @@
 #define _TEMPEH_RENDERER_GUI_GUI_IMGUI_RENDERER_HPP
 
 #include <imgui.h>
-#include <backends/imgui_impl_wgpu.h>
-#include <backends/imgui_impl_glfw.h>
-#include <dawn/webgpu_cpp.h>
 
 #include <utility>
 #include <memory>
