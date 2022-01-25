@@ -28,6 +28,7 @@ namespace TempehEditor::Window
 		void* get_raw_handle() override { return static_cast<void*>(window); }
 		void process_input(InputManager& input_manager) override;
 		WindowType get_window_type() override { return WindowType::GLFW; }
+		bool is_need_to_close() override { return glfwWindowShouldClose(window); }
 	};
 }
 #endif // _TEMPEH_EDITOR_WINDOW_WINDOWGLFW_HPP

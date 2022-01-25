@@ -180,7 +180,7 @@ namespace TempehEditor::Renderer
 			.format = wgpu::TextureFormat::BGRA8Unorm,
 			.width = (u32)w,
 			.height = (u32)h,
-			.presentMode = wgpu::PresentMode::Fifo,
+			.presentMode = wgpu::PresentMode::Mailbox,
 			//.implementation = binding.GetSwapChainImplementation()
 			// .implementation = binding->GetSwapChainImplementation(),
 		};

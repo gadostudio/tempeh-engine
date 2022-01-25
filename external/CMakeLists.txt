@@ -21,6 +21,13 @@ add_library("imgui" STATIC
 	"imgui/backends/imgui_impl_glfw.cpp")
 	
 target_include_directories("imgui"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/dawn/src/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/glfw/include"
+	PUBLIC "dawn/src/include"
+	PUBLIC "glfw/include"
 	PUBLIC "imgui")
+
+add_library("glad" STATIC
+	"glad/src/glad.c")
+	
+target_include_directories("glad"
+	PUBLIC "glad/include")
+

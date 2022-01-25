@@ -4,7 +4,7 @@
 #include <dawn/webgpu_cpp.h>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include <primitive.hpp>
+#include <typedefs.hpp>
 
 #include "gui_imgui_renderer.hpp"
 
@@ -37,7 +37,7 @@ namespace TempehEditor::Renderer
 		[[nodiscard]] const wgpu::SwapChain& get_swap_chain() const { return main_swap_chain; }
 		//[[nodiscard]] const wgpu::Surface& get_main_surface() const { return surface; }
 		void resize(const WindowSize& window_size) { this->window_size = window_size; }
-		void frame_start() { gui_renderer->frame_start(); }
+		void frame_start(std::shared_ptr<Window::Window> window) { gui_renderer->frame_start(window); }
 		void render() { gui_renderer->render(); }
 	};
 

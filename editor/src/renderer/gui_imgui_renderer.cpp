@@ -3,7 +3,9 @@
 #include <backends/imgui_impl_wgpu.h>
 #include <backends/imgui_impl_glfw.h>
 #include <imgui.h>
+#include <primitive.hpp>
 #include <iostream>
+#include <tempeh/logger.hpp>
 
 #include "render_context.hpp"
 
@@ -33,14 +35,25 @@ namespace TempehEditor::Renderer::GUI
 		 ImGui_ImplWGPU_Init(device.Get(), 3, WGPUTextureFormat_BGRA8Unorm);
 	}
 
-	void GUIImGuiRenderer::frame_start()
+	void GUIImGuiRenderer::frame_start(std::shared_ptr<Window::Window> window)
 	{
+		int wa, ha;
+		glfwGetFramebufferSize(static_cast<GLFWwindow*>(window->get_raw_handle()), &wa, &ha);
+		if (wa != w || ha != h)
+		{
+			h = ha;
+			w = wa;
+			ImGui_ImplWGPU_InvalidateDeviceObjects();
+			render_context->get_swap_chain().Configure(wgpu::TextureFormat::RGBA8Unorm, wgpu::TextureUsage::RenderAttachment, (u32)w, (u32)h);
+			ImGui_ImplWGPU_CreateDeviceObjects();
+			LOG_INFO("size change");
+		}
+
 		// TODO
 		ImGui_ImplWGPU_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		
-		bool a = true;
 		ImGui::ShowDemoWindow(&a);
 	}
 

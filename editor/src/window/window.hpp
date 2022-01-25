@@ -1,7 +1,7 @@
 #ifndef _TEMPEH_EDITOR_WINDOW_WINDOW
 #define _TEMPEH_EDITOR_WINDOW_WINDOW
 
-#include <primitive.hpp>
+#include <typedefs.hpp>
 
 #include "input_manager.hpp"
 
@@ -20,6 +20,7 @@ namespace TempehEditor::Window {
 		virtual void set_title(const char* str) = 0;
 		virtual void* get_raw_handle() = 0;
 		virtual void process_input(InputManager& input_manager) = 0;
+		virtual bool is_need_to_close() = 0;
 	};
 
 }

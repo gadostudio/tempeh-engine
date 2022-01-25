@@ -25,10 +25,10 @@ namespace TempehEditor::Core {
 
 	Application::ApplicationReturn Application::run()
 	{
-		while (is_running)
+		while (!window->is_need_to_close())
 		{
-			render_context->frame_start();
 			window->process_input(*input_manager);
+			render_context->frame_start(window);
 			render_context->render();
 		}
 		return APPLICATION_RETURN_SUCCESS;
