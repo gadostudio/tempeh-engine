@@ -15,7 +15,8 @@ set(tempeh_engine_editor_headers
 
 set(tempeh_engine_editor_sources
 	"src/main.cpp"
-	
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp"
 	"src/core/application.cpp"
 
 	"src/renderer/render_context.cpp"

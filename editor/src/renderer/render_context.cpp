@@ -8,7 +8,7 @@
 #include <util.hpp>
 #include <typedefs.hpp>
 //#include <utils/GLFWUtils.h>
-#if defined(BOOST_OS_WINDOWS)
+#if defined(WIN32)
 #    define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(BOOST_OS_LINUX)
 #    define GLFW_EXPOSE_NATIVE_X11
@@ -17,34 +17,9 @@
 #endif
 #include <GLFW/glfw3native.h>
 #include <backends/imgui_impl_wgpu.h>
-#include <dawn_native/D3D12Backend.h>
 
 namespace TempehEditor::Renderer
 {
-
-	class D3D12Binding {
-	public:
-		D3D12Binding(GLFWwindow* window, WGPUDevice device): mWindow(window), mDevice(device) {
-		}
-	
-		uint64_t GetSwapChainImplementation() {
-			if (mSwapchainImpl.userData == nullptr) {
-				HWND win32Window = glfwGetWin32Window(mWindow);
-				mSwapchainImpl =
-					dawn::native::d3d12::CreateNativeSwapChainImpl(mDevice, win32Window);
-			}
-			return reinterpret_cast<uint64_t>(&mSwapchainImpl);
-		}
-	
-		WGPUTextureFormat GetPreferredSwapChainTextureFormat() {
-			return dawn::native::d3d12::GetNativeSwapChainPreferredFormat(&mSwapchainImpl);
-		}
-	
-	private:
-		DawnSwapChainImplementation mSwapchainImpl = {};
-		GLFWwindow* mWindow;
-		WGPUDevice mDevice;
-	};
 
 	RenderContext::RenderContext(std::shared_ptr<Window::Window> window)
 	{
@@ -169,8 +144,6 @@ namespace TempehEditor::Renderer
 
 		// auto binding = utils::CreateBinding(backend, static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
 
-		D3D12Binding binding(static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
-
 		int w, h;
 		glfwGetFramebufferSize(static_cast<GLFWwindow*>(window->get_raw_handle()), &w, &h);
 		wgpu::SwapChainDescriptor swap_chain_descriptor{
@@ -200,8 +173,8 @@ namespace TempehEditor::Renderer
 		desc->hinstance = GetModuleHandle(nullptr);
 		return desc;
 #elif BOOST_OS_LINUX
-		std::unique_ptr<wgpu::SurfaceDescriptorFromXlib> desc =
-			std::make_unique<wgpu::SurfaceDescriptorFromXlib>();
+		std::unique_ptr<wgpu::SurfaceDescriptorFromXlibWindow> desc =
+			std::make_unique<wgpu::SurfaceDescriptorFromXlibWindow>();
 		desc->display = glfwGetX11Display();
 		desc->window = glfwGetX11Window(window);
 		return desc;

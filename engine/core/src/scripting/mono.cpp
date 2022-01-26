@@ -1,4 +1,4 @@
-#include <tempeh/scripting/Mono.hpp>
+#include <tempeh/scripting/mono.hpp>
 
 #include <mono/jit/jit.h>
 #include <mono/metadata/object.h>
