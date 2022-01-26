@@ -25,6 +25,7 @@ add_library("tempeh_core" STATIC
 	"src/renderer/perspective_camera.cpp")
 
 target_include_directories("tempeh_core"
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include"
 	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
@@ -35,4 +36,5 @@ target_include_directories("tempeh_core"
 target_link_libraries("tempeh_core"
 	PUBLIC "${Vulkan_LIBRARIES}"
 	PUBLIC "tempeh_math"
+	PUBLIC "glfw"
 	)

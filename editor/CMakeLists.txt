@@ -1,4 +1,4 @@
-set(tempeh_engine_editor_headers
+set(TEMPEH_ENGINE_EDITOR_HEADERS
 	"src/window/window.hpp"
 
 	"src/core/application.hpp"
@@ -13,9 +13,13 @@ set(tempeh_engine_editor_headers
 	"src/window/keycode_glfw.hpp"
 	"src/renderer/gui_imgui_renderer.cpp")
 
-set(tempeh_engine_editor_sources
+set(TEMPEH_ENGINE_EDITOR_SOURCES
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp"
+
 	"src/main.cpp"
-	
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp"
 	"src/core/application.cpp"
 
 	"src/renderer/render_context.cpp"
@@ -27,40 +31,34 @@ set(tempeh_engine_editor_sources
 	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp")
 
 add_executable("tempeh_engine_editor"
-	${tempeh_engine_editor_sources}
-	${tempeh_engine_editor_headers})
+	${TEMPEH_ENGINE_EDITOR_SOURCES}
+	${TEMPEH_ENGINE_EDITOR_HEADERS})
 
 target_compile_definitions("tempeh_engine_editor"
 	PUBLIC SENTRY_DSN="https://8e07fe63b9c94200a0926d0d28b54ad2@o1113293.ingest.sentry.io/6143604")
 
 target_include_directories("tempeh_engine_editor"
-	PUBLIC "../common"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/glfw/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/predef/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/imgui"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/dawn/src/include"
+	#PUBLIC "../common"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/dawn/src/utils"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/imgui/misc/single_include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/sentry-native/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/log/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/math/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/common"
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC ${TEMPEH_COMMON_INCLUDE})
 
 target_link_libraries("tempeh_engine_editor"
-	PUBLIC "glfw"
-	PUBLIC "tempeh_log"
-	PUBLIC "tempeh_core"
-	PUBLIC "tempeh_math"
-	PUBLIC "spdlog::spdlog"
-	PUBLIC "sentry::sentry"
-	PUBLIC "webgpu_dawn"
-	#PUBLIC "dawn_native"
-	#PUBLIC "dawn_utils"
-	#PUBLIC "dawn_proc"
-	PUBLIC "dawncpp"
-	#PUBLIC "dawncpp_headers"
-	PUBLIC "imgui"
-	)
+	# Private, because anyone ain't gonna touch the editor
+	PRIVATE "glfw"
+	PRIVATE "boost_predef"
+	PRIVATE "tempeh_common"
+	PRIVATE "tempeh_core"
+	PRIVATE "tempeh_log"
+	PRIVATE "tempeh_math"
+	PRIVATE "spdlog::spdlog"
+	#PUBLIC "sentry::sentry"
+	PRIVATE "webgpu_dawn"
+	PRIVATE "dawn_native"
+	PRIVATE "dawn_utils"
+	PRIVATE "dawn_proc"
+	PRIVATE "dawncpp"
+	PRIVATE "dawncpp_headers"
+	PRIVATE "imgui")
+
+add_dependencies(tempeh_engine_editor webgpu_headers_gen)

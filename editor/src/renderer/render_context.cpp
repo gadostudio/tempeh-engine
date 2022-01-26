@@ -3,12 +3,11 @@
 #include <dawn/webgpu_cpp.h>
 #include <dawn_native/DawnNative.h>
 #include <tempeh/logger.hpp>
+#include <tempeh/common/util.hpp>
 #include <boost/predef.h>
 #include <BackendBinding.h>
-#include <util.hpp>
-#include <typedefs.hpp>
 //#include <utils/GLFWUtils.h>
-#if defined(BOOST_OS_WINDOWS)
+#if defined(WIN32)
 #    define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(BOOST_OS_LINUX)
 #    define GLFW_EXPOSE_NATIVE_X11
@@ -24,7 +23,7 @@ namespace TempehEditor::Renderer
 	RenderContext::RenderContext(std::shared_ptr<Window::Window> window)
 	{
 
-		wgpu::BackendType backend = wgpu::BackendType::D3D12;
+		wgpu::BackendType backend = wgpu::BackendType::Vulkan;
 		if (backend == wgpu::BackendType::OpenGL || backend == wgpu::BackendType::OpenGLES)
 		{
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -168,8 +167,8 @@ namespace TempehEditor::Renderer
 		desc->hinstance = GetModuleHandle(nullptr);
 		return desc;
 #elif BOOST_OS_LINUX
-		std::unique_ptr<wgpu::SurfaceDescriptorFromXlib> desc =
-			std::make_unique<wgpu::SurfaceDescriptorFromXlib>();
+		std::unique_ptr<wgpu::SurfaceDescriptorFromXlibWindow> desc =
+			std::make_unique<wgpu::SurfaceDescriptorFromXlibWindow>();
 		desc->display = glfwGetX11Display();
 		desc->window = glfwGetX11Window(window);
 		return desc;

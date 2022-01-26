@@ -1,7 +1,7 @@
 #ifndef _TEMPEH_EDITOR_WINDOW_WINDOW
 #define _TEMPEH_EDITOR_WINDOW_WINDOW
 
-#include <typedefs.hpp>
+#include <tempeh/common/typedefs.hpp>
 
 #include "input_manager.hpp"
 

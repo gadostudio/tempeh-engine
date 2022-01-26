@@ -14,24 +14,25 @@ add_subdirectory("dawn")
 add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
 add_subdirectory("entt")
+add_subdirectory("glm")
+add_subdirectory("predef")
 
 add_library("imgui" STATIC
-	"imgui/imgui.cpp"
-	"imgui/imgui_demo.cpp"
-	"imgui/imgui_draw.cpp"
-	"imgui/imgui_tables.cpp"
-	"imgui/imgui_widgets.cpp")
+		"imgui/imgui.cpp"
+		"imgui/imgui_demo.cpp"
+		"imgui/imgui_draw.cpp"
+		"imgui/imgui_tables.cpp"
+		"imgui/imgui_widgets.cpp")
 	
 target_include_directories("imgui"
-	PUBLIC "dawn/src/include"
-	PUBLIC "glfw/include"
-	PUBLIC "imgui")
+		PUBLIC "imgui"
+		PUBLIC "imgui/misc/single_include")
 
 add_library("glad" STATIC
-	"glad/src/glad.c")
-	
+		"glad/src/glad.c")
+
 target_include_directories("glad"
-	PUBLIC "glad/include")
+		PUBLIC "glad/include")
 
 find_package(Vulkan REQUIRED)
 

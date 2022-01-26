@@ -4,7 +4,7 @@
 #include <imgui.h>
 
 #include <utility>
-#include <typedefs.hpp>
+#include <tempeh/common/typedefs.hpp>
 #include <memory>
 
 #include "gui.hpp"

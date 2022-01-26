@@ -15,7 +15,7 @@ namespace Tempeh::Event
 
 		enum class Type : u8
 		{
-			None,
+			None = 0,
 			KeyPress, KeyRelease,
 			MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
 			WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,

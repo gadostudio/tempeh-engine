@@ -1,6 +1,6 @@
 #include "core/application.hpp"
 
-#include <tempeh/scripting/Mono.hpp>
+#include <tempeh/scripting/mono.hpp>
 #include <tempeh/logger.hpp>
 
 #include "renderer/editor_camera.hpp"
