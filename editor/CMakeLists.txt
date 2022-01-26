@@ -5,7 +5,7 @@ set(tempeh_engine_editor_headers
 
 	"src/renderer/render_context.hpp"
 
-	"src/event/input_manager.hpp"
+	"src/event/event.hpp"
 	"src/renderer/gui.hpp"
 	"src/renderer/gui_imgui_renderer.hpp"
 	"src/renderer/gui_renderer.hpp"

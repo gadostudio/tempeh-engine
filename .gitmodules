@@ -22,3 +22,4 @@
 [submodule "external/predef"]
 	path = external/predef
 	url = https://github.com/boostorg/predef.git
+

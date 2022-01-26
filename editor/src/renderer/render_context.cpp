@@ -6,7 +6,7 @@
 #include <boost/predef.h>
 #include <BackendBinding.h>
 #include <util.hpp>
-#include <primitive.hpp>
+#include <typedefs.hpp>
 //#include <utils/GLFWUtils.h>
 #if defined(BOOST_OS_WINDOWS)
 #    define GLFW_EXPOSE_NATIVE_WIN32

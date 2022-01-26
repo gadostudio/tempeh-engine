@@ -3,7 +3,7 @@
 #include <backends/imgui_impl_wgpu.h>
 #include <backends/imgui_impl_glfw.h>
 #include <imgui.h>
-#include <primitive.hpp>
+#include <typedefs.hpp>
 #include <iostream>
 #include <tempeh/logger.hpp>
 
