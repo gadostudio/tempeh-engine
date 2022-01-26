@@ -23,3 +23,6 @@
 	path = external/predef
 	url = https://github.com/boostorg/predef.git
 
+[submodule "external/entt"]
+	path = external/entt
+	url = https://github.com/skypjack/entt.git
