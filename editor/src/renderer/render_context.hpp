@@ -4,7 +4,7 @@
 #include <dawn/webgpu_cpp.h>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include <typedefs.hpp>
+#include <tempeh/common/typedefs.hpp>
 
 #include "gui_imgui_renderer.hpp"
 
