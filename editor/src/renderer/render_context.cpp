@@ -3,10 +3,9 @@
 #include <dawn/webgpu_cpp.h>
 #include <dawn_native/DawnNative.h>
 #include <tempeh/logger.hpp>
+#include <tempeh/common/util.hpp>
 #include <boost/predef.h>
 #include <BackendBinding.h>
-#include <util.hpp>
-#include <typedefs.hpp>
 //#include <utils/GLFWUtils.h>
 #if defined(WIN32)
 #    define GLFW_EXPOSE_NATIVE_WIN32
@@ -24,7 +23,7 @@ namespace TempehEditor::Renderer
 	RenderContext::RenderContext(std::shared_ptr<Window::Window> window)
 	{
 
-		wgpu::BackendType backend = wgpu::BackendType::D3D12;
+		wgpu::BackendType backend = wgpu::BackendType::Vulkan;
 		if (backend == wgpu::BackendType::OpenGL || backend == wgpu::BackendType::OpenGLES)
 		{
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);

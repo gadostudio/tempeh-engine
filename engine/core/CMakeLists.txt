@@ -20,12 +20,10 @@ add_library("tempeh_core" STATIC
 	"include/tempeh/renderer/backend/opengl_es/instance.hpp")
 
 target_include_directories("tempeh_core"
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
-	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
-	PUBLIC "${Vulkan_INCLUDE_DIRS}"
-	)
+	PUBLIC "${Vulkan_INCLUDE_DIRS}")
 
 target_link_libraries("tempeh_core"
-	PUBLIC "${Vulkan_LIBRARIES}"
-	)
+	PUBLIC tempeh_common
+	PUBLIC glfw "${Vulkan_LIBRARIES}")

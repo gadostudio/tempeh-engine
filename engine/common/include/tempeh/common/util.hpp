@@ -2,7 +2,7 @@
 #define _TEMPEH_UTIL_HPP
 
 template <typename T = u8>
-constexpr T bit(T n)
+static inline constexpr T bit(T n)
 {
     return 1 << n;
 };
