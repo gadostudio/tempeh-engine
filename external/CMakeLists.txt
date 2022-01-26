@@ -7,7 +7,12 @@ set(GLFW_INSTALL OFF)
 add_subdirectory("glfw")
 set(BUILD_EXAMPLE OFF)
 set(DAWN_BUILD_EXAMPLES OFF)
+
 add_subdirectory("dawn")
+if(NOT(EXISTS "dawn/src/dawn/webgpu_cpp.cpp"))
+	file(COPY "${Dawn_BINARY_DIR}/gen/src" DESTINATION "dawn/src")
+endif()
+
 add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
 
@@ -31,3 +36,4 @@ add_library("glad" STATIC
 target_include_directories("glad"
 	PUBLIC "glad/include")
 
+find_package(Vulkan REQUIRED)

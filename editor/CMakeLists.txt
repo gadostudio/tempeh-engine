@@ -5,7 +5,13 @@ set(tempeh_engine_editor_headers
 
 	"src/renderer/render_context.hpp"
 
-	"src/event/input_manager.hpp")
+	"src/event/input_manager.hpp"
+	"src/renderer/gui.hpp"
+	"src/renderer/gui_imgui_renderer.hpp"
+	"src/renderer/gui_renderer.hpp"
+	"src/renderer/editor_camera.hpp"
+	"src/window/keycode_glfw.hpp"
+	"src/renderer/gui_imgui_renderer.cpp")
 
 set(tempeh_engine_editor_sources
 	"src/main.cpp"
@@ -19,7 +25,7 @@ set(tempeh_engine_editor_sources
 
 add_executable("tempeh_engine_editor"
 	${tempeh_engine_editor_sources}
-	${tempeh_engine_editor_headers} "src/window/input_manager.hpp" "src/renderer/gui.hpp" "src/renderer/gui_imgui_renderer.hpp" "src/renderer/gui_renderer.hpp" "src/renderer/editor_camera.hpp" "src/window/keycode_glfw.hpp" "src/renderer/gui_imgui_renderer.cpp" "src/renderer/backend/backend.hpp" "src/renderer/backend/opengles/instance.hpp" "src/renderer/backend/framebuffer.hpp" "src/renderer/backend/texture.hpp")
+	${tempeh_engine_editor_headers})
 
 target_compile_definitions("tempeh_engine_editor"
 	PUBLIC SENTRY_DSN="https://8e07fe63b9c94200a0926d0d28b54ad2@o1113293.ingest.sentry.io/6143604")

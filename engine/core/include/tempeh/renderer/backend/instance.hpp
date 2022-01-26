@@ -2,6 +2,8 @@
 #define _TEMPEH_RENDERER_BACKEND_BACKEND_HPP
 
 #include <typedefs.hpp>
+#include "open_gl/instance.hpp"
+#include "vulkan/instance.hpp"
 
 namespace Tempeh::Renderer::Backend {
 
@@ -13,7 +15,7 @@ namespace Tempeh::Renderer::Backend {
 		Vulkan,
 	};
 
-	interface Backend
+	interface Instance
 	{
 	public:
 		virtual const Type type() = 0;

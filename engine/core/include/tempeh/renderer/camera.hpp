@@ -1,12 +1,14 @@
 #ifndef _TEMPEH_RENDERER_CAMERA_HPP
 #define _TEMPEH_RENDERER_CAMERA_HPP
 
+#include <typedefs.hpp>
+
 #include <tempeh/math.hpp>
 
 namespace Tempeh::Renderer
 {
 
-	class Camera
+	interface Camera
 	{
 	private:
 		virtual void recalculate_matrix() = 0;

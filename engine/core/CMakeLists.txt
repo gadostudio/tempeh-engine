@@ -9,11 +9,23 @@ endif()
 add_library("tempeh_core" STATIC
 	"include/tempeh/scripting/mono.hpp"
 	"src/scripting/mono.cpp"
-	"include/tempeh/renderer/camera.hpp")
+	"include/tempeh/renderer/camera.hpp"
+	"include/tempeh/renderer/backend/framebuffer.hpp"
+	"include/tempeh/renderer/backend/texture.hpp"
+	"include/tempeh/renderer/backend/uniform_buffer.hpp"
+	"include/tempeh/renderer/camera.hpp"
+	"include/tempeh/renderer/backend/vulkan/texture.hpp"
+	"include/tempeh/renderer/backend/vulkan/instance.hpp"
+	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
+	"include/tempeh/renderer/backend/opengl_es/instance.hpp")
 
 target_include_directories("tempeh_core"
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include")
+	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include"
+	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
+	PUBLIC "${Vulkan_INCLUDE_DIRS}"
+	)
 
-#target_link_libraries("tempeh_core"
-#	PUBLIC "include")
+target_link_libraries("tempeh_core"
+	PUBLIC "${Vulkan_LIBRARIES}"
+	)
