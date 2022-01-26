@@ -15,6 +15,7 @@ endif()
 
 add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
+add_subdirectory("entt")
 
 add_library("imgui" STATIC
 	"imgui/imgui.cpp"

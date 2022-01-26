@@ -3,6 +3,7 @@
 
 #include <tempeh/renderer/instance.hpp>
 #include <glad/glad.h>
+#include <sbstd.hpp>
 
 namespace Tempeh::Renderer::Backend::OpenGLES
 {
@@ -12,7 +13,7 @@ namespace Tempeh::Renderer::Backend::OpenGLES
 	public:
 		virtual const Type type() { return Instance::Type::OpenGLES };
 		const char* name() { return "OpenGL ES" };
-		const char* version() { return glGetString(GL_VERSION); };
+		sbstd::Optional<const char*> version() { return glGetString(GL_VERSION); };
 	};
 
 }
