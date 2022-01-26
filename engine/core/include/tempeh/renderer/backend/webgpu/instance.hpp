@@ -14,10 +14,13 @@ namespace Tempeh::Renderer::Backend::WebGPU
 	private:
 		wgpu::Instance mInstance;
 	public:
-		VulkanInstance() : mInstance(wgpu::CreateInstance()) {}
+		WebGPUInstance() : mInstance(std::move(wgpu::CreateInstance())) {}
 		virtual const Type type() { return Instance::Type::WebGPU; };
-		const char* name() { return "WebGPU" };
-		sbstd::Optional<const char*> version() { return sbstd::Optional{}; };
+		const char* name() { return "WebGPU"; }
+		sbstd::Optional<const char*> version()
+		{
+			return sbstd::Optional{};					
+		};
 	};
 
 }

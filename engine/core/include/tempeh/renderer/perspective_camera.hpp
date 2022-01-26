@@ -10,12 +10,16 @@ namespace Tempeh::Renderer
 	class PerspectiveCamera : public Camera
 	{
 	private:
+		Tempeh::Math::vec3 m_position;
+
 		void recalculate_matrix();
 	public:
-		virtual const Tempeh::Math::mat4& get_view_matrix();
-		virtual const Tempeh::Math::mat4& get_projection_matrix();
-		virtual const Tempeh::Math::mat4& get_view_projection_matrix();
+		const Tempeh::Math::mat4& get_view_matrix();
+		const Tempeh::Math::mat4& get_projection_matrix();
+		const Tempeh::Math::mat4& get_view_projection_matrix();
+		void set_camera_position(Tempeh::Math::vec3& pos);
 	};
+
 }
 
 #endif

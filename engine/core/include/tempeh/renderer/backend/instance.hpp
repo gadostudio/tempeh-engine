@@ -8,7 +8,7 @@
 
 namespace Tempeh::Renderer::Backend {
 
-	enum class Type: u8
+	enum class Type : u8
 	{
 		None,
 		WebGPU,
@@ -16,7 +16,7 @@ namespace Tempeh::Renderer::Backend {
 		Vulkan,
 	};
 
-	interface Instance
+	INTERFACE class Instance
 	{
 	public:
 		virtual const Type type() = 0;

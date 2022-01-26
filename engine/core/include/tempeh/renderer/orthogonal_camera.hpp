@@ -7,15 +7,19 @@
 namespace Tempeh::Renderer
 {
 
-	class OrthogonalCamera: public Camera
+	class OrthogonalCamera : public Camera
 	{
 	private:
+		Tempeh::Math::vec2 m_position;
+
 		void recalculate_matrix();
 	public:
-		virtual const Tempeh::Math::mat4& get_view_matrix();
-		virtual const Tempeh::Math::mat4& get_projection_matrix();
-		virtual const Tempeh::Math::mat4& get_view_projection_matrix();
+		const Tempeh::Math::mat4& get_view_matrix();
+		const Tempeh::Math::mat4& get_projection_matrix();
+		const Tempeh::Math::mat4& get_view_projection_matrix();
+		void set_camera_position(Tempeh::Math::vec2& position);
 	};
+
 }
 
 #endif

@@ -2,7 +2,7 @@
 #define _TEMPEH_EDITOR_EVENT_INPUT_MANAGER_HPP
 
 #include <tempeh/math.hpp>
-#include <primitive.hpp>
+#include <typedefs.hpp>
 
 namespace Tempeh::Event
 {
@@ -13,7 +13,7 @@ namespace Tempeh::Event
 	public:
 		virtual const char* get_type();
 
-		enum class Type: u8
+		enum class Type : u8
 		{
 			None,
 			KeyPress, KeyRelease,
@@ -21,7 +21,7 @@ namespace Tempeh::Event
 			WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		};
 
-		enum class Category: u8
+		enum class Category : u8
 		{
 			None = 0,
 			Keyboard = bit(1),
@@ -33,10 +33,10 @@ namespace Tempeh::Event
 
 #define TEMPEH_EVENT_CLASS_TYPE(type) static Event::Type get_type() const { return Event::type }
 
-	class MouseButton: public Event
+	class MouseButton : public Event
 	{
 	private:
-		
+
 	public:
 		MouseButton() {}
 	};
@@ -56,7 +56,7 @@ namespace Tempeh::Event
 	private:
 		Event& event;
 	public:
-		Dispatcher(Event& event): event(event) {}
+		Dispatcher(Event& event) : event(event) {}
 	};
 
 }

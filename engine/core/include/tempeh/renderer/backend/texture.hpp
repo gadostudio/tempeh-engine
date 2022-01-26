@@ -5,10 +5,10 @@
 
 namespace Tempeh::Renderer::Backend
 {
-	
-	interface Texture
+
+	INTERFACE class Texture
 	{
-		
+
 	};
 
 }

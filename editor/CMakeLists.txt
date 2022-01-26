@@ -21,7 +21,10 @@ set(tempeh_engine_editor_sources
 	"src/renderer/render_context.cpp"
 	
 	"src/window/window_glfw.cpp"
-	"src/window/input_manager.cpp")
+	"src/window/input_manager.cpp"
+	
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp")
 
 add_executable("tempeh_engine_editor"
 	${tempeh_engine_editor_sources}

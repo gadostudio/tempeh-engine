@@ -17,7 +17,10 @@ namespace Tempeh::Renderer::Backend::Vulkan
 		VulkanInstance() : mInstance{  } {}
 		virtual const Type type() { return Instance::Type::Vulkan; };
 		const char* name() { return "Vulkan" };
-		sbstd::Optional<const char*> version() { return glGetString(GL_VERSION); };
+		sbstd::Optional<const char*> version()
+		{
+			return sbstd::Optional<const char*>{glGetString(GL_VERSION)};
+		};
 	};
 
 }

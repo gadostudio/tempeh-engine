@@ -17,15 +17,22 @@ add_library("tempeh_core" STATIC
 	"include/tempeh/renderer/backend/vulkan/texture.hpp"
 	"include/tempeh/renderer/backend/vulkan/instance.hpp"
 	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
-	"include/tempeh/renderer/backend/opengl_es/instance.hpp")
+	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
+	"include/tempeh/application.hpp"
+	"include/tempeh/renderer/orthogonal_camera.hpp"
+	"include/tempeh/renderer/perspective_camera.hpp"
+	"src/renderer/orthogonal_camera.cpp"
+	"src/renderer/perspective_camera.cpp")
 
 target_include_directories("tempeh_core"
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include"
 	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
+	PUBLIC "${CMAKE_SOURCE_DIR}/engine/common"
 	PUBLIC "${Vulkan_INCLUDE_DIRS}"
 	)
 
 target_link_libraries("tempeh_core"
 	PUBLIC "${Vulkan_LIBRARIES}"
+	PUBLIC "tempeh_math"
 	)

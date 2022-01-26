@@ -6,7 +6,7 @@
 namespace Tempeh::Renderer::Backend
 {
 
-	interface UniformBuffer
+	INTERFACE class UniformBuffer
 	{
 
 	};

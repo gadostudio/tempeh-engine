@@ -25,7 +25,7 @@ namespace TempehEditor::Core
 
 		Application();
 		~Application();
-		int run();
+		ApplicationReturn run();
 	};
 
 }

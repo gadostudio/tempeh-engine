@@ -8,7 +8,7 @@
 namespace Tempeh::Renderer
 {
 
-	interface Camera
+	INTERFACE class Camera
 	{
 	private:
 		virtual void recalculate_matrix() = 0;
@@ -17,6 +17,7 @@ namespace Tempeh::Renderer
 		virtual const Tempeh::Math::mat4& get_projection_matrix() = 0;
 		virtual const Tempeh::Math::mat4& get_view_projection_matrix() = 0;
 	};
+
 }
 
 #endif
