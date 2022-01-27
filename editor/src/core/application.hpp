@@ -7,6 +7,7 @@
 #include "../window/window.hpp"
 #include "../renderer/render_context.hpp"
 #include "../renderer/gui.hpp"
+#include "../filesystem/filetree.hpp"
 
 namespace TempehEditor::Core
 {

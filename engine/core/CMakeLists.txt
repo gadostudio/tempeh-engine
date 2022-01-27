@@ -29,7 +29,7 @@ target_include_directories("tempeh_core"
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include"
 	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/common"
+	PUBLIC "${CMAKE_SOURCE_DIR}/engine/common/include"
 	PUBLIC "${Vulkan_INCLUDE_DIRS}"
 	)
 

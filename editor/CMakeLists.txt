@@ -11,7 +11,7 @@ set(TEMPEH_ENGINE_EDITOR_HEADERS
 	"src/renderer/gui_renderer.hpp"
 	"src/renderer/editor_camera.hpp"
 	"src/window/keycode_glfw.hpp"
-	"src/renderer/gui_imgui_renderer.cpp")
+	"src/filesystem/filetree.hpp")
 
 set(TEMPEH_ENGINE_EDITOR_SOURCES
 	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
@@ -23,10 +23,11 @@ set(TEMPEH_ENGINE_EDITOR_SOURCES
 	"src/core/application.cpp"
 
 	"src/renderer/render_context.cpp"
-	
+	"src/renderer/gui_imgui_renderer.cpp"
+
 	"src/window/window_glfw.cpp"
 	"src/window/input_manager.cpp"
-	
+	"src/filesystem/filetree.cpp"
 	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
 	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp")
 
