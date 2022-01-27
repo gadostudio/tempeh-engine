@@ -17,6 +17,7 @@ add_subdirectory("dawn")
 add_subdirectory("spdlog")
 add_subdirectory("predef")
 add_subdirectory("glm")
+add_subdirectory("Vulkan-Headers")
 
 add_library("imgui" STATIC
 	"imgui/imgui.cpp"
