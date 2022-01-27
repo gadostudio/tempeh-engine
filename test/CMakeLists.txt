@@ -6,37 +6,28 @@
 		"core/main.cpp"
 	)
 
+	target_link_libraries(
+		"tempeh_core_test"
+		PUBLIC "gtest_main"
+	)
+
 	add_executable(
 		"tempeh_editor_test"
 		"editor/filesystem.cpp"
-		"${TEMPEH_ENGINE_EDITOR_SOURCES}"
-		"${TEMPEH_ENGINE_EDITOR_HEADERS}"
+	)
+
+	target_include_directories("tempeh_editor_test"
+		PUBLIC "${CMAKE_SOURCE_DIR}/editor/src"
+		PUBLIC "${CMAKE_SOURCE_DIR}/external/dawn/src/utils"
+		PUBLIC "${CMAKE_SOURCE_DIR}/external/predef/include"
+		PUBLIC "$ENV{MONO_INCLUDE_DIR}"
+		PUBLIC ${TEMPEH_COMMON_INCLUDE}
 	)
 
 	target_link_libraries(
-	  "tempeh_core_test"
-	  PUBLIC "gtest_main"
-	)
-
-	target_link_libraries(
-	  "tempeh_editor_test"
-	  PUBLIC "gtest_main"
-		# Private, because anyone ain't gonna touch the editor
-		PRIVATE "glfw"
-		PRIVATE "boost_predef"
-		PRIVATE "tempeh_common"
-		PRIVATE "tempeh_core"
-		PRIVATE "tempeh_log"
-		PRIVATE "tempeh_math"
-		PRIVATE "spdlog::spdlog"
-		#PUBLIC "sentry::sentry"
-		PRIVATE "webgpu_dawn"
-		PRIVATE "dawn_native"
-		PRIVATE "dawn_utils"
-		PRIVATE "dawn_proc"
-		PRIVATE "dawncpp"
-		PRIVATE "dawncpp_headers"
-		PRIVATE "imgui"
+		"tempeh_editor_test"
+		PRIVATE "tempeh_engine_editor_lib"
+		PUBLIC "gtest_main"
 	)
 
 	include(GoogleTest)

@@ -1,9 +1,5 @@
-//
-// Created by rahman on 1/27/22.
-//
-
-#ifndef TEMPEH_ENGINE_FILETREE_HPP
-#define TEMPEH_ENGINE_FILETREE_HPP
+#ifndef _TEMPEH_FILE_FILETREE_HPP
+#define _TEMPEH_FILE_FILETREE_HPP
 
 #include <memory>
 #include <map>
@@ -12,25 +8,29 @@
 #include <functional>
 #include <tempeh/common/typedefs.hpp>
 
-namespace Tempeh::File {
+namespace TempehEditor::FileSystem
+{
 
-    struct FileMetaData {
+    struct FileMetaData
+    {
         std::string name;
         u32 size;
     };
 
-    class FileTree {
+    class FileTree
+    {
     private:
-        class FileTreeInternal {
+        class FileTreeInternal
+        {
             std::map<std::string, std::shared_ptr<FileTree>> hashmap;
         };
         std::unique_ptr<FileTreeInternal> root;
     public:
-        FileTree(std::string path);
+        FileTree(std::string& path);
 
-        // TODO
-        void tree_traversal(std::function<void(FileMetaData)>);
+        // Implemented as BFS
+        void traversal(std::function<void(FileMetaData)> f);
     };
 }
 
-#endif //TEMPEH_ENGINE_FILETREE_HPP
+#endif //_TEMPEH_FILE_FILETREE_HPP

@@ -22,7 +22,8 @@ add_library("tempeh_core" STATIC
 	"include/tempeh/renderer/orthogonal_camera.hpp"
 	"include/tempeh/renderer/perspective_camera.hpp"
 	"src/renderer/orthogonal_camera.cpp"
-	"src/renderer/perspective_camera.cpp")
+	"src/renderer/perspective_camera.cpp"
+	)
 
 target_include_directories("tempeh_core"
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

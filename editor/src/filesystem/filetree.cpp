@@ -9,11 +9,19 @@
 #include <cassert>
 #include <system_error>
 
-namespace Tempeh::File {
+namespace TempehEditor::FileSystem {
 
-    FileTree::FileTree(std::string x) {
+    FileTree::FileTree(std::string& path_str)
+    {
+        std::filesystem::path path(path_str);
         std::error_code err;
-        std::filesystem::path y(x);
-        assert(std::filesystem::exists(y, err));
-    };
+        assert(std::filesystem::exists(path, err) && "Path did not exists");
+    }
+
+    // TODO
+    void FileTree::traversal(std::function<void(FileMetaData)> f)
+    {
+
+    }
+
 }
