@@ -6,7 +6,8 @@
 TEST(FileSystem, FileTree_ObjectCreation)
 {
     // For debugging purpose
-    TempehEditor::FileSystem::FileTree test_obj("/home/rahman/Projects/tempeh-engine/test/dummy-dir");
+    std::filesystem::path p = std::filesystem::current_path() / "../../../../test/testfile/dummy-dir";
+    TempehEditor::FileSystem::FileTree test_obj(p.generic_string());
 
 //    ASSERT_DEATH({
 //        TempehEditor::FileSystem::FileTree test_obj(std::string("/blah"));

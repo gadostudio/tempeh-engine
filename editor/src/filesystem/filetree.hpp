@@ -10,22 +10,23 @@
 
 namespace TempehEditor::FileSystem
 {
-
     struct FileMetaData
     {
-        std::string name;
+        std::filesystem::path name;
         u32 size;
     };
 
     class FileTree
     {
     private:
-        using FileTreeMap = std::map<std::string, std::shared_ptr<FileTree>>;
-        FileTreeMap hashmap;
+        using FileTreeMap = std::map<std::filesystem::path, std::shared_ptr<FileTree>>;
+
+        std::filesystem::path m_path;
+        FileTreeMap m_file_map;
+
     public:
-        FileTree(const std::filesystem::path &path_str);
-
-
+        FileTree();
+        FileTree(const std::filesystem::path& path);
 
         // Implemented as BFS
         void traversal(std::function<void(FileMetaData)> f);

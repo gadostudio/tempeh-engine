@@ -8,39 +8,34 @@
 #include <tempeh/common/typedefs.hpp>
 #include <cassert>
 #include <system_error>
-#include <list>
 
 namespace TempehEditor::FileSystem {
-
-    namespace fs = std::filesystem;
-
-    FileTree::FileTree(const fs::path &path_str)
+    
+    FileTree::FileTree()
     {
-        std::list<FileTreeMap::iterator> list;
+    }
 
-        auto [iter, _] = hashmap.insert_or_assign(path_str.string(),
-                                                  nullptr);
+    FileTree::FileTree(const std::filesystem::path& path) :
+        m_path(path)
+    {
+        std::deque<std::pair<std::filesystem::path, FileTreeMap&>> queue;
 
-        list.push_back(iter);
+        queue.emplace_back(m_path, m_path);
 
-        while (!list.empty()) {
-            auto current_entry = list.front();
-            list.pop_front();
-            for (const auto & entry : fs::directory_iterator(current_entry->first)) {
+        while (!queue.empty()) {
+            auto [current, current_map] = queue.back();
+            queue.pop_back();
 
-                fs::path p = entry.path();
+            for (const auto& entry : std::filesystem::directory_iterator{ current }) {
+                std::filesystem::path p = entry.path();
+                std::shared_ptr<FileTree> dir;
 
-                std::shared_ptr<FileTree> tree;
-
-                if (fs::path(p).filename() == ".git") {
-                    continue;
+                if (std::filesystem::is_directory(p)) {
+                    dir = std::make_shared<FileTree>();
+                    queue.emplace_back(p, dir->m_path);
                 }
-                if (fs::is_directory(p)) {
-                    tree = std::make_shared<FileTree>(p);
-                }
 
-                auto [i, _] = hashmap.insert_or_assign(p.string(), tree);
-                list.push_back(i);
+                current_map.insert_or_assign(p, dir);
             }
         }
     }
