@@ -20,13 +20,12 @@ namespace TempehEditor::FileSystem
     class FileTree
     {
     private:
-        class FileTreeInternal
-        {
-            std::map<std::string, std::shared_ptr<FileTree>> hashmap;
-        };
-        std::unique_ptr<FileTreeInternal> root;
+        using FileTreeMap = std::map<std::string, std::shared_ptr<FileTree>>;
+        FileTreeMap hashmap;
     public:
-        FileTree(std::string& path);
+        FileTree(const std::filesystem::path &path_str);
+
+
 
         // Implemented as BFS
         void traversal(std::function<void(FileMetaData)> f);
