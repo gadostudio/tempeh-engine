@@ -5,7 +5,6 @@
 #include <tempeh/logger.hpp>
 #include <tempeh/common/util.hpp>
 #include <boost/predef.h>
-#include <BackendBinding.h>
 //#include <utils/GLFWUtils.h>
 #if defined(WIN32)
 #    define GLFW_EXPOSE_NATIVE_WIN32
