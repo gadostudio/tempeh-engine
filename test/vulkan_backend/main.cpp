@@ -7,7 +7,7 @@ using namespace Tempeh;
 
 int main()
 {
-    GPU::Instance::initialize(GPU::BackendType::Vulkan);
+    GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
     
     return 0;
 }

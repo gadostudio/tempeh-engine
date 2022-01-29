@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_GPU_DEVICE_H
-#define _TEMPEH_GPU_DEVICE_H
+#ifndef _TEMPEH_GPU_DEVICE_HPP
+#define _TEMPEH_GPU_DEVICE_HPP
 
 #include <tempeh/gpu/types.hpp>
 #include <tempeh/gpu/detail/wrapper.hpp>

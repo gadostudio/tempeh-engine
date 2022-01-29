@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_GPU_RESOURCE_H
-#define _TEMPEH_GPU_RESOURCE_H
+#ifndef _TEMPEH_GPU_RESOURCE_HPP
+#define _TEMPEH_GPU_RESOURCE_HPP
 
 #include <tempeh/gpu/detail/wrapper.hpp>
 #include <tempeh/gpu/detail/resource_impl.hpp>

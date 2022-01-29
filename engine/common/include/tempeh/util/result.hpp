@@ -14,71 +14,71 @@ namespace Tempeh::Util
         }
 
         constexpr Result(T&& value) noexcept :
-            var_(std::move(value))
+            m_var(std::move(value))
         {
         }
 
         constexpr Result(E&& err) noexcept :
-            var_(std::move(err))
+            m_var(std::move(err))
         {
         }
 
         constexpr Result(const Result& other) :
-            var_(other.var_)
+            m_var(other.m_var)
         {
         }
 
         constexpr Result(Result&& other) noexcept :
-            var_(std::move(other.var_))
+            m_var(std::move(other.m_var))
         {
         }
 
         Result& operator=(T&& value)
         {
-            var_ = std::move(value);
+            m_var = std::move(value);
             return *this;
         }
 
         Result& operator=(E&& err)
         {
-            var_ = std::move(err);
+            m_var = std::move(err);
             return *this;
         }
 
         Result& operator=(const Result& other)
         {
-            var_ = other.var_;
+            m_var = other.m_var;
             return *this;
         }
 
         Result& operator=(Result&& other)
         {
-            var_ = std::move(other.var_);
+            m_var = std::move(other.m_var);
             return *this;
         }
 
         bool is_ok() const
         {
-            return std::holds_alternative<T>(var_);
+            return std::holds_alternative<T>(m_var);
         }
 
         T& value()
         {
-            return std::get<T>(var_);
+            return std::get<T>(m_var);
         }
 
         const T& value() const
         {
-            return std::get<T>(var_);
+            return std::get<T>(m_var);
         }
 
         const E& err() const
         {
-            return std::get<E>(var_);
+            return std::get<E>(m_var);
         }
 
     private:
-        std::variant<T, E> var_;
+        std::variant<T, E> m_var;
     };
 }
 

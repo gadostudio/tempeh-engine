@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_GPU_VK_COMMAND_LIST_H
-#define _TEMPEH_GPU_VK_COMMAND_LIST_H
+#ifndef _TEMPEH_GPU_VK_COMMAND_LIST_HPP
+#define _TEMPEH_GPU_VK_COMMAND_LIST_HPP
 
 #include <tempeh/gpu/detail/command_list_impl.hpp>
 

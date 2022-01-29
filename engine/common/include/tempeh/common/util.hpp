@@ -1,11 +1,18 @@
 #ifndef _TEMPEH_UTIL_HPP
 #define _TEMPEH_UTIL_HPP
 
-template <typename T = u8>
+template<typename T = u8>
 static inline constexpr T bit(T n)
 {
     return 1 << n;
 };
+
+template<typename T, typename... Bits>
+static inline constexpr bool bit_match(T bitfield, Bits... bits)
+{
+    T b = (bits | ...);
+    return (b & bitfield) == b;
+}
 
 struct Lambda {
     template<typename Tret, typename T>

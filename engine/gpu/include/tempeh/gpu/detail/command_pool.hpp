@@ -1,0 +1,9 @@
+#ifndef _TEMPEH_GPU_DETAIL_COMMAND_POOL_HPP
+#define _TEMPEH_GPU_DETAIL_COMMAND_POOL_HPP
+
+namespace Tempeh::GPU
+{
+
+}
+
+#endif

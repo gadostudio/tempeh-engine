@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_GPU_TYPES_H
-#define _TEMPEH_GPU_TYPES_H
+#ifndef _TEMPEH_GPU_TYPES_HPP
+#define _TEMPEH_GPU_TYPES_HPP
 
 #include <tempeh/common/typedefs.hpp>
 #include <tempeh/common/util.hpp>
@@ -9,6 +9,7 @@ namespace Tempeh::GPU
 {
     using TextureUsageFlags = u32;
     using BufferUsageFlags = u32;
+    using CommandUsageFlags = u32;
 
     enum class BackendType : u8
     {
@@ -86,9 +87,25 @@ namespace Tempeh::GPU
         Float4
     };
 
+    struct CommandUsage
+    {
+        enum
+        {
+            Graphics                = bit(0),
+            Compute                 = bit(1),
+            Copy                    = bit(2),
+
+            GraphicsAndCompute      = Graphics | Compute,
+            GraphicsAndCopy         = Graphics | Copy,
+            ComputeAndCopy          = Compute | Copy,
+            All                     = Graphics | Compute | Copy
+        };
+    };
+
     enum class DeviceErrorCode : u8
     {
-        OutOfMemory,
+        InitializationFailed,
+        OutOfHostMemory,
         OutOfDeviceMemory,
         BackendNotSupported,
         InternalError
@@ -99,31 +116,32 @@ namespace Tempeh::GPU
 
     struct TextureDesc
     {
-        const char* label;
-        TextureType type;
-        TextureUsageFlags usages;
-        MemoryUsage memory_usage;
-        TextureFormat format;
-        u32 width;
-        u32 height;
-        u32 depth;
-        u32 mip_levels;
-        u32 array_layers;
-        u32 num_samples;
+        const char*         label;
+        TextureType         type;
+        TextureUsageFlags   usages;
+        MemoryUsage         memory_usage;
+        TextureFormat       format;
+        u32                 width;
+        u32                 height;
+        u32                 depth;
+        u32                 mip_levels;
+        u32                 array_layers;
+        u32                 num_samples;
     };
 
     struct BufferDesc
     {
-        const char* label;
-        BufferUsageFlags usage;
-        MemoryUsage memory_usage;
-        u32 size;
+        const char*         label;
+        BufferUsageFlags    usage;
+        MemoryUsage         memory_usage;
+        u32                 size;
     };
 
     struct CommandListDesc
     {
-        const char* label;
-        bool secondary;
+        const char*         label;
+        CommandUsageFlags   command_usage;
+        bool                secondary;
     };
 }
 

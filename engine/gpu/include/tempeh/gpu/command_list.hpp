@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_GPU_COMMAND_LIST_H
-#define _TEMPEH_GPU_COMMAND_LIST_H
+#ifndef _TEMPEH_GPU_COMMAND_LIST_HPP
+#define _TEMPEH_GPU_COMMAND_LIST_HPP
 
 #include <tempeh/common/util.hpp>
 #include <tempeh/gpu/types.hpp>
@@ -34,6 +34,9 @@ namespace Tempeh::GPU
         CommandList& bind_vertex_buffers(u32 first_slot, u32 num_vertex_buffers);
         CommandList& set_viewports(u32 first_slot, u32 num_viewports);
         CommandList& set_scissor_rects(u32 first_slot, u32 num_scissor_rects);
+        CommandList& set_blend_constants(float r, float g, float b, float a);
+        CommandList& set_blend_constants(float color[4]);
+        CommandList& set_stencil_ref(u32 ref);
         CommandList& draw(u32 num_vertices, u32 first_vertex);
         CommandList& draw_indexed(u32 num_indices, u32 first_index, i32 vertex_offset);
         CommandList& draw_instanced(u32 num_vertices, u32 num_instances, u32 first_vertex, u32 first_instance);

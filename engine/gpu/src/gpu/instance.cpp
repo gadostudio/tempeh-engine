@@ -1,15 +1,15 @@
 #include <tempeh/gpu/instance.hpp>
-#include "vk/device_vk.h"
+#include "vk/device_vk.hpp"
 
 #include <cassert>
 
 namespace Tempeh::GPU
 {
-    void Instance::initialize(BackendType type)
+    void Instance::initialize(BackendType type, bool prefer_high_performance)
     {
         switch (type) {
             case BackendType::Vulkan: {
-                auto result = DeviceVK::initialize();
+                auto result = DeviceVK::initialize(prefer_high_performance);
                 assert(result.is_ok() && "Failed to initialize device");
                 device_ = Device(std::move(result.value()));
                 break;

@@ -12,11 +12,20 @@ namespace Tempeh::GPU
     class DeviceVK : public Detail::DeviceImpl
     {
     public:
-        DeviceVK();
+        DeviceVK(
+            VkInstance instance,
+            VkPhysicalDevice physical_device,
+            VkDevice device);
+
         ~DeviceVK();
 
         static DeviceResult<std::shared_ptr<Detail::DeviceImpl>>
-            initialize();
+            initialize(bool prefer_high_performance);
+
+    private:
+        VkInstance m_instance;
+        VkPhysicalDevice m_physical_device;
+        VkDevice m_device;
     };
 }
 
