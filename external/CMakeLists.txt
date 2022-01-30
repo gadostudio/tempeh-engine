@@ -9,13 +9,13 @@ set(BUILD_EXAMPLE OFF)
 
 set(DAWN_BUILD_EXAMPLES OFF)
 set(DAWN_ENABLE_D3D12 OFF) # Not stable yet!
+#set(DAWN_ENABLE_VULKAN OFF)
 add_subdirectory("dawn")
 
 add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
 add_subdirectory("entt")
 add_subdirectory("glm")
-add_subdirectory("predef")
 
 add_library("imgui" STATIC
 		"imgui/imgui.cpp"

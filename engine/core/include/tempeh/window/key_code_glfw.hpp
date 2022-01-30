@@ -1,7 +1,13 @@
+#ifndef _TEMPEH_WINDOW_KEYCODE_GLFW_HPP
+#define _TEMPEH_WINDOW_KEYCODE_GLFW_HPP
+
+#include <tempeh/event/event.hpp>
+#include <tempeh/event/key_code.hpp>
+
 namespace Tempeh::Window
 {
 
-	enum class GLFWKeyCode
+	enum class GLFWKeyCode : i32
 	{
 		// From glfw3.h
 		Space = 32,
@@ -136,4 +142,21 @@ namespace Tempeh::Window
 		Menu = 348
 	};
 
+	Event::KeyboardKeyCode keyboard_key_code_from_glfw_key_code(int key)
+	{
+		return static_cast<Event::KeyboardKeyCode>(key);
+	}
+
+	Event::KeyState key_state_from_glfw_action(int action)
+	{
+		return static_cast<Event::KeyState>(action);
+	}
+
+	Event::MouseKeyCode mouse_key_code_from_glfw_key_code(int key)
+	{
+		return static_cast<Event::MouseKeyCode>(key);
+	}
+
 }
+
+#endif

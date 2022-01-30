@@ -1,6 +1,8 @@
 #ifndef _TEMPEH_UTIL_HPP
 #define _TEMPEH_UTIL_HPP
 
+#include <string_view>
+
 template <typename T = u8>
 static inline constexpr T bit(T n)
 {

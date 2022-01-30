@@ -1,3 +1,6 @@
+#ifndef _TEMPEH_COMMON_TYPEDEFS
+#define _TEMPEH_COMMON_TYPEDEFS
+
 #include <cstdint>
 
 using u8 = uint8_t;
@@ -12,3 +15,5 @@ using f32 = float;
 using f64 = double;
 
 #define INTERFACE
+
+#endif
