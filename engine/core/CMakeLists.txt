@@ -7,8 +7,13 @@ if(NOT(DEFINED ENV{MONO_INCLUDE_DIR}))
 endif()
 
 add_library("tempeh_core" STATIC
-	"include/tempeh/scripting/mono.hpp"
 	"src/scripting/mono.cpp"
+	"src/renderer/orthogonal_camera.cpp"
+	"src/renderer/perspective_camera.cpp"
+	"src/event/input_manager.cpp"
+	"src/window/window_glfw.cpp"
+
+	"include/tempeh/scripting/mono.hpp"
 	"include/tempeh/renderer/camera.hpp"
 	"include/tempeh/renderer/backend/framebuffer.hpp"
 	"include/tempeh/renderer/backend/texture.hpp"
@@ -21,20 +26,20 @@ add_library("tempeh_core" STATIC
 	"include/tempeh/application.hpp"
 	"include/tempeh/renderer/orthogonal_camera.hpp"
 	"include/tempeh/renderer/perspective_camera.hpp"
-	"src/renderer/orthogonal_camera.cpp"
-	"src/renderer/perspective_camera.cpp")
+	"include/tempeh/window/key_code_glfw.hpp")
 
 target_include_directories("tempeh_core"
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include"
 	PUBLIC "${CMAKE_SOURCE_DIR}/engine/core/include"
-	PUBLIC "${CMAKE_SOURCE_DIR}/engine/common"
 	PUBLIC "${Vulkan_INCLUDE_DIRS}"
 	)
 
 target_link_libraries("tempeh_core"
 	PUBLIC "${Vulkan_LIBRARIES}"
+	PUBLIC "tempeh_common"
 	PUBLIC "tempeh_math"
+	PUBLIC "tempeh_log"
 	PUBLIC "glfw"
 	)
