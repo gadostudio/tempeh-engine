@@ -4,8 +4,7 @@ set(TEMPEH_ENGINE_EDITOR_HEADERS
 	"src/core/application.hpp"
 
 	"src/renderer/render_context.hpp"
-
-	"src/event/event.hpp"
+	
 	"src/renderer/gui.hpp"
 	"src/renderer/gui_imgui_renderer.hpp"
 	"src/renderer/gui_renderer.hpp"
@@ -46,7 +45,6 @@ target_include_directories("tempeh_engine_editor"
 target_link_libraries("tempeh_engine_editor"
 	# Private, because anyone ain't gonna touch the editor
 	PRIVATE "glfw"
-	PRIVATE "boost_predef"
 	PRIVATE "tempeh_common"
 	PRIVATE "tempeh_core"
 	PRIVATE "tempeh_log"

@@ -1,3 +1,5 @@
+#define TEMPEH_EDITOR
+
 #include "core/application.hpp"
 
 #include <tempeh/scripting/mono.hpp>

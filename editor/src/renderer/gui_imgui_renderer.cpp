@@ -53,6 +53,20 @@ namespace TempehEditor::Renderer::GUI
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+        std::string log_messages;
+        auto& l = ::Tempeh::Log::Logger::get_capped_log_messages();
+        for (auto& c: l)
+        {
+            log_messages += c;
+            log_messages.push_back('\n');
+        }
+
+        ImGui::Begin("Log");
+        ImGui::InputTextMultiline("Log", const_cast<char*>(log_messages.c_str()), log_messages.size());
+        ImGui::End();
+
+        LOG_INFO("TEst");
+
 		ImGui::ShowDemoWindow(&a);
 	}
 

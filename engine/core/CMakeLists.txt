@@ -22,7 +22,8 @@ add_library("tempeh_core" STATIC
 	"include/tempeh/renderer/orthogonal_camera.hpp"
 	"include/tempeh/renderer/perspective_camera.hpp"
 	"src/renderer/orthogonal_camera.cpp"
-	"src/renderer/perspective_camera.cpp")
+	"src/renderer/perspective_camera.cpp"
+	"include/tempeh/event/kind/mouse.hpp" "include/tempeh/event/kind/window.hpp")
 
 target_include_directories("tempeh_core"
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -35,6 +36,7 @@ target_include_directories("tempeh_core"
 
 target_link_libraries("tempeh_core"
 	PUBLIC "${Vulkan_LIBRARIES}"
+	PUBLIC "tempeh_common"
 	PUBLIC "tempeh_math"
 	PUBLIC "glfw"
 	)
