@@ -35,8 +35,7 @@ namespace Tempeh::GPU
         vkDestroyInstance(m_instance, nullptr);
     }
 
-    DeviceResult<std::shared_ptr<Detail::DeviceImpl>>
-        DeviceVK::initialize(bool prefer_high_performance)
+    DeviceResult<Detail::DeviceImpl*> DeviceVK::initialize(bool prefer_high_performance)
     {
         if (VULKAN_FAILED(volkInitialize())) {
             return DeviceErrorCode::InitializationFailed;
@@ -162,16 +161,23 @@ namespace Tempeh::GPU
         static float queue_priorities = 1.0f;
         VkDeviceQueueCreateInfo queue_info{};
         u32 queue_family_idx = 0;
+        bool has_suitable_queue = false;
 
+        // For now, we expect the hardware supports Graphics, Compute and Present queues
         for (const auto& queue_family : queue_families) {
             if (bit_match(queue_family.queueFlags, VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT)) {
                 queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
                 queue_info.queueFamilyIndex = queue_family_idx;
                 queue_info.queueCount = 1;
                 queue_info.pQueuePriorities = &queue_priorities;
+                has_suitable_queue = true;
                 break;
             }
             queue_family_idx++;
+        }
+
+        if (!has_suitable_queue) {
+            return DeviceErrorCode::BackendNotSupported;
         }
 
         VkDeviceCreateInfo device_info{};
@@ -190,7 +196,6 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        return std::static_pointer_cast<Detail::DeviceImpl>(
-            std::make_shared<DeviceVK>(instance, physical_device, device));
+        return new DeviceVK(instance, physical_device, device);
     }
 }

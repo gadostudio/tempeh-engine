@@ -2,15 +2,20 @@
 #define _TEMPEH_GPU_DETAIL_COMMAND_LIST_IMPL_H
 
 #include "command_pool.hpp"
+#include <tempeh/util/ref_count.hpp>
 #include <tempeh/gpu/types.hpp>
 
 namespace Tempeh::GPU::Detail
 {
-    struct CommandListImpl
+    struct CommandListImpl : Util::RefCount
     {
         CommandPool pool;
 
-        CommandListImpl() { }
+        CommandListImpl() :
+            pool(32767)
+        {
+        }
+
         virtual ~CommandListImpl() { }
 
         virtual void begin() = 0;

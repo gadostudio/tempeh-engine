@@ -14,11 +14,12 @@ namespace Tempeh::GPU
     {
     public:
         Device();
-        Device(std::shared_ptr<Detail::DeviceImpl>&& impl);
+        Device(Detail::DeviceImpl* impl);
         Device(const Device& other);
         ~Device();
 
         DeviceResult<Texture> create_texture(const TextureDesc& desc);
+        DeviceResult<Buffer> create_buffer(const BufferDesc& desc);
         DeviceResult<CommandList> create_command_list(const CommandListDesc& desc);
     };
 }

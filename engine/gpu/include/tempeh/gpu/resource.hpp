@@ -10,20 +10,29 @@ namespace Tempeh::GPU
     {
     public:
         Texture();
-        Texture(std::shared_ptr<Detail::TextureImpl>&& impl);
+        Texture(Detail::TextureImpl* impl);
         Texture(const Texture& other);
         ~Texture();
 
-        TextureType get_type() const { return impl_->type; }
+        TextureType get_type() const { return m_impl->type; }
     };
 
     class Buffer : public Detail::Wrapper<Detail::BufferImpl>
     {
     public:
         Buffer();
-        Buffer(std::shared_ptr<Detail::BufferImpl>&& impl);
+        Buffer(Detail::BufferImpl* impl);
         Buffer(const Buffer& other);
         ~Buffer();
+    };
+
+    class GraphicsPipeline : public Detail::Wrapper<Detail::GraphicsPipelineImpl>
+    {
+    public:
+        GraphicsPipeline();
+        GraphicsPipeline(Detail::GraphicsPipelineImpl* impl);
+        GraphicsPipeline(const GraphicsPipeline& other);
+        ~GraphicsPipeline();
     };
 }
 

@@ -3,12 +3,12 @@
 namespace Tempeh::GPU
 {
     Texture::Texture() :
-        Wrapper(std::shared_ptr<Detail::TextureImpl>(nullptr))
+        Wrapper(nullptr)
     {
     }
 
-    Texture::Texture(std::shared_ptr<Detail::TextureImpl>&& impl) :
-        Wrapper(std::move(impl))
+    Texture::Texture(Detail::TextureImpl* impl) :
+        Wrapper(impl)
     {
     }
 
@@ -24,12 +24,12 @@ namespace Tempeh::GPU
     //
 
     Buffer::Buffer() :
-        Wrapper(std::shared_ptr<Detail::BufferImpl>(nullptr))
+        Wrapper(nullptr)
     {
     }
 
-    Buffer::Buffer(std::shared_ptr<Detail::BufferImpl>&& impl) :
-        Wrapper(std::move(impl))
+    Buffer::Buffer(Detail::BufferImpl* impl) :
+        Wrapper(impl)
     {
     }
 
@@ -39,6 +39,27 @@ namespace Tempeh::GPU
     }
 
     Buffer::~Buffer()
+    {
+    }
+
+    //
+
+    GraphicsPipeline::GraphicsPipeline() :
+        Wrapper(nullptr)
+    {
+    }
+
+    GraphicsPipeline::GraphicsPipeline(Detail::GraphicsPipelineImpl* impl) :
+        Wrapper(impl)
+    {
+    }
+
+    GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other) :
+        Wrapper(other)
+    {
+    }
+
+    GraphicsPipeline::~GraphicsPipeline()
     {
     }
 }

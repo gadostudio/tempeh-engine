@@ -11,9 +11,11 @@ namespace Tempeh::GPU
             case BackendType::Vulkan: {
                 auto result = DeviceVK::initialize(prefer_high_performance);
                 assert(result.is_ok() && "Failed to initialize device");
-                device_ = Device(std::move(result.value()));
+                device_ = std::move(result.value());
                 break;
             }
+            default:
+                assert("Backend not supported");
         }
     }
 

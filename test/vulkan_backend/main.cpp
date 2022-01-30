@@ -8,6 +8,7 @@ using namespace Tempeh;
 int main()
 {
     GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
+    GPU::Device device = GPU::Instance::get_device();
     
     return 0;
 }

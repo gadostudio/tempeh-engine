@@ -2,47 +2,48 @@
 #define _TEMPEH_GPU_DETAIL_WRAPPER_HPP
 
 #include <memory>
+#include <type_traits>
+#include <tempeh/util/ref_count.hpp>
 
 namespace Tempeh::GPU::Detail
 {
-    template<typename T>
+    template<typename T, std::enable_if_t<std::is_base_of_v<Util::RefCount, T>, bool> = true>
     class Wrapper
     {
     public:
-        Wrapper(std::shared_ptr<T>&& impl) :
-            impl_(std::move(impl))
-        {
-        }
-
-        Wrapper(const std::shared_ptr<T>& impl) :
-            impl_(impl)
+        Wrapper(T* impl) :
+            m_impl(impl)
         {
         }
 
         Wrapper(const Wrapper<T>& other) :
-            impl_(other.impl_)
+            m_impl(safe_add_ref(other.m_impl))
         {
         }
 
-        Wrapper(Wrapper<T>&& other) :
-            impl_(std::move(other.impl_))
+        ~Wrapper()
         {
+            safe_release(m_impl);
         }
 
         Wrapper& operator=(const Wrapper<T>& other)
         {
-            impl_ = other.impl_;
-            return *this;
-        }
+            if (m_impl != other.m_impl) {
+                reset(safe_add_ref(other.m_impl));
+            }
 
-        Wrapper& operator=(Wrapper<T>&& other)
-        {
-            impl_ = std::move(other.impl_);
             return *this;
         }
 
     protected:
-        std::shared_ptr<T> impl_;
+        T* m_impl;
+
+        void reset(T* new_ptr)
+        {
+            T* tmp = m_impl;
+            m_impl = new_ptr;
+            safe_release(tmp);
+        }
     };
 }
 

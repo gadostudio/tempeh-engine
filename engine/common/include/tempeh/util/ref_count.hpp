@@ -37,6 +37,26 @@ namespace Tempeh::Util
     private:
         mutable std::atomic<uint32_t> m_counter;
     };
+
+    template<class T>
+    static inline T* safe_add_ref(T* ptr)
+    {
+        if (ptr != nullptr) {
+            ptr->add_ref();
+        }
+
+        return ptr;
+    }
+
+    template<class T>
+    static inline T* safe_release(T* ptr)
+    {
+        if (ptr != nullptr) {
+            ptr->release();
+        }
+
+        return ptr;
+    }
 }
 
 #endif

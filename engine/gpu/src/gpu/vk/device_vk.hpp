@@ -19,8 +19,7 @@ namespace Tempeh::GPU
 
         ~DeviceVK();
 
-        static DeviceResult<std::shared_ptr<Detail::DeviceImpl>>
-            initialize(bool prefer_high_performance);
+        static DeviceResult<Detail::DeviceImpl*> initialize(bool prefer_high_performance);
 
     private:
         VkInstance m_instance;

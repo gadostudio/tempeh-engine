@@ -3,12 +3,12 @@
 namespace Tempeh::GPU
 {
     Device::Device() :
-        Wrapper(std::shared_ptr<Detail::DeviceImpl>(nullptr))
+        Wrapper(nullptr)
     {
     }
 
-    Device::Device(std::shared_ptr<Detail::DeviceImpl>&& impl) :
-        Wrapper(std::move(impl))
+    Device::Device(Detail::DeviceImpl* impl) :
+        Wrapper(impl)
     {
     }
 
