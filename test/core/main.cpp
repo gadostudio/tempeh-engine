@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+//#include "common/collections/capped_vector.cpp"
 
 TEST(HelloTest, BasicAssertions) {
 	// Expect two strings not to be equal.

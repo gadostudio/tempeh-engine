@@ -4,7 +4,6 @@
 #include <dawn_native/DawnNative.h>
 #include <tempeh/logger.hpp>
 #include <tempeh/common/util.hpp>
-#include <boost/predef.h>
 #include <BackendBinding.h>
 //#include <utils/GLFWUtils.h>
 #if defined(WIN32)
@@ -160,7 +159,7 @@ namespace TempehEditor::Renderer
 
 	std::unique_ptr<wgpu::ChainedStruct> RenderContext::get_surface_descriptor(GLFWwindow* window) const
 	{
-#if		BOOST_OS_WINDOWS
+#if		WIN32
 		std::unique_ptr<wgpu::SurfaceDescriptorFromWindowsHWND> desc =
 			std::make_unique<wgpu::SurfaceDescriptorFromWindowsHWND>();
 		desc->hwnd = glfwGetWin32Window(window);

@@ -15,7 +15,6 @@ add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
 add_subdirectory("entt")
 add_subdirectory("glm")
-add_subdirectory("predef")
 
 add_library("imgui" STATIC
 		"imgui/imgui.cpp"

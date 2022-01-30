@@ -4,10 +4,11 @@
 	add_executable(
 		"tempeh_core_test"
 		"core/main.cpp"
-	)
+			core/common/collections/capped_vector.cpp)
 	target_link_libraries(
 	  "tempeh_core_test"
 	  PUBLIC "gtest_main"
+	  PUBLIC "tempeh_common"
 	)
 
 	include(GoogleTest)
