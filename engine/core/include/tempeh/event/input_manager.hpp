@@ -6,7 +6,7 @@
 #include <tempeh/event/key_code.hpp>
 #include <tempeh/event/dispatcher.hpp>
 
-#include <set>
+#include <unordered_set>
 #include <vector>
 
 namespace Tempeh::Event
@@ -31,7 +31,7 @@ namespace Tempeh::Event
 	{
 	private:
 		MouseState m_mouse_state;
-		std::set<KeyboardKeyCode> m_pressed_keyboard_key;
+		std::unordered_set<KeyboardKeyCode> m_pressed_keyboard_key;
 
 		std::vector<Event> m_events;
 	public:
@@ -41,7 +41,10 @@ namespace Tempeh::Event
 		void process_event(Event& event);
 
 		// Traditional
-		bool is_key_pressed(KeyboardKeyCode key) { return m_pressed_keyboard_key.find(key) != m_pressed_keyboard_key.end(); };
+		[[nodiscard]] bool is_key_pressed(KeyboardKeyCode key) const
+        {
+            return m_pressed_keyboard_key.find(key) != m_pressed_keyboard_key.end();
+        };
 		[[nodiscard]] const MouseState& get_mouse_state() const { return m_mouse_state; }
 
 		// Event

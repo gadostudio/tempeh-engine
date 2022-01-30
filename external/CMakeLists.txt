@@ -15,6 +15,7 @@ add_subdirectory("dawn")
 add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
 add_subdirectory("entt")
+add_subdirectory("magic-enum")
 add_subdirectory("glm")
 
 add_library("imgui" STATIC

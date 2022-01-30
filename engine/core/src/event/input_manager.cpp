@@ -7,7 +7,7 @@ namespace Tempeh::Event
 	void InputManager::clear()
 	{
 		m_events.clear();
-		std::memset(&m_mouse_state, 0, sizeof(m_mouse_state));
+        m_mouse_state = {};
 	}
 
 	void InputManager::process_event(Event& event)
