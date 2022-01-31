@@ -16,7 +16,7 @@ set(TEMPEH_ENGINE_EDITOR_SOURCES
 	"src/renderer/render_context.cpp"
 	
 	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_wgpu.cpp"
-	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp")
+	"${CMAKE_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp" src/core/projects.cpp src/core/projects.hpp)
 
 add_executable("tempeh_engine_editor"
 	${TEMPEH_ENGINE_EDITOR_SOURCES}
