@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "gui.hpp"
-#include "../window/window.hpp"
+#include <tempeh/window/window.hpp>
 #include "gui_renderer.hpp"
 
 namespace TempehEditor::Renderer
@@ -22,17 +22,15 @@ namespace TempehEditor::Renderer::GUI
 	class GUIImGuiRenderer : public GUIRenderer
 	{
 	private:
-		ImGuiIO io;
 		// TODO
 		// Probably not a good practice, lets revisit this later
 		bool a = true;
-		i32 w, h;
 		std::shared_ptr<TempehEditor::Renderer::RenderContext> render_context;
 	public:
-		GUIImGuiRenderer(std::shared_ptr<Window::Window> window, TempehEditor::Renderer::RenderContext* render_context);
+		GUIImGuiRenderer(std::shared_ptr<Tempeh::Window::Window> window, TempehEditor::Renderer::RenderContext* render_context);
 
-		void frame_start(std::shared_ptr<Window::Window> window);
-
+		void frame_start(std::shared_ptr<Tempeh::Window::Window> window, Tempeh::Event::InputManager& input_manager);
+		void resize_swapchain();
 		void render() override;
 	};
 

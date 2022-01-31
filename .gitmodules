@@ -25,3 +25,6 @@
 [submodule "external/sentry-native"]
 	path = external/sentry-native
 	url = https://github.com/getsentry/sentry-native.git
+[submodule "external/magic-enum"]
+	path = external/magic-enum
+	url = https://github.com/Neargye/magic_enum.git
