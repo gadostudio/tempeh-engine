@@ -29,6 +29,12 @@ set(TEMPEH_GPU_SOURCES
 add_library(tempeh_core STATIC
 	"include/tempeh/scripting/mono.hpp"
 	"src/scripting/mono.cpp"
+	"src/renderer/orthogonal_camera.cpp"
+	"src/renderer/perspective_camera.cpp"
+	"src/event/input_manager.cpp"
+	"src/window/window_glfw.cpp"
+
+	"include/tempeh/scripting/mono.hpp"
 	"include/tempeh/renderer/camera.hpp"
 	"include/tempeh/renderer/backend/framebuffer.hpp"
 	"include/tempeh/renderer/backend/texture.hpp"
@@ -43,9 +49,12 @@ add_library(tempeh_core STATIC
 
 target_include_directories(tempeh_core
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	PUBLIC "$ENV{MONO_INCLUDE_DIR}")
+	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
+	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include")
 
-target_link_libraries("tempeh_core"
+target_link_libraries(tempeh_core
 	PUBLIC tempeh_common
+	PUBLIC tempeh_math
+	PUBLIC tempeh_log
 	PUBLIC glfw
     PUBLIC Vulkan-Headers)

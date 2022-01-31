@@ -18,10 +18,11 @@ This project is curretly being rewritten to C++.
 Platform compatibility is our priority. For now, the supported and planned platforms are
 
 - [ ] Android
-- [x] Windows - Tested on Windows 10
+- [ ] Windows
 - [ ] Web
 - [ ] Linux
 
-# Building
+## Others
 
-See [BUILDING.md]
+- [Build instruction](BUILDING.md)
+- [Third party tools or libraries we use](THIRD-PARTY.md)

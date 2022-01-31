@@ -6,7 +6,7 @@
 namespace Tempeh::Renderer::Backend
 {
 
-	interface Framebuffer
+	INTERFACE class Framebuffer
 	{
 
 	};

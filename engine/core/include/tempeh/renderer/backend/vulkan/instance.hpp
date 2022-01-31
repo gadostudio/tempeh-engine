@@ -4,6 +4,7 @@
 #include <tempeh/renderer/instance.hpp>
 #include <glad/glad.h>
 #include <vulkan/vulkan.hpp>
+#include <sbstd.hpp>
 
 namespace Tempeh::Renderer::Backend::Vulkan
 {
@@ -16,7 +17,10 @@ namespace Tempeh::Renderer::Backend::Vulkan
 		VulkanInstance() : mInstance{  } {}
 		virtual const Type type() { return Instance::Type::Vulkan; };
 		const char* name() { return "Vulkan" };
-		const char* version() { return glGetString(GL_VERSION); };
+		sbstd::Optional<const char*> version()
+		{
+			return sbstd::Optional<const char*>{glGetString(GL_VERSION)};
+		};
 	};
 
 }

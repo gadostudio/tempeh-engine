@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_TYPEDEFS_HPP
-#define _TEMPEH_TYPEDEFS_HPP
+#ifndef _TEMPEH_COMMON_TYPEDEFS
+#define _TEMPEH_COMMON_TYPEDEFS
 
 #include <cstdint>
 
@@ -14,6 +14,6 @@ using i64 = int64_t;
 using f32 = float;
 using f64 = double;
 
-#define interface class
+#define INTERFACE
 
 #endif

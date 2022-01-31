@@ -7,104 +7,126 @@
 #include <tempeh/logger.hpp>
 
 #include "render_context.hpp"
+#include <utils/WGPUHelpers.h>
+#include "../gui/window_menubar_panel.hpp"
+#include <imgui_internal.h>
 
 namespace TempehEditor::Renderer::GUI
 {
-	
-	GUIImGuiRenderer::GUIImGuiRenderer(std::shared_ptr<Window::Window> window, TempehEditor::Renderer::RenderContext* render_context):
+
+	GUIImGuiRenderer::GUIImGuiRenderer(std::shared_ptr<Tempeh::Window::Window> window, TempehEditor::Renderer::RenderContext* render_context) :
 		render_context(render_context)
 	{
-		 IMGUI_CHECKVERSION();
-		 ImGui::CreateContext();
-		 io = ImGui::GetIO(); (void)io;
-		 io.IniFilename = nullptr;
-		 ImGui::StyleColorsClassic();
-		 
-		 switch (window->get_window_type())
-		 {
-		 case TempehEditor::Window::WindowType::GLFW:
-		 	ImGui_ImplGlfw_InitForOther(static_cast<GLFWwindow*>(window->get_raw_handle()), true);
-		 	break;
-		 default:
-		 	assert(false);
-		 }
-		 
-		 auto& device = render_context->get_device();
-		 
-		 ImGui_ImplWGPU_Init(device.Get(), 3, WGPUTextureFormat_BGRA8Unorm);
-	}
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io.IniFilename = nullptr;
 
-	void GUIImGuiRenderer::frame_start(std::shared_ptr<Window::Window> window)
-	{
-		int wa, ha;
-		glfwGetFramebufferSize(static_cast<GLFWwindow*>(window->get_raw_handle()), &wa, &ha);
-		if (wa != w || ha != h)
+		ImGui::StyleColorsLight();
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			h = ha;
-			w = wa;
-			ImGui_ImplWGPU_InvalidateDeviceObjects();
-			render_context->get_swap_chain().Configure(wgpu::TextureFormat::RGBA8Unorm, wgpu::TextureUsage::RenderAttachment, (u32)w, (u32)h);
-			ImGui_ImplWGPU_CreateDeviceObjects();
-			LOG_INFO("size change");
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
+		switch (window->get_window_type())
+		{
+		case Tempeh::Window::WindowType::GLFW:
+			ImGui_ImplGlfw_InitForOther(static_cast<GLFWwindow*>(window->get_raw_handle()), true);
+			break;
+		default:
+			assert(false);
+		}
+
+		auto& device = render_context->get_device();
+
+		ImGui_ImplWGPU_Init(device.Get(), 3, WGPUTextureFormat_BGRA8Unorm);
+	}
+
+	void GUIImGuiRenderer::frame_start(std::shared_ptr<Tempeh::Window::Window> window, Tempeh::Event::InputManager& input_manager)
+	{
 		// TODO
 		ImGui_ImplWGPU_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		
-		ImGui::ShowDemoWindow(&a);
+
+		auto dock_space_id = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+
+		// https://github.com/ocornut/imgui/issues/2999
+
+		static TempehEditor::GUI::Panels::WindowMenubarPanel window_menubar_panel;
+		window_menubar_panel.draw();
+
+		ImGui::ShowDemoWindow();
+
+		ImGui::Begin("Left");
+		ImGui::Text("Hello, left!");
+		ImGui::End();
+
+		ImGui::Begin("Down");
+		ImGui::Text("Hello, down!");
+		ImGui::End();
 	}
 
 	void GUIImGuiRenderer::render()
 	{
 		ImGui::Render();
-		// TODO change color
 
 		auto& device = render_context->get_device();
 
-		const wgpu::CommandEncoderDescriptor command_encoder_descriptor{
-			.nextInChain = nullptr,
-			.label = "ImGui command encoder descriptor"
-		};
+		wgpu::CommandEncoderDescriptor command_encoder_descriptor;
+		command_encoder_descriptor.nextInChain = nullptr;
+		command_encoder_descriptor.label = "ImGui command encoder descriptor";
 		const auto command_encoder = device.CreateCommandEncoder(&command_encoder_descriptor);
+		{
+			wgpu::RenderPassColorAttachment render_pass_color_attachment;
+			render_pass_color_attachment.view = render_context->get_swap_chain().GetCurrentTextureView();
+			render_pass_color_attachment.resolveTarget = nullptr;
+			render_pass_color_attachment.loadOp = wgpu::LoadOp::Clear;
+			render_pass_color_attachment.storeOp = wgpu::StoreOp::Store;
+			{
+				render_pass_color_attachment.clearColor.r = 0.82f;
+				render_pass_color_attachment.clearColor.g = 0.82f;
+				render_pass_color_attachment.clearColor.b = 0.82f;
+				render_pass_color_attachment.clearColor.a = 1.0f;
+			}
 
-		wgpu::RenderPassColorAttachment render_pass_color_attachment{
-			.view = render_context->get_swap_chain().GetCurrentTextureView(),
-			.resolveTarget = nullptr,
-			.loadOp = wgpu::LoadOp::Clear,
-			.storeOp = wgpu::StoreOp::Store,
-			.clearColor = wgpu::Color {
-				.r = 1.0f,
-				.g = 0.0f,
-				.b = 0.0f,
-				.a = 1.0f,
-			},
-		};
-		const wgpu::RenderPassDescriptor render_pass_descriptor{
-			.nextInChain = nullptr,
-			.label = "ImGui render pass descriptor",
-			.colorAttachmentCount = 1,
-			.colorAttachments = &render_pass_color_attachment,
-			.depthStencilAttachment = nullptr,
-			.occlusionQuerySet = wgpu::QuerySet{}
-		};
-		auto render_pass = command_encoder.BeginRenderPass(&render_pass_descriptor);
-		ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), render_pass.Get());
-		render_pass.EndPass();
+			//wgpu::RenderPassDescriptor render_pass_descriptor;
+			//render_pass_descriptor.nextInChain = nullptr;
+			//render_pass_descriptor.label = "ImGui render pass descriptor";
+			//render_pass_descriptor.colorAttachmentCount = 1;
+			//render_pass_descriptor.colorAttachments = &render_pass_color_attachment;
+			//render_pass_descriptor.depthStencilAttachment = nullptr;
+			//render_pass_descriptor.occlusionQuerySet = wgpu::QuerySet{};
 
-		const wgpu::CommandBufferDescriptor command_buffer_descriptor{
-			.nextInChain = nullptr,
-			.label =  "ImGui command buffer descriptor"
-		};
+			utils::ComboRenderPassDescriptor render_pass_descriptor({ render_context->get_swap_chain().GetCurrentTextureView() });
+			render_pass_descriptor.cColorAttachments[0] = render_pass_color_attachment;
+
+			auto render_pass = command_encoder.BeginRenderPass(&render_pass_descriptor);
+			ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), render_pass.Get());
+			render_pass.EndPass();
+		}
+
+		wgpu::CommandBufferDescriptor command_buffer_descriptor;
+		command_buffer_descriptor.nextInChain = nullptr;
+		command_buffer_descriptor.label = "ImGui command buffer descriptor";
 		const auto commands = command_encoder.Finish(&command_buffer_descriptor);
 
 		const auto queue = device.GetQueue();
 		queue.Submit(1, &commands);
 
+		{
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(backup_current_context);
+		}
+
 		render_context->get_swap_chain().Present();
 	}
-
-
 
 }

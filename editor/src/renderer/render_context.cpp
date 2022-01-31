@@ -4,51 +4,28 @@
 #include <dawn_native/DawnNative.h>
 #include <tempeh/logger.hpp>
 #include <tempeh/common/util.hpp>
-#include <boost/predef.h>
-#include <BackendBinding.h>
+#include <tempeh/common/os.hpp>
+#include <utils/BackendBinding.h>
 //#include <utils/GLFWUtils.h>
-#if defined(BOOST_OS_WINDOWS)
+#if defined(TEMPEH_OS_WINDOWS)
 #    define GLFW_EXPOSE_NATIVE_WIN32
-#elif defined(BOOST_OS_LINUX)
+#elif defined(TEMPEH_OS_LINUX)
 #    define GLFW_EXPOSE_NATIVE_X11
 #else
 #	error
 #endif
 #include <GLFW/glfw3native.h>
 #include <backends/imgui_impl_wgpu.h>
-#include <dawn_native/D3D12Backend.h>
 
 namespace TempehEditor::Renderer
 {
 
-	class D3D12Binding {
-	public:
-		D3D12Binding(GLFWwindow* window, WGPUDevice device): mWindow(window), mDevice(device) {
-		}
-	
-		uint64_t GetSwapChainImplementation() {
-			if (mSwapchainImpl.userData == nullptr) {
-				HWND win32Window = glfwGetWin32Window(mWindow);
-				mSwapchainImpl =
-					dawn::native::d3d12::CreateNativeSwapChainImpl(mDevice, win32Window);
-			}
-			return reinterpret_cast<uint64_t>(&mSwapchainImpl);
-		}
-	
-		WGPUTextureFormat GetPreferredSwapChainTextureFormat() {
-			return dawn::native::d3d12::GetNativeSwapChainPreferredFormat(&mSwapchainImpl);
-		}
-	
-	private:
-		DawnSwapChainImplementation mSwapchainImpl = {};
-		GLFWwindow* mWindow;
-		WGPUDevice mDevice;
-	};
-
-	RenderContext::RenderContext(std::shared_ptr<Window::Window> window)
+	RenderContext::RenderContext(std::shared_ptr<Tempeh::Window::Window> window)
 	{
 
 		wgpu::BackendType backend = wgpu::BackendType::Vulkan;
+
+		// TODO should be moved before window creation!
 		if (backend == wgpu::BackendType::OpenGL || backend == wgpu::BackendType::OpenGLES)
 		{
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -61,24 +38,21 @@ namespace TempehEditor::Renderer
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		}
 
-		wgpu::InstanceDescriptor instance_descriptor {
-			.nextInChain = nullptr
-		};
+		wgpu::InstanceDescriptor instance_descriptor;
+		instance_descriptor.nextInChain = nullptr;
 		instance = wgpu::CreateInstance(&instance_descriptor);
 
 		const auto surface_descriptor_raw = get_surface_descriptor(static_cast<GLFWwindow*>(window->get_raw_handle()));
-		wgpu::SurfaceDescriptor surface_descriptor{
-			.nextInChain = surface_descriptor_raw.get(),
-			.label = "Default surface descriptor"
-		};
+		wgpu::SurfaceDescriptor surface_descriptor;
+		surface_descriptor.nextInChain = surface_descriptor_raw.get();
+		surface_descriptor.label = "Default surface descriptor";
 		main_surface = instance.CreateSurface(&surface_descriptor);
 
-		const wgpu::RequestAdapterOptions adapter_options {
-			.nextInChain = nullptr,
-			.compatibleSurface = main_surface,
-			.powerPreference = wgpu::PowerPreference::HighPerformance,
-			.forceFallbackAdapter =  false,
-		};
+		wgpu::RequestAdapterOptions adapter_options;
+		adapter_options.nextInChain = nullptr;
+		adapter_options.compatibleSurface = main_surface;
+		adapter_options.powerPreference = wgpu::PowerPreference::HighPerformance;
+		adapter_options.forceFallbackAdapter = false;
 
 		WGPUAdapter requested_adapter = nullptr;
 		auto adapter_callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, char const* message, void* userdata)
@@ -128,12 +102,11 @@ namespace TempehEditor::Renderer
 		//	.nextInChain = nullptr,
 		//	.limits = limits
 		//};
-		wgpu::DeviceDescriptor device_descriptor{
-			.nextInChain = nullptr,
-			.label = "Device descriptor",
-			.requiredFeatures = &features,
-			.requiredLimits = nullptr
-		};
+		wgpu::DeviceDescriptor device_descriptor;
+		device_descriptor.nextInChain = nullptr;
+		device_descriptor.label = "Device descriptor";
+		device_descriptor.requiredFeatures = &features;
+		device_descriptor.requiredLimits = nullptr;
 		device = adapter.CreateDevice(&device_descriptor);
 
 		auto uncaptured_error_callback = [](WGPUErrorType type, char const* message, void* userdata)
@@ -163,49 +136,70 @@ namespace TempehEditor::Renderer
 				error_type = "Unreachable";
 			}
 			LOG_ERROR("wgpu Error [{}]: {}", error_type, message);
+			assert(false);
 		};
 		device.SetUncapturedErrorCallback(uncaptured_error_callback, nullptr);
 
-		// auto binding = utils::CreateBinding(backend, static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
-
-		D3D12Binding binding(static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
+		auto binding = utils::CreateBinding(backend, static_cast<GLFWwindow*>(window->get_raw_handle()), device.Get());
 
 		int w, h;
 		glfwGetFramebufferSize(static_cast<GLFWwindow*>(window->get_raw_handle()), &w, &h);
-		wgpu::SwapChainDescriptor swap_chain_descriptor{
-			.nextInChain = nullptr,
-			.label = "Main swap chain descriptor",
-			.usage = wgpu::TextureUsage::RenderAttachment,
-			.format = wgpu::TextureFormat::BGRA8Unorm,
-			.width = (u32)w,
-			.height = (u32)h,
-			.presentMode = wgpu::PresentMode::Mailbox,
-			//.implementation = binding.GetSwapChainImplementation()
-			// .implementation = binding->GetSwapChainImplementation(),
-		};
+		wgpu::SwapChainDescriptor swap_chain_descriptor;
+		swap_chain_descriptor.nextInChain = nullptr;
+		swap_chain_descriptor.label = "Main swap chain descriptor";
+		swap_chain_descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+		swap_chain_descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
+		swap_chain_descriptor.width = (u32)w;
+		swap_chain_descriptor.height = (u32)h;
+		swap_chain_descriptor.presentMode = wgpu::PresentMode::Mailbox;
+		swap_chain_descriptor.implementation = binding->GetSwapChainImplementation();
 		ImGui_ImplWGPU_InvalidateDeviceObjects();
-		main_swap_chain = device.CreateSwapChain(main_surface, &swap_chain_descriptor);
+		main_swap_chain = device.CreateSwapChain(nullptr, &swap_chain_descriptor);
 		ImGui_ImplWGPU_CreateDeviceObjects();
+
+		auto window_size = window->get_window_size();
+		resize(window_size);
 
 		gui_renderer = std::make_shared<GUI::GUIImGuiRenderer>(window, this);
 	}
 
 	std::unique_ptr<wgpu::ChainedStruct> RenderContext::get_surface_descriptor(GLFWwindow* window) const
 	{
-#if		BOOST_OS_WINDOWS
+#if defined(TEMPEH_OS_WINDOWS)
 		std::unique_ptr<wgpu::SurfaceDescriptorFromWindowsHWND> desc =
 			std::make_unique<wgpu::SurfaceDescriptorFromWindowsHWND>();
 		desc->hwnd = glfwGetWin32Window(window);
 		desc->hinstance = GetModuleHandle(nullptr);
 		return desc;
-#elif BOOST_OS_LINUX
-		std::unique_ptr<wgpu::SurfaceDescriptorFromXlib> desc =
-			std::make_unique<wgpu::SurfaceDescriptorFromXlib>();
+#elif defined(TEMPEH_OS_LINUX)
+		std::unique_ptr<wgpu::SurfaceDescriptorFromXlibWindow> desc =
+			std::make_unique<wgpu::SurfaceDescriptorFromXlibWindow>();
 		desc->display = glfwGetX11Display();
 		desc->window = glfwGetX11Window(window);
 		return desc;
+#else
+#      error
 #endif
 	}
 
+	void RenderContext::resize(const Tempeh::Window::WindowSize& window_size)
+	{
+		this->window_size = window_size;
+		main_swap_chain.Configure(wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureUsage::RenderAttachment, window_size.width, window_size.height);
+	}
 
+	void RenderContext::frame_start(std::shared_ptr<Tempeh::Window::Window> window,
+		Tempeh::Event::InputManager& input_manager)
+	{
+		Tempeh::Event::Dispatcher dispatcher;
+		dispatcher.dispatch<Tempeh::Event::Type::WindowResize>([&](const Tempeh::Event::Event& event)
+			{
+				Tempeh::Window::WindowSize new_window_size;
+				new_window_size.width = event.inner.window_resize.new_size.x;
+				new_window_size.height = event.inner.window_resize.new_size.y;
+				this->resize(new_window_size);
+			});
+		input_manager.dispatch(dispatcher);
+		gui_renderer->frame_start(window, input_manager);
+	}
 }

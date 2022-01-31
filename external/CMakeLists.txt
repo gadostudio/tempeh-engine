@@ -6,34 +6,38 @@ set(GLFW_INSTALL OFF)
 #set(GLFW_VULKAN_STATIC OFF)
 add_subdirectory("glfw")
 set(BUILD_EXAMPLE OFF)
+
 set(DAWN_BUILD_EXAMPLES OFF)
-
+set(DAWN_ENABLE_D3D12 OFF) # Not stable yet!
+#set(DAWN_ENABLE_VULKAN OFF)
 add_subdirectory("dawn")
-#if(NOT(EXISTS "dawn/src/dawn/webgpu_cpp.cpp"))
-#	file(COPY "${Dawn_BINARY_DIR}/gen/src" DESTINATION "dawn/src")
-#endif()
 
-#add_subdirectory("sentry-native")
+add_subdirectory("sentry-native")
 add_subdirectory("spdlog")
-add_subdirectory("predef")
+add_subdirectory("entt")
+add_subdirectory("magic-enum")
 add_subdirectory("glm")
 add_subdirectory("Vulkan-Headers")
 
 add_library("imgui" STATIC
-	"imgui/imgui.cpp"
-	"imgui/imgui_demo.cpp"
-	"imgui/imgui_draw.cpp"
-	"imgui/imgui_tables.cpp"
-	"imgui/imgui_widgets.cpp")
-
+		"imgui/imgui.cpp"
+		"imgui/imgui_demo.cpp"
+		"imgui/imgui_draw.cpp"
+		"imgui/imgui_tables.cpp"
+		"imgui/imgui_widgets.cpp")
+	
 target_include_directories("imgui"
-	PUBLIC "imgui"
-	PUBLIC "imgui/misc/single_include")
+		PUBLIC "imgui"
+		PUBLIC "imgui/misc/single_include")
 
 add_library("glad" STATIC
-	"glad/src/glad.c")
-	
+		"glad/src/glad.c")
+
 target_include_directories("glad"
-	PUBLIC "glad/include")
+		PUBLIC "glad/include")
 
 find_package(Vulkan REQUIRED)
+
+if(TEMPEH_ENABLE_TEST)
+	add_subdirectory("googletest")
+endif()

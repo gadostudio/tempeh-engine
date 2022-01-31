@@ -29,3 +29,14 @@ cd external\dawn
 copy scripts\standalone.gclient .gclient
 gclient sync
 ```
+
+It should generate a `src` dir under `$CMAKE_BUILD_FOLDER/external/dawn/gen`. If not, you have to build the `dawn` yourself.
+
+```
+cd external/dawn
+gn args out/Debug
+# fill the text editor with `is_debug=true`
+ninja -C out/Debug
+```
+
+Then copy the content inside `src` directory inside `external/dawn/out/Debug` to `external/dawn/src`.
