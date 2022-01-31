@@ -11,10 +11,25 @@ if (TEMPEH_USE_VULKAN_BACKEND)
 endif()
 
 set(TEMPEH_GPU_SOURCES
+    "include/tempeh/gpu/detail/command_list_impl.hpp"
+    "include/tempeh/gpu/detail/command_pool.hpp"
+    "include/tempeh/gpu/detail/device_impl.hpp"
+    "include/tempeh/gpu/detail/resource_impl.hpp"
+    "include/tempeh/gpu/detail/surface_impl.hpp"
+    "include/tempeh/gpu/detail/wrapper.hpp"
+    "include/tempeh/gpu/command_list.hpp"
+    "include/tempeh/gpu/device.hpp"
+    "include/tempeh/gpu/instance.hpp"
+    "include/tempeh/gpu/resource.hpp"
+    "include/tempeh/gpu/surface.hpp"
+    "include/tempeh/gpu/types.hpp"
+
     "src/gpu/command_list.cpp"
+    "src/gpu/commands.hpp"
     "src/gpu/device.cpp"
     "src/gpu/instance.cpp"
-    "src/gpu/resource.cpp")
+    "src/gpu/resource.cpp"
+    "src/gpu/surface.cpp")
 
 add_library(tempeh_gpu STATIC
     ${TEMPEH_GPU_SOURCES}
