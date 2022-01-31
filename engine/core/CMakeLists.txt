@@ -44,6 +44,7 @@ add_library(tempeh_core STATIC
 	"include/tempeh/renderer/backend/vulkan/instance.hpp"
 	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
 	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
+
     ${TEMPEH_GPU_SOURCES}
     ${TEMPEH_GPU_VULKAN_BACKEND_SOURCES})
 

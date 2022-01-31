@@ -19,6 +19,19 @@ namespace Tempeh::GPU
         virtual ~Buffer();
     };
 
+    class Framebuffer
+    {
+    public:
+        Framebuffer();
+        virtual ~Framebuffer();
+    };
+
+    class RenderPass
+    {
+        RenderPass();
+        virtual ~RenderPass();
+    };
+
     class GraphicsPipeline
     {
     public:

@@ -1,10 +1,10 @@
-#include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <utility>
 #include <tempeh/logger.hpp>
-#include <tempeh/window/key_code_glfw.hpp>
-#include <tempeh/window/window_glfw.hpp>
 #include <tempeh/event/input_manager.hpp>
+
+#include "../event/key_code_glfw.hpp"
+#include "window_glfw.hpp"
 
 namespace Tempeh::Window {
 

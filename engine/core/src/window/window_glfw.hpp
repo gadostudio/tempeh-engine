@@ -25,18 +25,23 @@ namespace Tempeh::Window
 		~WindowGLFW();
 
 		void set_title(const char* str) override { glfwSetWindowTitle(window, str); }
-		void* get_raw_handle() override { return static_cast<void*>(window); }
+		void* get_raw_handle() const override { return static_cast<void*>(window); }
 		void process_input(Event::InputManager& input_manager) override;
 		WindowType get_window_type() override { return WindowType::GLFW; }
 		bool is_need_to_close() override { return glfwWindowShouldClose(window); }
-		WindowSize get_window_size() override {
-			int width;
-			int height;
+
+		WindowPosition get_window_pos() override
+		{
+			int x, y;
+			glfwGetWindowPos(window, &x, &y);
+			return WindowPosition{ x, y };
+		}
+
+		WindowSize get_window_size() override
+		{
+			int width, height;
 			glfwGetWindowSize(window, &width, &height);
-			WindowSize window_size;
-			window_size.width = width;
-			window_size.height = height;
-			return window_size;
+			return WindowSize{ (u32)width, (u32)height };
 		}
 	};
 }

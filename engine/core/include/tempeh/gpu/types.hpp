@@ -105,9 +105,12 @@ namespace Tempeh::GPU
     enum class DeviceErrorCode : u8
     {
         InitializationFailed,
+        InvalidArgs,
         OutOfHostMemory,
         OutOfDeviceMemory,
         BackendNotSupported,
+        SurfacePresentationNotSupported,
+        FormatNotSupported,
         Unimplemented,
         InternalError
     };
@@ -120,6 +123,7 @@ namespace Tempeh::GPU
         TextureFormat       format;
         u32                 width;
         u32                 height;
+        bool                triple_buffer;
     };
 
     struct TextureDesc
@@ -143,13 +147,6 @@ namespace Tempeh::GPU
         BufferUsageFlags    usage;
         MemoryUsage         memory_usage;
         u32                 size;
-    };
-
-    struct CommandListDesc
-    {
-        const char*         label;
-        CommandUsageFlags   command_usage;
-        bool                secondary;
     };
 }
 
