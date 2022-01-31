@@ -35,7 +35,22 @@ namespace Tempeh::GPU
         vkDestroyInstance(m_instance, nullptr);
     }
 
-    DeviceResult<Detail::DeviceImpl*> DeviceVK::initialize(bool prefer_high_performance)
+    RefDeviceResult<Surface> DeviceVK::create_surface(const SurfaceDesc& desc)
+    {
+        return DeviceErrorCode::Unimplemented;
+    }
+
+    RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
+    {
+        return DeviceErrorCode::Unimplemented;
+    }
+
+    RefDeviceResult<Buffer> DeviceVK::create_buffer(const BufferDesc& desc)
+    {
+        return DeviceErrorCode::Unimplemented;
+    }
+
+    RefDeviceResult<Device> DeviceVK::initialize(bool prefer_high_performance)
     {
         if (VULKAN_FAILED(volkInitialize())) {
             return DeviceErrorCode::InitializationFailed;
@@ -196,6 +211,7 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        return new DeviceVK(instance, physical_device, device);
+        return std::static_pointer_cast<Device>(
+            std::make_shared<DeviceVK>(instance, physical_device, device));
     }
 }

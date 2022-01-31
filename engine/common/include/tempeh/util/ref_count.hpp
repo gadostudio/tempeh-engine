@@ -2,6 +2,7 @@
 #define _TEMPEH_UTIL_REF_COUNT_H
 
 #include <atomic>
+#include <memory>
 
 namespace Tempeh::Util
 {
@@ -57,6 +58,9 @@ namespace Tempeh::Util
 
         return ptr;
     }
+
+    template<typename T>
+    using Ref = std::shared_ptr<T>;
 }
 
 #endif

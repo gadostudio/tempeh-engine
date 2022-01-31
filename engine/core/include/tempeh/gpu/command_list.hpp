@@ -3,7 +3,6 @@
 
 #include <tempeh/common/util.hpp>
 #include <tempeh/gpu/types.hpp>
-#include <tempeh/gpu/detail/command_list_impl.hpp>
 
 namespace Tempeh::GPU
 {

@@ -108,11 +108,19 @@ namespace Tempeh::GPU
         OutOfHostMemory,
         OutOfDeviceMemory,
         BackendNotSupported,
+        Unimplemented,
         InternalError
     };
 
     template<typename T>
     using DeviceResult = Util::Result<T, DeviceErrorCode>;
+
+    struct SurfaceDesc
+    {
+        TextureFormat       format;
+        u32                 width;
+        u32                 height;
+    };
 
     struct TextureDesc
     {

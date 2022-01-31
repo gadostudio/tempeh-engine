@@ -1,38 +1,29 @@
 #ifndef _TEMPEH_GPU_RESOURCE_HPP
 #define _TEMPEH_GPU_RESOURCE_HPP
 
-#include <tempeh/gpu/detail/wrapper.hpp>
-#include <tempeh/gpu/detail/resource_impl.hpp>
+#include <tempeh/gpu/types.hpp>
 
 namespace Tempeh::GPU
 {
-    class Texture : public Detail::Wrapper<Detail::TextureImpl>
+    class Texture
     {
     public:
         Texture();
-        Texture(Detail::TextureImpl* impl);
-        Texture(const Texture& other);
-        ~Texture();
-
-        TextureType get_type() const { return m_impl->type; }
+        virtual ~Texture();
     };
 
-    class Buffer : public Detail::Wrapper<Detail::BufferImpl>
+    class Buffer
     {
     public:
         Buffer();
-        Buffer(Detail::BufferImpl* impl);
-        Buffer(const Buffer& other);
-        ~Buffer();
+        virtual ~Buffer();
     };
 
-    class GraphicsPipeline : public Detail::Wrapper<Detail::GraphicsPipelineImpl>
+    class GraphicsPipeline
     {
     public:
-        GraphicsPipeline();
-        GraphicsPipeline(Detail::GraphicsPipelineImpl* impl);
-        GraphicsPipeline(const GraphicsPipeline& other);
-        ~GraphicsPipeline();
+        GraphicsPipeline() { }
+        virtual ~GraphicsPipeline() { }
     };
 }
 

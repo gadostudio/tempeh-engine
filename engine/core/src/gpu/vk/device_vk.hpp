@@ -1,7 +1,7 @@
 #ifndef _TEMPEH_GPU_DEVICE_VK_H
 #define _TEMPEH_GPU_DEVICE_VK_H
 
-#include <tempeh/gpu/detail/device_impl.hpp>
+#include <tempeh/gpu/device.hpp>
 #include <tempeh/gpu/types.hpp>
 #include <memory>
 
@@ -9,7 +9,7 @@
 
 namespace Tempeh::GPU
 {
-    class DeviceVK : public Detail::DeviceImpl
+    class DeviceVK : public Device
     {
     public:
         DeviceVK(
@@ -19,7 +19,11 @@ namespace Tempeh::GPU
 
         ~DeviceVK();
 
-        static DeviceResult<Detail::DeviceImpl*> initialize(bool prefer_high_performance);
+        RefDeviceResult<Surface> create_surface(const SurfaceDesc& desc) override final;
+        RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
+        RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
+
+        static RefDeviceResult<Device> initialize(bool prefer_high_performance);
 
     private:
         VkInstance m_instance;

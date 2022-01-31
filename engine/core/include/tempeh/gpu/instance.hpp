@@ -10,10 +10,10 @@ namespace Tempeh::GPU
     {
     public:
         static void initialize(BackendType type, bool prefer_high_performance);
-        static Device get_device();
+        static Util::Ref<Device> get_device();
 
     private:
-        static Device device_;
+        static Util::Ref<Device> device_;
     };
 }
 

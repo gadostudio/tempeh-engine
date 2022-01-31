@@ -19,10 +19,10 @@ namespace Tempeh::GPU
         }
     }
 
-    Device Instance::get_device()
+    Util::Ref<Device> Instance::get_device()
     {
         return device_;
     }
 
-    Device Instance::device_;
+    Util::Ref<Device> Instance::device_;
 }
