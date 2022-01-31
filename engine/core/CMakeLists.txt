@@ -6,7 +6,40 @@ if(NOT(DEFINED ENV{MONO_INCLUDE_DIR}))
 	message(FATAL_ERROR "Mono environment variable is not defined")
 endif()
 
-add_library("tempeh_core" STATIC
+set(TEMPEH_USE_VULKAN_BACKEND ON)
+
+if (TEMPEH_USE_VULKAN_BACKEND)
+    set(TEMPEH_GPU_VULKAN_BACKEND_SOURCES
+        "src/gpu/vk/command_list_vk.cpp"
+        "src/gpu/vk/command_list_vk.hpp"
+        "src/gpu/vk/device_vk.cpp"
+        "src/gpu/vk/device_vk.hpp"
+        "src/gpu/vk/vk.hpp"
+        "src/gpu/vk/volk_stub.cpp")
+endif()
+
+set(TEMPEH_GPU_SOURCES
+    "include/tempeh/gpu/detail/command_list_impl.hpp"
+    "include/tempeh/gpu/detail/command_pool.hpp"
+    "include/tempeh/gpu/detail/device_impl.hpp"
+    "include/tempeh/gpu/detail/resource_impl.hpp"
+    "include/tempeh/gpu/detail/surface_impl.hpp"
+    "include/tempeh/gpu/detail/wrapper.hpp"
+    "include/tempeh/gpu/command_list.hpp"
+    "include/tempeh/gpu/device.hpp"
+    "include/tempeh/gpu/instance.hpp"
+    "include/tempeh/gpu/resource.hpp"
+    "include/tempeh/gpu/surface.hpp"
+    "include/tempeh/gpu/types.hpp"
+
+    "src/gpu/command_list.cpp"
+    "src/gpu/commands.hpp"
+    "src/gpu/device.cpp"
+    "src/gpu/instance.cpp"
+    "src/gpu/resource.cpp"
+    "src/gpu/surface.cpp")
+
+add_library(tempeh_core STATIC
 	"include/tempeh/scripting/mono.hpp"
 	"src/scripting/mono.cpp"
 	"include/tempeh/renderer/camera.hpp"
@@ -17,13 +50,15 @@ add_library("tempeh_core" STATIC
 	"include/tempeh/renderer/backend/vulkan/texture.hpp"
 	"include/tempeh/renderer/backend/vulkan/instance.hpp"
 	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
-	"include/tempeh/renderer/backend/opengl_es/instance.hpp")
+	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
+    ${TEMPEH_GPU_SOURCES}
+    ${TEMPEH_GPU_VULKAN_BACKEND_SOURCES})
 
-target_include_directories("tempeh_core"
+target_include_directories(tempeh_core
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
-	PUBLIC "${Vulkan_INCLUDE_DIRS}")
+	PUBLIC "$ENV{MONO_INCLUDE_DIR}")
 
 target_link_libraries("tempeh_core"
 	PUBLIC tempeh_common
-	PUBLIC glfw "${Vulkan_LIBRARIES}")
+	PUBLIC glfw
+    PUBLIC Vulkan-Headers)
