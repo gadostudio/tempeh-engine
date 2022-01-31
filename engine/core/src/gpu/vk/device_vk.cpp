@@ -70,22 +70,9 @@ namespace Tempeh::GPU
         vkGetPhysicalDeviceSurfaceSupportKHR(m_physical_device, m_main_queue_index, surface, &present_supported);
 
         if (present_supported != VK_TRUE) {
+            vkDestroySurfaceKHR(m_instance, surface, nullptr);
             return DeviceErrorCode::SurfacePresentationNotSupported;
         }
-
-        VkSurfaceCapabilitiesKHR surface_caps{};
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physical_device, surface, &surface_caps);
-
-        u32 num_surface_formats;
-        std::vector<VkSurfaceFormatKHR> surface_formats;
-
-        vkGetPhysicalDeviceSurfaceFormatsKHR(
-            m_physical_device, surface, &num_surface_formats, nullptr);
-
-        surface_formats.resize(num_surface_formats);
-
-        vkGetPhysicalDeviceSurfaceFormatsKHR(
-            m_physical_device, surface, &num_surface_formats, surface_formats.data());
 
         return DeviceErrorCode::Unimplemented;
     }
@@ -108,8 +95,9 @@ namespace Tempeh::GPU
     {
     }
 
-    void DeviceVK::swap_buffer()
+    void DeviceVK::wait_idle()
     {
+        vkDeviceWaitIdle(m_device);
     }
 
     RefDeviceResult<Device> DeviceVK::initialize(bool prefer_high_performance)
@@ -281,13 +269,13 @@ namespace Tempeh::GPU
 
     VkSurfaceKHR DeviceVK::create_surface_glfw(const std::shared_ptr<Window::Window>& window)
     {
-        VkWin32SurfaceCreateInfoKHR surface_info{};
-        surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        surface_info.hinstance = ::GetModuleHandle(nullptr);
-        surface_info.hwnd = glfwGetWin32Window(static_cast<GLFWwindow*>(window->get_raw_handle()));
-
         VkSurfaceKHR ret = VK_NULL_HANDLE;
-        vkCreateWin32SurfaceKHR(m_instance, &surface_info, nullptr, &ret);
+
+        glfwCreateWindowSurface(
+            m_instance,
+            static_cast<GLFWwindow*>(window->get_raw_handle()),
+            nullptr,
+            &ret);
 
         return ret;
     }

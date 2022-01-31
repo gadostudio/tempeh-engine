@@ -10,8 +10,11 @@ set(TEMPEH_USE_VULKAN_BACKEND ON)
 
 if (TEMPEH_USE_VULKAN_BACKEND)
     set(TEMPEH_GPU_VULKAN_BACKEND_SOURCES
+        "src/gpu/vk/backend_vk.hpp"
         "src/gpu/vk/device_vk.cpp"
         "src/gpu/vk/device_vk.hpp"
+        "src/gpu/vk/surface_vk.cpp"
+        "src/gpu/vk/surface_vk.hpp"
         "src/gpu/vk/vk.hpp"
         "src/gpu/vk/volk_stub.cpp")
 endif()
@@ -52,6 +55,9 @@ target_include_directories(tempeh_core
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include")
+
+target_compile_definitions(tempeh_core
+	PRIVATE NOMINMAX)
 
 target_link_libraries(tempeh_core
 	PUBLIC tempeh_common

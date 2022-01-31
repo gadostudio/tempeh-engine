@@ -104,6 +104,7 @@ namespace Tempeh::GPU
 
     enum class DeviceErrorCode : u8
     {
+        Ok,
         InitializationFailed,
         InvalidArgs,
         OutOfHostMemory,
@@ -123,7 +124,8 @@ namespace Tempeh::GPU
         TextureFormat       format;
         u32                 width;
         u32                 height;
-        bool                triple_buffer;
+        u32                 num_images;
+        bool                vsync;
     };
 
     struct TextureDesc

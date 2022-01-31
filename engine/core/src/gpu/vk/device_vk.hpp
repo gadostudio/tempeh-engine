@@ -6,6 +6,7 @@
 #include <memory>
 #include <array>
 
+#include "backend_vk.hpp"
 #include "vk.hpp"
 
 namespace Tempeh::GPU
@@ -13,13 +14,11 @@ namespace Tempeh::GPU
     template<size_t MaxBuffer>
     class CommandManagerVK
     {
+    public:
         using PoolBufferPair = std::pair<VkCommandPool, VkCommandBuffer>;
 
-        VkDevice device = VK_NULL_HANDLE;
-        std::array<PoolBufferPair, MaxBuffer> m_cmds{};
-
         CommandManagerVK(VkDevice device, u32 queue_family_index) :
-            device(device)
+            m_device(device)
         {
             VkCommandPoolCreateInfo cmd_pool_info{};
             cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -38,7 +37,7 @@ namespace Tempeh::GPU
                 assert(!VULKAN_FAILED(result) && "Failed to create command pool");
 
                 cmd_buffer_info.commandPool = cmd.first;
-                result = vkAllocateCommandBuffers(device, &cmd_buffer_info, &cmd.last);
+                result = vkAllocateCommandBuffers(device, &cmd_buffer_info, &cmd.second);
 
                 assert(!VULKAN_FAILED(result) && "Failed to allocate command buffer");
             }
@@ -47,15 +46,28 @@ namespace Tempeh::GPU
         ~CommandManagerVK()
         {
             for (auto& cmd : m_cmds) {
-                vkDestroyCommandPool(cmd.first);
+                vkDestroyCommandPool(m_device, cmd.first, nullptr);
             }
         }
+
+    private:
+        VkDevice m_device;
+        std::array<PoolBufferPair, MaxBuffer> m_cmds{};
     };
 
-    class DeviceVK : public Device
+    struct DeviceVK : public Device
     {
-    public:
         static constexpr size_t max_command_buffers = 3;
+
+        VkInstance m_instance;
+        VkPhysicalDevice m_physical_device;
+        VkDevice m_device;
+        u32 m_main_queue_index;
+        VkQueue m_main_queue = VK_NULL_HANDLE;
+
+        std::vector<VkSurfaceFormatKHR> m_surface_formats;
+        std::vector<VkPresentModeKHR> m_present_modes;
+        std::unique_ptr<CommandManagerVK<max_command_buffers>> m_cmd_manager;
 
         DeviceVK(
             VkInstance instance,
@@ -74,19 +86,13 @@ namespace Tempeh::GPU
 
         void begin_frame() override final;
         void end_frame() override final;
-        void swap_buffer() override final;
 
+        void wait_idle();
+
+        
         static RefDeviceResult<Device> initialize(bool prefer_high_performance);
 
     private:
-        VkInstance m_instance;
-        VkPhysicalDevice m_physical_device;
-        VkDevice m_device;
-        u32 m_main_queue_index;
-        VkQueue m_main_queue = VK_NULL_HANDLE;
-
-        std::unique_ptr<CommandManagerVK<max_command_buffers>> m_cmd_manager;
-
         VkSurfaceKHR create_surface_glfw(const std::shared_ptr<Window::Window>& window);
     };
 }

@@ -17,6 +17,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstring>
+#include <memory>
 
 namespace Tempeh::GPU
 {
@@ -32,6 +33,32 @@ namespace Tempeh::GPU
             default:
                 return DeviceErrorCode::InternalError;
         }
+    }
+
+    static inline constexpr VkFormat convert_format_vk(TextureFormat format)
+    {
+        switch (format) {
+            case TextureFormat::RGBA_8_8_8_8_Uint:
+                return VK_FORMAT_R8G8B8A8_UINT;
+            case TextureFormat::RGBA_8_8_8_8_Unorm:
+                return VK_FORMAT_R8G8B8A8_UNORM;
+            case TextureFormat::RGBA_8_8_8_8_Srgb:
+                return VK_FORMAT_R8G8B8A8_SRGB;
+            case TextureFormat::BGRA_8_8_8_8_Uint:
+                return VK_FORMAT_B8G8R8A8_UINT;
+            case TextureFormat::BGRA_8_8_8_8_Unorm:
+                return VK_FORMAT_B8G8R8A8_UNORM;
+            case TextureFormat::BGRA_8_8_8_8_Srgb:
+                return VK_FORMAT_B8G8R8A8_SRGB;
+            case TextureFormat::RG_32_32_Float:
+                return VK_FORMAT_R32G32_SFLOAT;
+            case TextureFormat::RGBA_32_32_32_32_Float:
+                return VK_FORMAT_R32G32B32A32_SFLOAT;
+            default:
+                break;
+        }
+
+        return VK_FORMAT_UNDEFINED;
     }
 
     static bool find_layer(
