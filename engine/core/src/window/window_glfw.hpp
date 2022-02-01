@@ -20,7 +20,7 @@ namespace Tempeh::Window
 		GLFWwindow* window;
 		WindowGLFWSharedState shared_state;
 	public:
-		WindowGLFW(WindowSize size, std::shared_ptr<Event::InputManager> input_manager);
+		WindowGLFW(WindowSize size, const std::shared_ptr<Event::InputManager>& input_manager);
 		~WindowGLFW();
 
 		void set_title(const char* str) override { glfwSetWindowTitle(window, str); }

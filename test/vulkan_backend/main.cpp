@@ -27,11 +27,12 @@ int main()
     surface_desc.num_images = 2;
     surface_desc.vsync = true;
 
-    auto surface = device->create_surface(window, surface_desc);
+    auto surface = device->create_surface(window, surface_desc).value();
 
     while (!window->is_need_to_close()) {
         input_manager->clear();
         window->process_input(*input_manager);
+        surface->swap_buffer();
     }
     
     return 0;

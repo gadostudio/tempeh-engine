@@ -37,7 +37,7 @@ namespace Tempeh::Window
 
 		static std::shared_ptr<Window> create(
 			WindowSize size,
-			std::shared_ptr<Event::InputManager> input_manager);
+			const std::shared_ptr<Event::InputManager>& input_manager);
 	};
 }
 

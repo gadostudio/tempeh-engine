@@ -82,13 +82,15 @@ namespace Tempeh::GPU
         }
 
         SurfaceVK* surface = new SurfaceVK(vk_surface, this);
-        DeviceErrorCode err = surface->initialize(VK_NULL_HANDLE, desc);
+        DeviceErrorCode err = surface->initialize(desc);
 
         if (err != DeviceErrorCode::Ok) {
             delete surface;
             vkDestroySurfaceKHR(m_instance, vk_surface, nullptr);
             return err;
         }
+
+        surface->attach_window(window);
 
         return Util::Ref<Surface>(surface);
     }

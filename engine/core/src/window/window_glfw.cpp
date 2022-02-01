@@ -8,8 +8,8 @@
 
 namespace Tempeh::Window
 {
-	WindowGLFW::WindowGLFW(WindowSize size, std::shared_ptr<Event::InputManager> input_manager) :
-		shared_state{ std::move(input_manager) }
+	WindowGLFW::WindowGLFW(WindowSize size, const std::shared_ptr<Event::InputManager>& input_manager) :
+		shared_state{ input_manager }
 	{
 		if (!glfwInit()) assert(false && "Failed to initialize GLFW");
 
