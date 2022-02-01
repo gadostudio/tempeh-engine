@@ -89,7 +89,6 @@ namespace Tempeh::GPU
 
         void wait_idle();
 
-        
         static RefDeviceResult<Device> initialize(bool prefer_high_performance);
 
     private:

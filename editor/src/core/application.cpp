@@ -3,13 +3,15 @@
 #include <memory>
 //#include <sentry.h>
 #include <tempeh/logger.hpp>
-#include <tempeh/window/window_glfw.hpp>
+#include <tempeh/window/window.hpp>
 
 namespace TempehEditor::Core {
 
+	namespace TempehWindow = Tempeh::Window;
+
 	Application::Application() :
 		input_manager(std::make_shared<Tempeh::Event::InputManager>()),
-		window(std::make_shared<Tempeh::Window::WindowGLFW>(input_manager)),
+		window(TempehWindow::Window::create(TempehWindow::WindowSize{ 640, 480 }, input_manager)),
 		render_context(std::make_shared<Renderer::RenderContext>(window))
 	{
 		//sentry_options_t* options = sentry_options_new();

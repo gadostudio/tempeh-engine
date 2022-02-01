@@ -30,14 +30,13 @@ set(TEMPEH_GPU_SOURCES
     "src/gpu/instance.cpp")
 
 add_library(tempeh_core STATIC
-	"include/tempeh/scripting/mono.hpp"
-	"src/scripting/mono.cpp"
-	"src/renderer/orthogonal_camera.cpp"
-	"src/renderer/perspective_camera.cpp"
-	"src/event/input_manager.cpp"
+	"include/tempeh/window/window.hpp"
+	"src/window/window.cpp"
 	"src/window/window_glfw.cpp"
 
 	"include/tempeh/scripting/mono.hpp"
+	"src/scripting/mono.cpp"
+
 	"include/tempeh/renderer/camera.hpp"
 	"include/tempeh/renderer/backend/framebuffer.hpp"
 	"include/tempeh/renderer/backend/texture.hpp"
@@ -47,6 +46,10 @@ add_library(tempeh_core STATIC
 	"include/tempeh/renderer/backend/vulkan/instance.hpp"
 	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
 	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
+
+	"src/renderer/orthogonal_camera.cpp"
+	"src/renderer/perspective_camera.cpp"
+	"src/event/input_manager.cpp"
 
     ${TEMPEH_GPU_SOURCES}
     ${TEMPEH_GPU_VULKAN_BACKEND_SOURCES})

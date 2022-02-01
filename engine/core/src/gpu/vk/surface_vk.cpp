@@ -3,7 +3,7 @@
 
 namespace Tempeh::GPU
 {
-    SurfaceVK::SurfaceVK(VkSurfaceKHR surface, std::shared_ptr<DeviceVK>& device) :
+    SurfaceVK::SurfaceVK(VkSurfaceKHR surface, DeviceVK* device) :
         Surface(SurfaceDesc{}),
         m_parent_device(device),
         m_surface(surface)
@@ -13,9 +13,9 @@ namespace Tempeh::GPU
     SurfaceVK::~SurfaceVK()
     {
         m_parent_device->wait_idle();
-        vkDestroySurfaceKHR(
-            m_parent_device->m_instance,
-            m_surface, nullptr);
+        destroy_sync_objs();
+        vkDestroySwapchainKHR(m_parent_device->m_device, m_swapchain, nullptr);
+        vkDestroySurfaceKHR(m_parent_device->m_instance, m_surface, nullptr);
     }
 
     DeviceErrorCode SurfaceVK::initialize(VkSwapchainKHR old_swapchain, const SurfaceDesc& desc)
@@ -127,11 +127,89 @@ namespace Tempeh::GPU
             m_parent_device->m_device, &swapchain_info,
             nullptr, &m_swapchain);
 
+        if (VULKAN_FAILED(ret)) {
+            return parse_error_vk(ret);
+        }
+
         m_initialized = true;
 
-        return DeviceErrorCode::Unimplemented;
+        VkSemaphoreCreateInfo semaphore_info{};
+        semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkFenceCreateInfo fence_info{};
+        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+        destroy_sync_objs();
+
+        for (u32 i = 0; i < desc.num_images; i++) {
+            VkResult image_available_semaphore_create_result =
+                vkCreateSemaphore(
+                    m_parent_device->m_device, &semaphore_info,
+                    nullptr, &m_image_available_semaphores[i]);
+
+            VkResult submission_finished_semaphore_create_result =
+                vkCreateSemaphore(
+                    m_parent_device->m_device, &semaphore_info,
+                    nullptr, &m_submission_finished_semaphores[i]);
+
+            VkResult wait_fence_create_result =
+                vkCreateFence(
+                    m_parent_device->m_device, &fence_info,
+                    nullptr, &m_wait_fences[i]);
+
+            if (VULKAN_FAILED(image_available_semaphore_create_result) ||
+                VULKAN_FAILED(submission_finished_semaphore_create_result) ||
+                VULKAN_FAILED(wait_fence_create_result))
+            {
+                return DeviceErrorCode::InternalError;
+            }
+        }
+
+        return DeviceErrorCode::Ok;
     }
-    void SurfaceVK::swap_buffer(u32 width, u32 height)
+
+    void SurfaceVK::swap_buffer()
     {
+
+    }
+
+    void SurfaceVK::resize(u32 width, u32 height)
+    {
+    }
+
+    void SurfaceVK::attach_window(const std::shared_ptr<Window::Window>& window)
+    {
+        m_attached_window = window;
+    }
+
+    void SurfaceVK::destroy_sync_objs()
+    {
+        for (u32 i = 0; i < max_images; i++) {
+            if (m_image_available_semaphores[i] != VK_NULL_HANDLE) {
+                vkDestroySemaphore(
+                    m_parent_device->m_device,
+                    m_image_available_semaphores[i],
+                    nullptr);
+
+                m_image_available_semaphores[i] = VK_NULL_HANDLE;
+            }
+
+            if (m_submission_finished_semaphores[i] != VK_NULL_HANDLE) {
+                vkDestroySemaphore(
+                    m_parent_device->m_device,
+                    m_submission_finished_semaphores[i],
+                    nullptr);
+
+                m_submission_finished_semaphores[i] = VK_NULL_HANDLE;
+            }
+
+            if (m_wait_fences[i] != VK_NULL_HANDLE) {
+                vkDestroyFence(
+                    m_parent_device->m_device,
+                    m_wait_fences[i], nullptr);
+
+                m_wait_fences[i] = VK_NULL_HANDLE;
+            }
+        }
     }
 }

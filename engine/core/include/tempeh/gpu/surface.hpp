@@ -15,7 +15,7 @@ namespace Tempeh::GPU
 
         virtual ~Surface() { }
 
-        virtual void swap_buffer(u32 width, u32 height) = 0;
+        virtual void swap_buffer() = 0;
         virtual void resize(u32 width, u32 height) = 0;
 
         const SurfaceDesc& get_desc() const;

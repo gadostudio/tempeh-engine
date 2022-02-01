@@ -4,8 +4,8 @@
 #include <tempeh/common/typedefs.hpp>
 #include <tempeh/event/input_manager.hpp>
 
-namespace Tempeh::Window {
-
+namespace Tempeh::Window
+{
 	enum class WindowType : u8
 	{
 		None,
@@ -34,8 +34,11 @@ namespace Tempeh::Window {
 		virtual bool is_need_to_close() = 0;
 		virtual WindowPosition get_window_pos() = 0;
 		virtual WindowSize get_window_size() = 0;
-	};
 
+		static std::shared_ptr<Window> create(
+			WindowSize size,
+			std::shared_ptr<Event::InputManager> input_manager);
+	};
 }
 
 #endif

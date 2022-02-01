@@ -4,11 +4,11 @@
 namespace Tempeh::GPU
 {
     // Forward Declarations
-    class DeviceVK;
-    class SurfaceVK;
-    class TextureVK;
-    class BufferVK;
-    class GraphicsPipelineVK;
+    struct DeviceVK;
+    struct SurfaceVK;
+    struct TextureVK;
+    struct BufferVK;
+    struct GraphicsPipelineVK;
 }
 
 #endif

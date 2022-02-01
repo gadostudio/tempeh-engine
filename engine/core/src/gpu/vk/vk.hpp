@@ -61,7 +61,7 @@ namespace Tempeh::GPU
         return VK_FORMAT_UNDEFINED;
     }
 
-    static bool find_layer(
+    static inline bool find_layer(
         const std::vector<VkLayerProperties>& layers,
         const char* layer)
     {
@@ -74,7 +74,7 @@ namespace Tempeh::GPU
             }) != layers.end();
     }
 
-    static bool find_extension(
+    static inline bool find_extension(
         const std::vector<VkExtensionProperties>& extensions,
         const char* layer)
     {

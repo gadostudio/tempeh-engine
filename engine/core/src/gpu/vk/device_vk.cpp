@@ -1,4 +1,5 @@
 #include "device_vk.hpp"
+#include "surface_vk.hpp"
 #include "vk.hpp"
 
 #include <tempeh/common/os.hpp>
@@ -56,25 +57,40 @@ namespace Tempeh::GPU
         const std::shared_ptr<Window::Window>& window,
         const SurfaceDesc& desc)
     {
-        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
 
         switch (window->get_window_type()) {
             case Window::WindowType::GLFW:
-                surface = create_surface_glfw(window);
+                vk_surface = create_surface_glfw(window);
                 break;
             default:
                 return DeviceErrorCode::Unimplemented;
         }
 
+        if (vk_surface == VK_NULL_HANDLE) {
+            return DeviceErrorCode::InternalError;
+        }
+
         VkBool32 present_supported = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_physical_device, m_main_queue_index, surface, &present_supported);
+        vkGetPhysicalDeviceSurfaceSupportKHR(
+            m_physical_device, m_main_queue_index,
+            vk_surface, &present_supported);
 
         if (present_supported != VK_TRUE) {
-            vkDestroySurfaceKHR(m_instance, surface, nullptr);
+            vkDestroySurfaceKHR(m_instance, vk_surface, nullptr);
             return DeviceErrorCode::SurfacePresentationNotSupported;
         }
 
-        return DeviceErrorCode::Unimplemented;
+        SurfaceVK* surface = new SurfaceVK(vk_surface, this);
+        DeviceErrorCode err = surface->initialize(VK_NULL_HANDLE, desc);
+
+        if (err != DeviceErrorCode::Ok) {
+            delete surface;
+            vkDestroySurfaceKHR(m_instance, vk_surface, nullptr);
+            return err;
+        }
+
+        return Util::Ref<Surface>(surface);
     }
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
@@ -249,7 +265,7 @@ namespace Tempeh::GPU
         device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         device_info.queueCreateInfoCount = 1;
         device_info.pQueueCreateInfos = &queue_info;
-        device_info.enabledExtensionCount = enabled_exts.size();
+        device_info.enabledExtensionCount = static_cast<uint32_t>(enabled_exts.size());
         device_info.ppEnabledExtensionNames = enabled_exts.data();
         device_info.pEnabledFeatures = &features;
 
