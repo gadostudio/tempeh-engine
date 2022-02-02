@@ -4,6 +4,14 @@
 
 namespace Tempeh::Event
 {
+	InputManager::InputManager()
+	{
+	}
+
+	InputManager::~InputManager()
+	{
+	}
+
 	void InputManager::clear()
 	{
 		m_events.clear();

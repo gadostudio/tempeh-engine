@@ -29,12 +29,10 @@ namespace Tempeh::Event
 
 	class InputManager
 	{
-	private:
-		MouseState m_mouse_state;
-		std::unordered_set<KeyboardKeyCode> m_pressed_keyboard_key;
-
-		std::vector<Event> m_events;
 	public:
+		InputManager();
+		~InputManager();
+
 		// Record
 		void process_keyboard_button(KeyboardKeyCode key_code, KeyState key_state);
 		void process_mouse_button(MouseKeyCode key_code, KeyState key_state);
@@ -53,6 +51,11 @@ namespace Tempeh::Event
 		// INTERNAL USE ONLY
 		MouseState& get_mouse_state_mut() { return m_mouse_state; }
 		void clear();
+
+	private:
+		MouseState m_mouse_state;
+		std::vector<Event> m_events;
+		std::unordered_set<KeyboardKeyCode> m_pressed_keyboard_key;
 	};
 
 }

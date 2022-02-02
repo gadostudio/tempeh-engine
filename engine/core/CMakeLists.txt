@@ -10,8 +10,11 @@ set(TEMPEH_USE_VULKAN_BACKEND ON)
 
 if (TEMPEH_USE_VULKAN_BACKEND)
     set(TEMPEH_GPU_VULKAN_BACKEND_SOURCES
+        "src/gpu/vk/backend_vk.hpp"
         "src/gpu/vk/device_vk.cpp"
         "src/gpu/vk/device_vk.hpp"
+        "src/gpu/vk/surface_vk.cpp"
+        "src/gpu/vk/surface_vk.hpp"
         "src/gpu/vk/vk.hpp"
         "src/gpu/vk/volk_stub.cpp")
 endif()
@@ -27,14 +30,13 @@ set(TEMPEH_GPU_SOURCES
     "src/gpu/instance.cpp")
 
 add_library(tempeh_core STATIC
-	"include/tempeh/scripting/mono.hpp"
-	"src/scripting/mono.cpp"
-	"src/renderer/orthogonal_camera.cpp"
-	"src/renderer/perspective_camera.cpp"
-	"src/event/input_manager.cpp"
+	"include/tempeh/window/window.hpp"
+	"src/window/window.cpp"
 	"src/window/window_glfw.cpp"
 
 	"include/tempeh/scripting/mono.hpp"
+	"src/scripting/mono.cpp"
+
 	"include/tempeh/renderer/camera.hpp"
 	"include/tempeh/renderer/backend/framebuffer.hpp"
 	"include/tempeh/renderer/backend/texture.hpp"
@@ -45,6 +47,10 @@ add_library(tempeh_core STATIC
 	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
 	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
 
+	"src/renderer/orthogonal_camera.cpp"
+	"src/renderer/perspective_camera.cpp"
+	"src/event/input_manager.cpp"
+
     ${TEMPEH_GPU_SOURCES}
     ${TEMPEH_GPU_VULKAN_BACKEND_SOURCES})
 
@@ -52,6 +58,9 @@ target_include_directories(tempeh_core
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include")
+
+target_compile_definitions(tempeh_core
+	PRIVATE NOMINMAX)
 
 target_link_libraries(tempeh_core
 	PUBLIC tempeh_common

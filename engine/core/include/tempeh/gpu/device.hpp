@@ -35,8 +35,6 @@ namespace Tempeh::GPU
         virtual void begin_frame() = 0;
         virtual void end_frame() = 0;
 
-        virtual void swap_buffer() = 0;
-
         BackendType type() const;
         const char* name() const;
 

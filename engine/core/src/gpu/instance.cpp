@@ -7,6 +7,10 @@ namespace Tempeh::GPU
 {
     void Instance::initialize(BackendType type, bool prefer_high_performance)
     {
+        if (device_) {
+            return;
+        }
+
         switch (type) {
             case BackendType::Vulkan: {
                 auto result = DeviceVK::initialize(prefer_high_performance);

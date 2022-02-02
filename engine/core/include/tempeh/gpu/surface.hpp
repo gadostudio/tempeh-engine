@@ -8,8 +8,20 @@ namespace Tempeh::GPU
     class Surface
     {
     public:
-        Surface();
-        virtual ~Surface();
+        Surface(const SurfaceDesc& desc) :
+            m_desc(desc)
+        {
+        }
+
+        virtual ~Surface() { }
+
+        virtual void swap_buffer() = 0;
+        virtual void resize(u32 width, u32 height) = 0;
+
+        const SurfaceDesc& get_desc() const;
+
+    protected:
+        SurfaceDesc m_desc;
     };
 }
 
