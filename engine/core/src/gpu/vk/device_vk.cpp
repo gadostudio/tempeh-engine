@@ -19,6 +19,7 @@ namespace Tempeh::GPU
     };
 
     static const char* instance_extensions[] = {
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
         VK_KHR_SURFACE_EXTENSION_NAME,
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME
     };
@@ -32,11 +33,13 @@ namespace Tempeh::GPU
         VkInstance instance,
         VkPhysicalDevice physical_device,
         VkDevice device,
+        VmaAllocator allocator,
         u32 main_queue_index)
         : Device(BackendType::Vulkan, "Vulkan"),
           m_instance(instance),
           m_physical_device(physical_device),
           m_device(device),
+          m_allocator(allocator),
           m_main_queue_index(main_queue_index)
     {
         vkGetDeviceQueue(m_device, m_main_queue_index, 0, &m_main_queue);
@@ -49,6 +52,7 @@ namespace Tempeh::GPU
     {
         vkDeviceWaitIdle(m_device);
         m_cmd_manager.reset();
+        vmaDestroyAllocator(m_allocator);
         vkDestroyDevice(m_device, nullptr);
         vkDestroyInstance(m_instance, nullptr);
     }
@@ -58,6 +62,10 @@ namespace Tempeh::GPU
         const SurfaceDesc& desc)
     {
         VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
+
+        if (desc.num_images > 3) {
+            return DeviceErrorCode::InvalidArgs;
+        }
 
         switch (window->get_window_type()) {
             case Window::WindowType::GLFW:
@@ -97,6 +105,38 @@ namespace Tempeh::GPU
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
+        VkImageCreateInfo image_info;
+        VkImageType image_type;
+
+        switch (desc.type) {
+            case TextureType::Texture1D:
+            case TextureType::TextureArray1D:
+                image_type = VK_IMAGE_TYPE_1D;
+                break;
+            case TextureType::Texture2D:
+            case TextureType::TextureArray2D:
+                image_type = VK_IMAGE_TYPE_2D;
+                break;
+            case TextureType::Texture3D:
+                image_type = VK_IMAGE_TYPE_3D;
+                break;
+        }
+
+        image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        image_info.imageType = image_type;
+        image_info.format;
+        image_info.extent;
+        image_info.mipLevels;
+        image_info.arrayLayers;
+        image_info.samples;
+        image_info.tiling;
+        image_info.usage;
+        image_info.sharingMode;
+        image_info.queueFamilyIndexCount;
+        image_info.pQueueFamilyIndices;
+        image_info.initialLayout;
+
+
         return DeviceErrorCode::Unimplemented;
     }
 
@@ -246,7 +286,7 @@ namespace Tempeh::GPU
         u32 queue_family_idx = 0;
         bool has_suitable_queue = false;
 
-        // For now, we expect the hardware supports Graphics, Compute and Present queues
+        // For now, we expect the hardware supports Graphics, Compute and Present on the same queue
         for (const auto& queue_family : queue_families) {
             if (bit_match(queue_family.queueFlags, VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT)) {
                 queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -279,10 +319,42 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
+        volkLoadDevice(device);
+
+        VmaVulkanFunctions vma_fn{};
+        vma_fn.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
+        vma_fn.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
+        vma_fn.vkAllocateMemory = vkAllocateMemory;
+        vma_fn.vkFreeMemory = vkFreeMemory;
+        vma_fn.vkMapMemory = vkMapMemory;
+        vma_fn.vkUnmapMemory = vkUnmapMemory;
+        vma_fn.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
+        vma_fn.vkInvalidateMappedMemoryRanges = vkInvalidateMappedMemoryRanges;
+        vma_fn.vkBindBufferMemory = vkBindBufferMemory;
+        vma_fn.vkBindImageMemory = vkBindImageMemory;
+        vma_fn.vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements;
+        vma_fn.vkGetImageMemoryRequirements = vkGetImageMemoryRequirements;
+        vma_fn.vkCreateBuffer = vkCreateBuffer;
+        vma_fn.vkDestroyBuffer = vkDestroyBuffer;
+        vma_fn.vkCreateImage = vkCreateImage;
+        vma_fn.vkDestroyImage = vkDestroyImage;
+        vma_fn.vkCmdCopyBuffer = vkCmdCopyBuffer;
+
+        VmaAllocatorCreateInfo allocator_info{};
+        allocator_info.vulkanApiVersion = app_info.apiVersion;
+        allocator_info.physicalDevice = physical_device;
+        allocator_info.device = device;
+        allocator_info.instance = instance;
+        allocator_info.pVulkanFunctions = &vma_fn;
+
+        VmaAllocator allocator;
+        vmaCreateAllocator(&allocator_info, &allocator);
+
         return std::static_pointer_cast<Device>(
             std::make_shared<DeviceVK>(
                 instance, physical_device,
-                device, queue_info.queueFamilyIndex));
+                device, allocator,
+                queue_info.queueFamilyIndex));
     }
 
     VkSurfaceKHR DeviceVK::create_surface_glfw(const std::shared_ptr<Window::Window>& window)

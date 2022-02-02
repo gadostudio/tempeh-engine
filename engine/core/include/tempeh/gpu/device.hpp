@@ -25,11 +25,15 @@ namespace Tempeh::GPU
         
         virtual ~Device() { }
 
+        [[nodiscard]]
         virtual RefDeviceResult<Surface> create_surface(
             const std::shared_ptr<Window::Window>& window,
             const SurfaceDesc& desc) = 0;
 
+        [[nodiscard]]
         virtual RefDeviceResult<Texture> create_texture(const TextureDesc& desc) = 0;
+
+        [[nodiscard]]
         virtual RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) = 0;
 
         virtual void begin_frame() = 0;

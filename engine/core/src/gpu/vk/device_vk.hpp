@@ -8,6 +8,7 @@
 
 #include "backend_vk.hpp"
 #include "vk.hpp"
+#include "vk_mem_alloc.h"
 
 namespace Tempeh::GPU
 {
@@ -50,6 +51,8 @@ namespace Tempeh::GPU
             }
         }
 
+
+
     private:
         VkDevice m_device;
         std::array<PoolBufferPair, MaxBuffer> m_cmds{};
@@ -62,6 +65,7 @@ namespace Tempeh::GPU
         VkInstance m_instance;
         VkPhysicalDevice m_physical_device;
         VkDevice m_device;
+        VmaAllocator m_allocator;
         u32 m_main_queue_index;
         VkQueue m_main_queue = VK_NULL_HANDLE;
 
@@ -73,6 +77,7 @@ namespace Tempeh::GPU
             VkInstance instance,
             VkPhysicalDevice physical_device,
             VkDevice device,
+            VmaAllocator allocator,
             u32 main_queue_index);
 
         ~DeviceVK();

@@ -13,9 +13,12 @@ if (TEMPEH_USE_VULKAN_BACKEND)
         "src/gpu/vk/backend_vk.hpp"
         "src/gpu/vk/device_vk.cpp"
         "src/gpu/vk/device_vk.hpp"
+        "src/gpu/vk/resource_vk.cpp"
+        "src/gpu/vk/resource_vk.hpp"
         "src/gpu/vk/surface_vk.cpp"
         "src/gpu/vk/surface_vk.hpp"
         "src/gpu/vk/vk.hpp"
+        "src/gpu/vk/vma_stub.cpp"
         "src/gpu/vk/volk_stub.cpp")
 endif()
 
