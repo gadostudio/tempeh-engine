@@ -28,3 +28,6 @@
 [submodule "external/magic-enum"]
 	path = external/magic-enum
 	url = https://github.com/Neargye/magic_enum.git
+[submodule "external/Vulkan-Headers"]
+	path = external/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
