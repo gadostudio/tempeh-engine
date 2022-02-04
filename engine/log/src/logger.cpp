@@ -15,7 +15,7 @@ namespace Tempeh::Log
 	{
 		spdlog::memory_buf_t formatted;
 		spdlog::sinks::base_sink<M>::formatter_->format(msg, formatted);
-        std::string str(formatted.data());
+        std::string str(formatted.data(), formatted.data() + formatted.size());
         m_log_messages->push_back(str);
 	}
 //#endif

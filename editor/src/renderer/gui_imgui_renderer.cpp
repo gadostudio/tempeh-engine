@@ -54,8 +54,6 @@ namespace TempehEditor::Renderer::GUI
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		auto dock_space_id = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-
 		// https://github.com/ocornut/imgui/issues/2999
 
 		static TempehEditor::GUI::Panels::WindowMenubarPanel window_menubar_panel;
@@ -71,16 +69,31 @@ namespace TempehEditor::Renderer::GUI
 		ImGui::Text("Hello, down!");
 		ImGui::End();
 
-        std::string log_messages;
-        auto& l = ::Tempeh::Log::Logger::get_capped_log_messages();
-        for (auto& c: l)
-        {
-            log_messages += c;
-            log_messages.push_back('\n');
-        }
+        auto& logs = ::Tempeh::Log::Logger::get_capped_log_messages();
 
+        ImGui::SetNextWindowSize(ImVec2(600, 250));
         ImGui::Begin("Log");
-        ImGui::InputTextMultiline("Log", const_cast<char*>(log_messages.c_str()), log_messages.size());
+        if (ImGui::BeginListBox("##listbox 2", ImVec2(-FLT_MIN, 10 * ImGui::GetTextLineHeightWithSpacing())))
+        {
+            for (auto& c: logs)
+            {
+                ImGui::Selectable(c.c_str(), false);
+            }
+
+            if (logs.size() == 10)
+            {
+                ImGui::SetScrollHereY(1.0f);
+            }
+
+            float scroll_y = ImGui::GetScrollY();
+            float max_scroll_y = ImGui::GetScrollMaxY();
+            float scroll_y_relative = scroll_y / max_scroll_y;
+            if (scroll_y_relative == 1.0f)
+            {
+                ImGui::SetScrollHereY(1.0f);
+            }
+            ImGui::EndListBox();
+        }
         ImGui::End();
 
 		ImGui::ShowDemoWindow(&a);
