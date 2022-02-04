@@ -231,7 +231,7 @@ namespace Tempeh::GPU
             assert(false && "Cannot acquire next image");
         }
 
-        static const VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        static const VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
         VkSubmitInfo submit_info{};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.waitSemaphoreCount = 1;
@@ -345,6 +345,8 @@ namespace Tempeh::GPU
         clear_color.float32[2] = 0.0f;
         clear_color.float32[3] = 1.0f;
 
+        // Here we didn't actually expose the swapchain image.
+        // But instead, we create our own images and pass them to the swapchain images.
         for (u32 i = 0; i < num_images; i++) {
             VkCommandBuffer current = m_cmd_buffers[i];
 
@@ -374,6 +376,7 @@ namespace Tempeh::GPU
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 &clear_color, 1, &image_barrier.subresourceRange);
 
+            // Transfer destination -> Present
             image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             image_barrier.dstAccessMask = 0;
             image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;

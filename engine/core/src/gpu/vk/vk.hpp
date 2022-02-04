@@ -9,9 +9,20 @@
 
 #include <vulkan/vulkan.h>
 #include "volk.h"
+#include "vk_mem_alloc.h"
 
 #define VULKAN_FAILED(x) \
     ((x) < VK_SUCCESS)
+
+#include <cassert>
+
+#ifdef NDEBUG
+#define VULKAN_ASSERT(x) \
+    (void)(x)
+#else
+#define VULKAN_ASSERT(x) \
+    assert(x)
+#endif
 
 #include <tempeh/gpu/types.hpp>
 #include <vector>
@@ -59,6 +70,49 @@ namespace Tempeh::GPU
         }
 
         return VK_FORMAT_UNDEFINED;
+    }
+
+    static inline constexpr std::pair<VkMemoryPropertyFlags, VkMemoryPropertyFlags> convert_memory_usage_vk(MemoryUsage usage)
+    {
+        switch (usage) {
+            case MemoryUsage::Default:
+                return std::make_pair(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+            case MemoryUsage::Upload:
+                return std::make_pair(
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            case MemoryUsage::Readback:
+                return std::make_pair(
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+            case MemoryUsage::Shared:
+                return std::make_pair(
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        }
+
+        return std::make_pair(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+    }
+
+    static inline constexpr std::pair<VkImageUsageFlags, VkFormatFeatureFlags> convert_texture_usage_vk(TextureUsageFlags usage)
+    {
+        VkImageUsageFlags image_usage = (bit_match(usage, TextureUsage::TransferSrc) ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0) |
+            (bit_match(usage, TextureUsage::TransferDst) ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0) |
+            (bit_match(usage, TextureUsage::Sampled) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0) |
+            (bit_match(usage, TextureUsage::ColorAttachment) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0) |
+            (bit_match(usage, TextureUsage::DepthStencilAttachment) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : 0) |
+            (bit_match(usage, TextureUsage::StorageRead) || bit_match(usage, TextureUsage::StorageWrite) ? VK_IMAGE_USAGE_STORAGE_BIT : 0);
+
+        VkFormatFeatureFlags format_features = (bit_match(usage, TextureUsage::TransferSrc) ? VK_FORMAT_FEATURE_TRANSFER_SRC_BIT : 0) |
+            (bit_match(usage, TextureUsage::TransferDst) ? VK_FORMAT_FEATURE_TRANSFER_DST_BIT : 0) |
+            (bit_match(usage, TextureUsage::Sampled) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT : 0) |
+            (bit_match(usage, TextureUsage::ColorAttachment) ? VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT : 0) |
+            (bit_match(usage, TextureUsage::DepthStencilAttachment) ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT : 0) |
+            (bit_match(usage, TextureUsage::StorageRead) || bit_match(usage, TextureUsage::StorageWrite) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : 0);
+
+        return std::make_pair(image_usage, format_features);
     }
 
     static inline bool find_layer(

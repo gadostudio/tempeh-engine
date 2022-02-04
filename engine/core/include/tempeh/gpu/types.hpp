@@ -18,11 +18,12 @@ namespace Tempeh::GPU
         GLES3
     };
 
-    enum class MemoryUsage
+    enum class MemoryUsage : u8
     {
         Default,
         Upload,
-        Readback
+        Readback,
+        Shared
     };
 
     enum class TextureType : u8
@@ -112,6 +113,7 @@ namespace Tempeh::GPU
         BackendNotSupported,
         SurfacePresentationNotSupported,
         FormatNotSupported,
+        MemoryUsageNotSupported,
         Unimplemented,
         InternalError
     };
@@ -132,7 +134,7 @@ namespace Tempeh::GPU
     {
         const char*         label;
         TextureType         type;
-        TextureUsageFlags   usages;
+        TextureUsageFlags   usage;
         MemoryUsage         memory_usage;
         TextureFormat       format;
         u32                 width;

@@ -1,5 +1,6 @@
 #include "device_vk.hpp"
 #include "surface_vk.hpp"
+#include "resource_vk.hpp"
 #include "vk.hpp"
 
 #include <tempeh/common/os.hpp>
@@ -15,7 +16,8 @@
 namespace Tempeh::GPU
 {
     static const char* layers[] = {
-        "VK_LAYER_KHRONOS_validation"
+        "VK_LAYER_KHRONOS_validation",
+        "dummy"
     };
 
     static const char* instance_extensions[] = {
@@ -32,26 +34,27 @@ namespace Tempeh::GPU
     DeviceVK::DeviceVK(
         VkInstance instance,
         VkPhysicalDevice physical_device,
+        const VkPhysicalDeviceProperties& properties,
         VkDevice device,
         VmaAllocator allocator,
         u32 main_queue_index)
         : Device(BackendType::Vulkan, "Vulkan"),
           m_instance(instance),
           m_physical_device(physical_device),
+          m_properties(properties),
           m_device(device),
           m_allocator(allocator),
           m_main_queue_index(main_queue_index)
     {
         vkGetDeviceQueue(m_device, m_main_queue_index, 0, &m_main_queue);
 
-        m_cmd_manager = std::make_unique<CommandManagerVK<max_command_buffers>>(
-            m_device, m_main_queue_index);
+        m_job_queue = std::make_unique<JobQueueVK>(m_device, m_main_queue, m_main_queue_index);
     }
 
     DeviceVK::~DeviceVK()
     {
         vkDeviceWaitIdle(m_device);
-        m_cmd_manager.reset();
+        m_job_queue.reset();
         vmaDestroyAllocator(m_allocator);
         vkDestroyDevice(m_device, nullptr);
         vkDestroyInstance(m_instance, nullptr);
@@ -61,6 +64,7 @@ namespace Tempeh::GPU
         const std::shared_ptr<Window::Window>& window,
         const SurfaceDesc& desc)
     {
+        std::lock_guard lock(m_sync_mutex);
         VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
 
         if (desc.num_images > 3) {
@@ -105,39 +109,133 @@ namespace Tempeh::GPU
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
-        VkImageCreateInfo image_info;
-        VkImageType image_type;
+        std::lock_guard lock(m_sync_mutex);
+
+        if (desc.width < 1 || desc.height < 1 || desc.depth < 1 ||
+            desc.mip_levels < 1 || desc.array_layers < 1 || desc.num_samples < 1)
+        {
+            return DeviceErrorCode::InvalidArgs;
+        }
+
+        VkImageCreateInfo image_info{};
+        VkImageType image_type = VK_IMAGE_TYPE_1D;
+        VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_1D;
+        VkImageCreateFlags create_flags = 0;
+        VkFormat format = convert_format_vk(desc.format);
+
+        auto [usage, format_feature] = convert_texture_usage_vk(desc.usage);
+        auto [format_supported, is_optimal] = is_format_supported_for_texture(format, format_feature);
+
+        if (!format_supported) {
+            return DeviceErrorCode::FormatNotSupported;
+        }
 
         switch (desc.type) {
             case TextureType::Texture1D:
+                image_type = VK_IMAGE_TYPE_1D;
+                view_type = VK_IMAGE_VIEW_TYPE_1D;
+                break;
             case TextureType::TextureArray1D:
                 image_type = VK_IMAGE_TYPE_1D;
+                view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
                 break;
             case TextureType::Texture2D:
+                image_type = VK_IMAGE_TYPE_2D;
+                view_type = VK_IMAGE_VIEW_TYPE_2D;
+                break;
             case TextureType::TextureArray2D:
                 image_type = VK_IMAGE_TYPE_2D;
+                view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+                break;
+            case TextureType::TextureCube:
+                image_type = VK_IMAGE_TYPE_2D;
+                view_type = VK_IMAGE_VIEW_TYPE_CUBE;
+                create_flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+                break;
+            case TextureType::TextureArrayCube:
+                image_type = VK_IMAGE_TYPE_2D;
+                view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+                create_flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
                 break;
             case TextureType::Texture3D:
                 image_type = VK_IMAGE_TYPE_3D;
+                view_type = VK_IMAGE_VIEW_TYPE_3D;
+                break;
+            default:
                 break;
         }
 
+        // Create image
         image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        image_info.flags = create_flags;
         image_info.imageType = image_type;
-        image_info.format;
-        image_info.extent;
-        image_info.mipLevels;
-        image_info.arrayLayers;
-        image_info.samples;
-        image_info.tiling;
-        image_info.usage;
-        image_info.sharingMode;
-        image_info.queueFamilyIndexCount;
-        image_info.pQueueFamilyIndices;
-        image_info.initialLayout;
+        image_info.format = format;
+        image_info.extent.width = desc.width;
+        image_info.extent.height = desc.height;
+        image_info.extent.depth = desc.depth;
+        image_info.mipLevels = desc.mip_levels;
+        image_info.arrayLayers = desc.array_layers;
+        image_info.samples = (VkSampleCountFlagBits)desc.num_samples;
+        
+        image_info.tiling =
+            is_optimal ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
 
+        image_info.usage = usage;
+        image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-        return DeviceErrorCode::Unimplemented;
+        auto [required_flags, preferred_flags] =
+            convert_memory_usage_vk(desc.memory_usage);
+
+        VkImage image;
+        VmaAllocation allocation;
+        VmaAllocationCreateInfo alloc_info{};
+
+        alloc_info.requiredFlags = required_flags;
+        alloc_info.preferredFlags = preferred_flags;
+
+        VkResult result = vmaCreateImage(
+            m_allocator, &image_info, &alloc_info,
+            &image, &allocation, nullptr);
+
+        if (result == VK_ERROR_FEATURE_NOT_PRESENT) {
+            return DeviceErrorCode::MemoryUsageNotSupported;
+        }
+        else if (VULKAN_FAILED(result)) {
+            return DeviceErrorCode::InternalError;
+        }
+
+        // Create image view
+        VkImageViewCreateInfo view_info{};
+        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view_info.image = image;
+        view_info.viewType = view_type;
+        view_info.format = format;
+        view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        if (bit_match(desc.usage, TextureUsage::DepthStencilAttachment)) {
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        else {
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
+        view_info.subresourceRange.baseMipLevel = 0;
+        view_info.subresourceRange.levelCount = desc.mip_levels;
+        view_info.subresourceRange.baseArrayLayer = 0;
+        view_info.subresourceRange.layerCount = desc.array_layers;
+
+        VkImageView image_view;
+        result = vkCreateImageView(m_device, &view_info, nullptr, &image_view);
+
+        if (VULKAN_FAILED(result)) {
+            vmaDestroyImage(m_allocator, image, allocation);
+            return DeviceErrorCode::InternalError;
+        }
+
+        return std::make_shared<TextureVK>(this, image, image_view, allocation, desc);
     }
 
     RefDeviceResult<Buffer> DeviceVK::create_buffer(const BufferDesc& desc)
@@ -145,17 +243,46 @@ namespace Tempeh::GPU
         return DeviceErrorCode::Unimplemented;
     }
 
-    void DeviceVK::begin_frame()
+    void DeviceVK::begin_cmd()
     {
+        JobItemVK& job_item = m_job_queue->enqueue_job();
+
+        job_item.wait(); // Wait current submission
+        job_item.destroy_pending_resources();
+        m_current_cmd_buffer = job_item.begin();
     }
 
-    void DeviceVK::end_frame()
+    void DeviceVK::end_cmd()
     {
+        vkEndCommandBuffer(m_current_cmd_buffer);
+        m_job_queue->dequeue_job(); // Also submits the dequeued job
     }
 
     void DeviceVK::wait_idle()
     {
         vkDeviceWaitIdle(m_device);
+    }
+
+    std::pair<bool, bool> DeviceVK::is_format_supported_for_texture(VkFormat format, VkFormatFeatureFlags features) const
+    {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &properties);
+
+        VkFormatFeatureFlags combined_features =
+            properties.optimalTilingFeatures | properties.linearTilingFeatures;
+
+        bool supported = bit_match(combined_features, features);
+        bool is_optimal = bit_match(properties.optimalTilingFeatures, features);
+
+        return std::make_pair(supported, is_optimal);
+    }
+
+    bool DeviceVK::is_format_supported_for_buffer(VkFormat format) const
+    {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &properties);
+
+        return properties.bufferFeatures == VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
     }
 
     RefDeviceResult<Device> DeviceVK::initialize(bool prefer_high_performance)
@@ -230,11 +357,11 @@ namespace Tempeh::GPU
 
         VkPhysicalDevice physical_device = physical_devices[0];
         VkPhysicalDeviceFeatures features{};
+        VkPhysicalDeviceProperties properties{};
 
         if (prefer_high_performance) {
-            // Find a discrete GPU and chooses it
+            // Find a discrete GPU
             for (auto current : physical_devices) {
-                VkPhysicalDeviceProperties properties;
                 vkGetPhysicalDeviceProperties(current, &properties);
 
                 if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
@@ -245,6 +372,7 @@ namespace Tempeh::GPU
             }
         }
         else {
+            vkGetPhysicalDeviceProperties(physical_device, &properties);
             vkGetPhysicalDeviceFeatures(physical_device, &features);
         }
 
@@ -352,9 +480,8 @@ namespace Tempeh::GPU
 
         return std::static_pointer_cast<Device>(
             std::make_shared<DeviceVK>(
-                instance, physical_device,
-                device, allocator,
-                queue_info.queueFamilyIndex));
+                instance, physical_device, properties,
+                device, allocator, queue_info.queueFamilyIndex));
     }
 
     VkSurfaceKHR DeviceVK::create_surface_glfw(const std::shared_ptr<Window::Window>& window)
@@ -368,5 +495,97 @@ namespace Tempeh::GPU
             &ret);
 
         return ret;
+    } 
+
+    JobItemVK::JobItemVK(VkDevice vk_device, u32 queue_family_index) :
+        device(vk_device)
+    {
+        VkCommandPoolCreateInfo pool_info{};
+        pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        pool_info.queueFamilyIndex = queue_family_index;
+
+        VULKAN_ASSERT(!VULKAN_FAILED(
+            vkCreateCommandPool(vk_device, &pool_info, nullptr, &cmd_pool)) &&
+            "Failed to create job command pool");
+
+        VkCommandBufferAllocateInfo alloc_info{};
+        alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        alloc_info.commandPool = cmd_pool;
+        alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        alloc_info.commandBufferCount = 1;
+
+        VULKAN_ASSERT(!VULKAN_FAILED(
+            vkAllocateCommandBuffers(vk_device, &alloc_info, &cmd_buffer)) &&
+            "Failed to create job command buffer");
+
+        /*
+        VkSemaphoreCreateInfo semaphore_info{};
+        semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VULKAN_ASSERT(!VULKAN_FAILED(
+            vkCreateSemaphore(device, &semaphore_info, nullptr, &semaphore)) &&
+            "Failed to create job semaphore");
+        */
+
+        VkFenceCreateInfo fence_info{};
+        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        VULKAN_ASSERT(!VULKAN_FAILED(
+            vkCreateFence(device, &fence_info, nullptr, &fence)) &&
+            "Failed to create job fence");
+    }
+    
+    JobItemVK::~JobItemVK()
+    {
+    }
+
+    void JobItemVK::wait()
+    {
+        vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(device, 1, &fence);
+    }
+
+    VkCommandBuffer JobItemVK::begin()
+    {
+        VkCommandBufferBeginInfo begin_info{};
+        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkResetCommandPool(device, cmd_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+
+        VULKAN_ASSERT(!VULKAN_FAILED(
+            vkBeginCommandBuffer(cmd_buffer, &begin_info)));
+
+        return cmd_buffer;
+    }
+
+    void JobItemVK::destroy_cmd_buffer()
+    {
+        // Will also destroy command buffers
+        vkDestroyCommandPool(device, cmd_pool, nullptr);
+        vkDestroyFence(device, fence, nullptr);
+    }
+
+    void JobItemVK::destroy_pending_resources()
+    {
+        
+    }
+
+    void JobQueueVK::dequeue_job()
+    {
+        VkSubmitInfo submission{};
+        JobItemVK& job_item = job_list[read_pointer];
+        u32 idx = 0;
+
+        submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submission.commandBufferCount = 1;
+        submission.pCommandBuffers = &job_item.cmd_buffer;
+
+        VULKAN_ASSERT(!VULKAN_FAILED(
+            vkQueueSubmit(cmd_queue, 1, &submission, job_item.fence)));
+
+        read_pointer = (read_pointer + 1) % max_job;
     }
 }

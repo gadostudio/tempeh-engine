@@ -2,80 +2,104 @@
 #define _TEMPEH_GPU_DEVICE_VK_H
 
 #include <tempeh/gpu/device.hpp>
-#include <tempeh/gpu/types.hpp>
 #include <memory>
 #include <array>
+#include <deque>
+#include <mutex>
 
 #include "backend_vk.hpp"
 #include "vk.hpp"
-#include "vk_mem_alloc.h"
 
 namespace Tempeh::GPU
 {
-    template<size_t MaxBuffer>
-    class CommandManagerVK
+    struct JobItemVK
     {
-    public:
-        using PoolBufferPair = std::pair<VkCommandPool, VkCommandBuffer>;
+        std::deque<std::tuple<VkImage, VkImageView, VmaAllocation>> texture_free_queue;
+        std::deque<std::tuple<VkBuffer, VmaAllocation>> buffer_free_queue;
 
-        CommandManagerVK(VkDevice device, u32 queue_family_index) :
-            m_device(device)
+        VkDevice device = VK_NULL_HANDLE;
+        VkCommandPool cmd_pool = VK_NULL_HANDLE;
+        VkCommandBuffer cmd_buffer = VK_NULL_HANDLE;
+        VkSemaphore semaphore = VK_NULL_HANDLE;
+        VkFence fence = VK_NULL_HANDLE;
+
+        JobItemVK(VkDevice vk_device, u32 queue_family_index);
+        ~JobItemVK();
+
+        void wait();
+        VkCommandBuffer begin();
+        void destroy_cmd_buffer();
+        void destroy_pending_resources();
+    };
+
+    // Class for managing GPU jobs
+    struct JobQueueVK
+    {
+        static constexpr u32 max_job = 4;
+
+        VkDevice device;
+        VkQueue cmd_queue;
+        u32 queue_family_index;
+        std::vector<JobItemVK> job_list;
+        u32 read_pointer = 0;
+        u32 write_pointer = 0;
+
+        JobQueueVK(VkDevice vk_device, VkQueue cmd_queue, u32 queue_family_index) :
+            device(vk_device),
+            cmd_queue(cmd_queue),
+            queue_family_index(queue_family_index)
         {
-            VkCommandPoolCreateInfo cmd_pool_info{};
-            cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            cmd_pool_info.queueFamilyIndex = queue_family_index;
+            job_list.reserve(max_job);
+        }
 
-            VkCommandBufferAllocateInfo cmd_buffer_info{};
-            cmd_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmd_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmd_buffer_info.commandBufferCount = 1;
-
-            for (auto& cmd : m_cmds) {
-                VkResult result = 
-                    vkCreateCommandPool(device, &cmd_pool_info, nullptr, &cmd.first);
-
-                assert(!VULKAN_FAILED(result) && "Failed to create command pool");
-
-                cmd_buffer_info.commandPool = cmd.first;
-                result = vkAllocateCommandBuffers(device, &cmd_buffer_info, &cmd.second);
-
-                assert(!VULKAN_FAILED(result) && "Failed to allocate command buffer");
+        ~JobQueueVK()
+        {
+            for (auto& job : job_list) {
+                job.destroy_cmd_buffer();
+                job.destroy_pending_resources();
             }
         }
 
-        ~CommandManagerVK()
+        JobItemVK& enqueue_job()
         {
-            for (auto& cmd : m_cmds) {
-                vkDestroyCommandPool(m_device, cmd.first, nullptr);
+            u32 current_job = write_pointer;
+            u32 job_incr = write_pointer + 1;
+
+            if (job_incr > job_list.size() && job_list.size() < max_job) {
+                job_list.emplace_back(device, queue_family_index);
             }
+
+            write_pointer = job_incr % max_job;
+
+            return job_list[current_job];
         }
 
-
-
-    private:
-        VkDevice m_device;
-        std::array<PoolBufferPair, MaxBuffer> m_cmds{};
+        void dequeue_job();
     };
 
     struct DeviceVK : public Device
     {
-        static constexpr size_t max_command_buffers = 3;
+        static constexpr size_t max_cmd_buffers = 16;
 
         VkInstance m_instance;
         VkPhysicalDevice m_physical_device;
+        VkPhysicalDeviceProperties m_properties;
         VkDevice m_device;
         VmaAllocator m_allocator;
-        u32 m_main_queue_index;
         VkQueue m_main_queue = VK_NULL_HANDLE;
+        u32 m_main_queue_index;
 
+        std::mutex m_sync_mutex;
         std::vector<VkSurfaceFormatKHR> m_surface_formats;
         std::vector<VkPresentModeKHR> m_present_modes;
-        std::unique_ptr<CommandManagerVK<max_command_buffers>> m_cmd_manager;
+
+        std::unique_ptr<JobQueueVK> m_job_queue;
+        VkCommandBuffer m_current_cmd_buffer;
 
         DeviceVK(
             VkInstance instance,
             VkPhysicalDevice physical_device,
+            const VkPhysicalDeviceProperties& properties,
             VkDevice device,
             VmaAllocator allocator,
             u32 main_queue_index);
@@ -89,8 +113,11 @@ namespace Tempeh::GPU
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
 
-        void begin_frame() override final;
-        void end_frame() override final;
+        void begin_cmd() override final;
+        void end_cmd() override final;
+
+        std::pair<bool, bool> is_format_supported_for_texture(VkFormat format, VkFormatFeatureFlags features) const;
+        bool is_format_supported_for_buffer(VkFormat format) const;
 
         void wait_idle();
 

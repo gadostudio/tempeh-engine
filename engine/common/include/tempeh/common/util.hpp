@@ -13,7 +13,7 @@ template<typename T, typename... Bits>
 static inline constexpr bool bit_match(T bitfield, Bits... bits)
 {
     T b = (bits | ...);
-    return (b & bitfield) == b;
+    return (bitfield & b) == b;
 }
 
 struct Lambda {

@@ -2,7 +2,6 @@
 #define _TEMPEH_GPU_DEVICE_HPP
 
 #include <tempeh/gpu/types.hpp>
-#include <tempeh/gpu/command_list.hpp>
 #include <tempeh/gpu/resource.hpp>
 #include <tempeh/gpu/surface.hpp>
 #include <tempeh/window/window.hpp>
@@ -36,8 +35,8 @@ namespace Tempeh::GPU
         [[nodiscard]]
         virtual RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) = 0;
 
-        virtual void begin_frame() = 0;
-        virtual void end_frame() = 0;
+        virtual void begin_cmd() = 0;
+        virtual void end_cmd() = 0;
 
         BackendType type() const;
         const char* name() const;
