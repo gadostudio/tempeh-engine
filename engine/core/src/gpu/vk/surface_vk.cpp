@@ -281,6 +281,8 @@ namespace Tempeh::GPU
 
     void SurfaceVK::resize(u32 width, u32 height)
     {
+        TEMPEH_UNREFERENCED(width);
+        TEMPEH_UNREFERENCED(height);
     }
 
     void SurfaceVK::attach_window(const std::shared_ptr<Window::Window>& window)

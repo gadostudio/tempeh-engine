@@ -115,6 +115,16 @@ namespace Tempeh::GPU
         return std::make_pair(image_usage, format_features);
     }
 
+    static inline constexpr VkBufferUsageFlags convert_buffer_usage_vk(BufferUsageFlags usage)
+    {
+        return (bit_match(usage, BufferUsage::TransferSrc) ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : 0) |
+            (bit_match(usage, BufferUsage::TransferDst) ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0) |
+            (bit_match(usage, BufferUsage::Uniform) ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 0) |
+            (bit_match(usage, BufferUsage::Index) ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : 0) |
+            (bit_match(usage, BufferUsage::Vertex) ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT : 0) |
+            (bit_match(usage, BufferUsage::StorageRead) || bit_match(usage, BufferUsage::StorageWrite) ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0);
+    }
+
     static inline bool find_layer(
         const std::vector<VkLayerProperties>& layers,
         const char* layer)

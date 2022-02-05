@@ -35,7 +35,14 @@ namespace Tempeh::GPU
         [[nodiscard]]
         virtual RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) = 0;
 
+        [[nodiscard]]
+        virtual RefDeviceResult<Framebuffer> create_framebuffer(const FramebufferDesc& desc) = 0;
+
+        [[nodiscard]]
+        virtual RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) = 0;
+
         virtual void begin_cmd() = 0;
+        virtual void bind_texture(u32 slot, const Util::Ref<Texture>& texture) = 0;
         virtual void end_cmd() = 0;
 
         BackendType type() const;

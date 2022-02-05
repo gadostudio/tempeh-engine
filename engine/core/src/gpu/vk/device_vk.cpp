@@ -48,13 +48,21 @@ namespace Tempeh::GPU
     {
         vkGetDeviceQueue(m_device, m_main_queue_index, 0, &m_main_queue);
 
-        m_job_queue = std::make_unique<JobQueueVK>(m_device, m_main_queue, m_main_queue_index);
+        m_storage_image_template_descriptors.emplace(m_device);
+        m_sampled_image_template_descriptors.emplace(m_device);
+        m_sampler_template_descriptors.emplace(m_device);
+
+        m_job_queue = std::make_unique<JobQueueVK>(
+            m_device, m_main_queue, m_main_queue_index);
     }
 
     DeviceVK::~DeviceVK()
     {
         vkDeviceWaitIdle(m_device);
         m_job_queue.reset();
+        m_storage_image_template_descriptors.reset();
+        m_sampled_image_template_descriptors.reset();
+        m_sampler_template_descriptors.reset();
         vmaDestroyAllocator(m_allocator);
         vkDestroyDevice(m_device, nullptr);
         vkDestroyInstance(m_instance, nullptr);
@@ -114,7 +122,7 @@ namespace Tempeh::GPU
         if (desc.width < 1 || desc.height < 1 || desc.depth < 1 ||
             desc.mip_levels < 1 || desc.array_layers < 1 || desc.num_samples < 1)
         {
-            return DeviceErrorCode::InvalidArgs;
+            return DeviceErrorCode::OutOfRange;
         }
 
         VkImageCreateInfo image_info{};
@@ -124,7 +132,7 @@ namespace Tempeh::GPU
         VkFormat format = convert_format_vk(desc.format);
 
         auto [usage, format_feature] = convert_texture_usage_vk(desc.usage);
-        auto [format_supported, is_optimal] = is_format_supported_for_texture(format, format_feature);
+        auto [format_supported, is_optimal] = is_texture_format_supported(format, format_feature);
 
         if (!format_supported) {
             return DeviceErrorCode::FormatNotSupported;
@@ -235,27 +243,137 @@ namespace Tempeh::GPU
             return DeviceErrorCode::InternalError;
         }
 
-        return std::make_shared<TextureVK>(this, image, image_view, allocation, desc);
+        // Prepare template descriptor
+
+        VkDescriptorSet storage_template_descriptor = VK_NULL_HANDLE;
+
+        if (bit_match(desc.usage, TextureUsage::StorageWrite) ||
+            bit_match(desc.usage, TextureUsage::StorageRead))
+        {
+            storage_template_descriptor = m_storage_image_template_descriptors.value().allocate_set();
+            
+            VkDescriptorImageInfo descriptor_image_info{};
+            descriptor_image_info.sampler = VK_NULL_HANDLE;
+            descriptor_image_info.imageView = image_view;
+            descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+            VkWriteDescriptorSet write_descriptor{};
+            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor.dstSet = storage_template_descriptor;
+            write_descriptor.dstBinding = 0;
+            write_descriptor.dstArrayElement = 0;
+            write_descriptor.descriptorCount = 1;
+            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            write_descriptor.pImageInfo = &descriptor_image_info;
+
+            vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
+        }
+
+        VkDescriptorSet sampled_template_descriptor = VK_NULL_HANDLE;
+
+        if (bit_match(desc.usage, TextureUsage::Sampled)) {
+            sampled_template_descriptor = m_sampled_image_template_descriptors.value().allocate_set();
+            
+            VkDescriptorImageInfo descriptor_image_info{};
+            descriptor_image_info.sampler = VK_NULL_HANDLE;
+            descriptor_image_info.imageView = image_view;
+
+            VkWriteDescriptorSet write_descriptor{};
+            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor.dstSet = sampled_template_descriptor;
+            write_descriptor.dstBinding = 0;
+            write_descriptor.dstArrayElement = 0;
+            write_descriptor.descriptorCount = 1;
+            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            write_descriptor.pImageInfo = &descriptor_image_info;
+
+            if (bit_match(desc.usage, TextureUsage::DepthStencilAttachment)) {
+                descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
+            }
+            else {
+                descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
+            }
+        }
+
+        return std::make_shared<TextureVK>(
+            this, image, image_view, allocation,
+            storage_template_descriptor,
+            sampled_template_descriptor, desc);
     }
 
     RefDeviceResult<Buffer> DeviceVK::create_buffer(const BufferDesc& desc)
     {
+        VkBufferCreateInfo buffer_info{};
+        buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        buffer_info.size = desc.size;
+        buffer_info.usage = convert_buffer_usage_vk(desc.usage);
+
+        auto [required_flags, preferred_flags] =
+            convert_memory_usage_vk(desc.memory_usage);
+
+        VmaAllocationCreateInfo alloc_info{};
+        alloc_info.requiredFlags = required_flags;
+        alloc_info.preferredFlags = preferred_flags;
+
+        VmaAllocation allocation;
+        VkBuffer buffer;
+        VkResult result =
+            vmaCreateBuffer(m_allocator, &buffer_info,
+                &alloc_info, &buffer, &allocation, nullptr);
+
+        if (result == VK_ERROR_FEATURE_NOT_PRESENT) {
+            return DeviceErrorCode::MemoryUsageNotSupported;
+        }
+        else if (VULKAN_FAILED(result)) {
+            return DeviceErrorCode::InternalError;
+        }
+
+        return std::make_shared<BufferVK>(this, buffer, allocation, desc);
+    }
+
+    RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const FramebufferDesc& desc)
+    {
+        TEMPEH_UNREFERENCED(desc);
+        return DeviceErrorCode::Unimplemented;
+    }
+
+    RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
+    {
+        TEMPEH_UNREFERENCED(desc);
         return DeviceErrorCode::Unimplemented;
     }
 
     void DeviceVK::begin_cmd()
     {
-        JobItemVK& job_item = m_job_queue->enqueue_job();
+        if (m_is_recording_command) {
+            return;
+        }
 
-        job_item.wait(); // Wait current submission
+        JobItemVK& job_item = m_job_queue->enqueue_job(); // Create new GPU job
+
+        job_item.wait(); // Wait previous submission on this job item
         job_item.destroy_pending_resources();
         m_current_cmd_buffer = job_item.begin();
+        m_is_recording_command = true;
+    }
+
+    void DeviceVK::bind_texture(u32 slot, const Util::Ref<Texture>& texture)
+    {
+        TEMPEH_UNREFERENCED(slot);
+        TEMPEH_UNREFERENCED(texture);
     }
 
     void DeviceVK::end_cmd()
     {
+        if (!m_is_recording_command) {
+            return;
+        }
+
         vkEndCommandBuffer(m_current_cmd_buffer);
-        m_job_queue->dequeue_job(); // Also submits the dequeued job
+        m_job_queue->dequeue_job(); // submit current job
+        m_is_recording_command = false;
     }
 
     void DeviceVK::wait_idle()
@@ -263,7 +381,7 @@ namespace Tempeh::GPU
         vkDeviceWaitIdle(m_device);
     }
 
-    std::pair<bool, bool> DeviceVK::is_format_supported_for_texture(VkFormat format, VkFormatFeatureFlags features) const
+    std::pair<bool, bool> DeviceVK::is_texture_format_supported(VkFormat format, VkFormatFeatureFlags features) const
     {
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &properties);
@@ -275,14 +393,6 @@ namespace Tempeh::GPU
         bool is_optimal = bit_match(properties.optimalTilingFeatures, features);
 
         return std::make_pair(supported, is_optimal);
-    }
-
-    bool DeviceVK::is_format_supported_for_buffer(VkFormat format) const
-    {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &properties);
-
-        return properties.bufferFeatures == VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
     }
 
     RefDeviceResult<Device> DeviceVK::initialize(bool prefer_high_performance)
@@ -495,7 +605,7 @@ namespace Tempeh::GPU
             &ret);
 
         return ret;
-    } 
+    }
 
     JobItemVK::JobItemVK(VkDevice vk_device, u32 queue_family_index) :
         device(vk_device)
@@ -577,7 +687,6 @@ namespace Tempeh::GPU
     {
         VkSubmitInfo submission{};
         JobItemVK& job_item = job_list[read_pointer];
-        u32 idx = 0;
 
         submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submission.commandBufferCount = 1;

@@ -42,7 +42,7 @@ int main()
     texture_desc.array_layers = 1;
     texture_desc.num_samples = 1;
 
-    //auto texture = device->create_texture(texture_desc);
+    auto texture = device->create_texture(texture_desc);
 
     while (!window->is_need_to_close()) {
         input_manager->clear();

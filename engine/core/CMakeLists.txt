@@ -17,6 +17,7 @@ if (TEMPEH_USE_VULKAN_BACKEND)
         "src/gpu/vk/resource_vk.hpp"
         "src/gpu/vk/surface_vk.cpp"
         "src/gpu/vk/surface_vk.hpp"
+        "src/gpu/vk/template_descriptors_vk.hpp"
         "src/gpu/vk/vk.hpp"
         "src/gpu/vk/vma_stub.cpp"
         "src/gpu/vk/volk_stub.cpp")

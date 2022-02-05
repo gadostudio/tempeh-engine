@@ -6,9 +6,11 @@
 #include <array>
 #include <deque>
 #include <mutex>
+#include <optional>
 
 #include "backend_vk.hpp"
 #include "vk.hpp"
+#include "template_descriptors_vk.hpp"
 
 namespace Tempeh::GPU
 {
@@ -41,8 +43,8 @@ namespace Tempeh::GPU
         VkQueue cmd_queue;
         u32 queue_family_index;
         std::vector<JobItemVK> job_list;
-        u32 read_pointer = 0;
-        u32 write_pointer = 0;
+        size_t read_pointer = 0;
+        size_t write_pointer = 0;
 
         JobQueueVK(VkDevice vk_device, VkQueue cmd_queue, u32 queue_family_index) :
             device(vk_device),
@@ -62,8 +64,8 @@ namespace Tempeh::GPU
 
         JobItemVK& enqueue_job()
         {
-            u32 current_job = write_pointer;
-            u32 job_incr = write_pointer + 1;
+            size_t current_job = write_pointer;
+            size_t job_incr = write_pointer + 1;
 
             if (job_incr > job_list.size() && job_list.size() < max_job) {
                 job_list.emplace_back(device, queue_family_index);
@@ -79,7 +81,10 @@ namespace Tempeh::GPU
 
     struct DeviceVK : public Device
     {
-        static constexpr size_t max_cmd_buffers = 16;
+        static constexpr u32 max_resources = 2048;
+        using StorageImageTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, max_resources>;
+        using SampledImageTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, max_resources>;
+        using SamplerTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_SAMPLER, max_resources>;
 
         VkInstance m_instance;
         VkPhysicalDevice m_physical_device;
@@ -93,8 +98,14 @@ namespace Tempeh::GPU
         std::vector<VkSurfaceFormatKHR> m_surface_formats;
         std::vector<VkPresentModeKHR> m_present_modes;
 
+        // Template descriptors for copying descriptors
+        std::optional<StorageImageTemplateDescriptors> m_storage_image_template_descriptors;
+        std::optional<SampledImageTemplateDescriptors> m_sampled_image_template_descriptors;
+        std::optional<SamplerTemplateDescriptors> m_sampler_template_descriptors;
+
         std::unique_ptr<JobQueueVK> m_job_queue;
-        VkCommandBuffer m_current_cmd_buffer;
+        VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
+        bool m_is_recording_command = false;
 
         DeviceVK(
             VkInstance instance,
@@ -112,12 +123,14 @@ namespace Tempeh::GPU
 
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
+        RefDeviceResult<Framebuffer> create_framebuffer(const FramebufferDesc& desc) override final;
+        RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
 
         void begin_cmd() override final;
+        void bind_texture(u32 slot, const Util::Ref<Texture>& texture) override final;
         void end_cmd() override final;
 
-        std::pair<bool, bool> is_format_supported_for_texture(VkFormat format, VkFormatFeatureFlags features) const;
-        bool is_format_supported_for_buffer(VkFormat format) const;
+        std::pair<bool, bool> is_texture_format_supported(VkFormat format, VkFormatFeatureFlags features) const;
 
         void wait_idle();
 

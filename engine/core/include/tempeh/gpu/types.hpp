@@ -18,6 +18,13 @@ namespace Tempeh::GPU
         GLES3
     };
 
+    enum class DeviceSelection : u8
+    {
+        Auto,
+        PreferHighPerformance,
+        PreferLowPower
+    };
+
     enum class MemoryUsage : u8
     {
         Default,
@@ -53,9 +60,11 @@ namespace Tempeh::GPU
 
     enum class TextureFormat : u8
     {
+        RGBA_8_8_8_8_Sint,
         RGBA_8_8_8_8_Uint,
         RGBA_8_8_8_8_Unorm,
         RGBA_8_8_8_8_Srgb,
+        BGRA_8_8_8_8_Sint,
         BGRA_8_8_8_8_Uint,
         BGRA_8_8_8_8_Unorm,
         BGRA_8_8_8_8_Srgb,
@@ -88,21 +97,6 @@ namespace Tempeh::GPU
         Float4
     };
 
-    struct CommandUsage
-    {
-        enum
-        {
-            Graphics                = bit(0),
-            Compute                 = bit(1),
-            Copy                    = bit(2),
-
-            GraphicsAndCompute      = Graphics | Compute,
-            GraphicsAndCopy         = Graphics | Copy,
-            ComputeAndCopy          = Compute | Copy,
-            All                     = Graphics | Compute | Copy
-        };
-    };
-
     enum class DeviceErrorCode : u8
     {
         Ok,
@@ -110,6 +104,7 @@ namespace Tempeh::GPU
         InvalidArgs,
         OutOfHostMemory,
         OutOfDeviceMemory,
+        OutOfRange,
         BackendNotSupported,
         SurfacePresentationNotSupported,
         FormatNotSupported,
@@ -120,6 +115,13 @@ namespace Tempeh::GPU
 
     template<typename T>
     using DeviceResult = Util::Result<T, DeviceErrorCode>;
+
+    struct DeviceLimits
+    {
+        u32                 maxTextureDimension1D;
+        u32                 maxTextureDimension2D;
+        u32                 maxTextureDimension3D;
+    };
 
     struct SurfaceDesc
     {
@@ -151,6 +153,16 @@ namespace Tempeh::GPU
         BufferUsageFlags    usage;
         MemoryUsage         memory_usage;
         u32                 size;
+    };
+
+    struct FramebufferDesc
+    {
+
+    };
+
+    struct RenderPassDesc
+    {
+
     };
 }
 

@@ -18,7 +18,8 @@ namespace Tempeh::GPU
         virtual void swap_buffer() = 0;
         virtual void resize(u32 width, u32 height) = 0;
 
-        const SurfaceDesc& get_desc() const;
+        u32 num_images() const { return m_desc.num_images; }
+        const SurfaceDesc& get_desc() const { return m_desc; };
 
     protected:
         SurfaceDesc m_desc;
