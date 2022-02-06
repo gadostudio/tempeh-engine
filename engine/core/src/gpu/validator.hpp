@@ -15,7 +15,7 @@ namespace Tempeh::GPU
             case TextureType::TextureArray1D: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_1d) {
                     LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_1d.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
                 
                 break;
@@ -24,12 +24,12 @@ namespace Tempeh::GPU
             case TextureType::TextureArray2D: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_2d) {
                     LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_2d.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.height < 1 || desc.height > limits.max_texture_dimension_2d) {
                     LOG_ERROR("Texture height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_2d.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 break;
@@ -38,12 +38,12 @@ namespace Tempeh::GPU
             case TextureType::TextureArrayCube: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_cube) {
                     LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_cube.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.height < 1 || desc.height > limits.max_texture_dimension_cube) {
                     LOG_ERROR("Texture height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_cube.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 break;
@@ -51,17 +51,17 @@ namespace Tempeh::GPU
             case TextureType::Texture3D: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_3d) {
                     LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.height < 1 || desc.height > limits.max_texture_dimension_3d) {
                     LOG_ERROR("Texture height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.depth < 1 || desc.depth > limits.max_texture_dimension_3d) {
                     LOG_ERROR("Texture depth must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
-                    err = true;
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 break;
@@ -69,27 +69,27 @@ namespace Tempeh::GPU
         }
         
         if (desc.mip_levels < 1) {
-            LOG_ERROR("Texture mipmap levels (mip_levels) must be greater than 0.");
-            err = true;
+            LOG_ERROR("Failed to create: mip_levels must be greater than 0.");
+            return DeviceErrorCode::InvalidArgs;
         }
 
         switch (desc.type) {
             case TextureType::TextureCube: {
                 if (desc.array_layers != 6) {
-                    LOG_ERROR("Texture array layers must be 6.");
-                    err = true;
+                    LOG_ERROR("Failed to create texture: array_layers must be 6.");
+                    return DeviceErrorCode::InvalidArgs;
                 }
                 break;
             }
             case TextureType::TextureArrayCube: {
                 if (desc.array_layers % 6 != 0) {
-                    LOG_ERROR("Texture array layers must be a multiple of 6.");
-                    err = true;
+                    LOG_ERROR("Failed to create texture: array_layers must be a multiple of 6.");
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.array_layers < 1 && desc.array_layers > limits.max_texture_array_layers) {
-                    LOG_ERROR("Texture array layers must be greater than 0 and less than or equal to DeviceLimits::max_texture_array_layers.");
-                    err = true;
+                    LOG_ERROR("Failed to create texture: array_layers must be greater than 0 and less than or equal to DeviceLimits::max_texture_array_layers.");
+                    return DeviceErrorCode::InvalidArgs;
                 }
 
                 break;
@@ -97,8 +97,8 @@ namespace Tempeh::GPU
             case TextureType::TextureArray1D:
             case TextureType::TextureArray2D: {
                 if (desc.array_layers < 1 && desc.array_layers > limits.max_texture_array_layers) {
-                    LOG_ERROR("Texture array layers must be greater than 0 and less than or equal to DeviceLimits::max_texture_array_layers.");
-                    err = true;
+                    LOG_ERROR("Failed to create texture: array_layers must be greater than 0 and less than or equal to DeviceLimits::max_texture_array_layers.");
+                    return DeviceErrorCode::InvalidArgs;
                 }
                 break;
             }
@@ -114,12 +114,8 @@ namespace Tempeh::GPU
             case 16:
                 break;
             default:
-                LOG_ERROR("Number of texture samples must be either 1, 2, 4, 8, or 16 samples.");
-                err = true;
-        }
-
-        if (err) {
-            return DeviceErrorCode::InvalidArgs;
+                LOG_ERROR("Failed to create texture: number of texture samples (num_samples) must be either 1, 2, 4, 8, or 16 samples.");
+                return DeviceErrorCode::InvalidArgs;
         }
 
         return DeviceErrorCode::Ok;

@@ -146,7 +146,7 @@ namespace Tempeh::GPU
         void set_blend_constants(float r, float g, float b, float a) override final;
         void set_blend_constants(float color[4]) override final;
         void set_stencil_ref(u32 reference) override final;
-        
+
         void end_render_pass() override final;
         
         void end_cmd() override final;

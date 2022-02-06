@@ -188,6 +188,7 @@ namespace Tempeh::GPU
         image_info.tiling =
             is_optimal ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
 
+        /*
         VkImageFormatProperties image_format_properties;
 
         VkResult result = vkGetPhysicalDeviceImageFormatProperties(
@@ -207,6 +208,7 @@ namespace Tempeh::GPU
             LOG_ERROR("Failed to create texture: too many mipmap levels.");
             return DeviceErrorCode::InvalidArgs;
         }
+        */
 
         // Create image
         image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -259,7 +261,7 @@ namespace Tempeh::GPU
         alloc_info.requiredFlags = required_flags;
         alloc_info.preferredFlags = preferred_flags;
 
-        result = vmaCreateImage(
+        VkResult result = vmaCreateImage(
             m_allocator, &image_info, &alloc_info,
             &image, &allocation, nullptr);
 
@@ -305,8 +307,7 @@ namespace Tempeh::GPU
 
         VkDescriptorSet storage_template_descriptor = VK_NULL_HANDLE;
 
-        if (bit_match(desc.usage, TextureUsage::StorageWrite) ||
-            bit_match(desc.usage, TextureUsage::StorageRead))
+        if (bit_match(desc.usage, TextureUsage::Storage))
         {
             storage_template_descriptor = m_storage_image_template_descriptors.value().allocate_set();
             
@@ -532,8 +533,8 @@ namespace Tempeh::GPU
 
     void DeviceVK::set_viewport(float x, float y, float width, float height, float min_depth, float max_depth)
     {
-        if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
 
@@ -542,8 +543,8 @@ namespace Tempeh::GPU
 
     void DeviceVK::set_scissor_rect(u32 x, u32 y, u32 width, u32 height)
     {
-        if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
 
@@ -552,8 +553,8 @@ namespace Tempeh::GPU
 
     void DeviceVK::set_blend_constants(float r, float g, float b, float a)
     {
-        if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
 
@@ -566,8 +567,8 @@ namespace Tempeh::GPU
 
     void DeviceVK::set_blend_constants(float color[4])
     {
-        if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
 
@@ -576,8 +577,8 @@ namespace Tempeh::GPU
 
     void DeviceVK::set_stencil_ref(u32 reference)
     {
-        if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
 
@@ -586,8 +587,8 @@ namespace Tempeh::GPU
 
     void DeviceVK::end_render_pass()
     {
-        if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
     }

@@ -54,26 +54,98 @@ namespace Tempeh::GPU
             Sampled                 = bit(2),
             ColorAttachment         = bit(3),
             DepthStencilAttachment  = bit(4),
-            StorageRead             = bit(5),
-            StorageWrite            = bit(6),
+            Storage                 = bit(5),
         };
     };
 
     enum class TextureFormat : u8
     {
+        R_8_Sint,
+        R_8_Uint,
+        R_8_Snorm,
+        R_8_Unorm,
+
+        RG_8_8_Sint,
+        RG_8_8_Uint,
+        RG_8_8_Snorm,
+        RG_8_8_Unorm,
+        
         RGBA_8_8_8_8_Sint,
         RGBA_8_8_8_8_Uint,
+        RGBA_8_8_8_8_Snorm,
         RGBA_8_8_8_8_Unorm,
         RGBA_8_8_8_8_Srgb,
+
         BGRA_8_8_8_8_Sint,
         BGRA_8_8_8_8_Uint,
+        BGRA_8_8_8_8_Snorm,
         BGRA_8_8_8_8_Unorm,
         BGRA_8_8_8_8_Srgb,
+        
+        R_16_Uint,
+        R_16_Sint,
+        R_16_Float,
+
+        RG_16_16_Uint,
+        RG_16_16_Sint,
+        RG_16_16_Float,
+
+        RGBA_16_16_16_16_Uint,
+        RGBA_16_16_16_16_Sint,
+        RGBA_16_16_16_16_Float,
+
+        R_32_Uint,
+        R_32_Sint,
+        R_32_Float,
+
+        RG_32_32_Uint,
+        RG_32_32_Sint,
         RG_32_32_Float,
+        
+        RGBA_32_32_32_32_Uint,
+        RGBA_32_32_32_32_Sint,
         RGBA_32_32_32_32_Float,
 
+        // Packed formats
+        RGB_11_11_10_Unorm,
+        RGBA_10_10_10_2_Unorm,
+        RGB_9_9_9_E_5_Float,
+
+        // Compressed formats
+        BC1_RGB_Srgb,
+        BC1_RGB_Unorm,
+        BC1_RGBA_Srgb,
+        BC1_RGBA_Unorm,
+        BC2_Srgb,
+        BC2_Unorm,
+        BC3_Srgb,
+        BC3_Unorm,
+        BC4_Snorm,
+        BC4_Unorm,
+        BC5_Snorm,
+        BC5_Unorm,
+        BC6H_Float,
+        BC6H_Ufloat,
+        BC7_Srgb,
+        BC7_Unorm,
+
+        EAC_R_11_Snorm,
+        EAC_R_11_Unorm,
+        EAC_RG_11_11_Snorm,
+        EAC_RG_11_11_Unorm,
+
+        ETC2_RGB_8_8_8_Srgb,
+        ETC2_RGB_8_8_8_Unorm,
+        ETC2_RGBA_8_8_8_1_Srgb,
+        ETC2_RGBA_8_8_8_1_Unorm,
+        ETC2_RGBA_8_8_8_8_Srgb,
+        ETC2_RGBA_8_8_8_8_Unorm,
+
+        // Depth formats
         D_16_Unorm,
-        D_32_Float
+        D_24_Unorm_S_8_Uint,
+        D_32_Float,
+        D_32_Float_S_8_Uint,
     };
 
     struct BufferUsage
@@ -85,8 +157,8 @@ namespace Tempeh::GPU
             Uniform                 = bit(2),
             Index                   = bit(3),
             Vertex                  = bit(4),
-            StorageRead             = bit(5),
-            StorageWrite            = bit(6),
+            Storage                 = bit(5),
+            Indirect                = bit(6),
         };
     };
 
@@ -173,14 +245,33 @@ namespace Tempeh::GPU
         MemoryUsage         memory_usage;
         u32                 size;
 
+        inline static constexpr BufferDesc uniform_buffer(
+            u32 size,
+            bool copyable = false,
+            MemoryUsage memory_usage = MemoryUsage::Upload,
+            const char* label = "Tempeh Uniform Buffer")
+        {
+            BufferUsageFlags usage =
+                copyable ? BufferUsage::Uniform | BufferUsage::TransferDst | BufferUsage::TransferSrc
+                         : BufferUsage::Uniform | BufferUsage::TransferDst;
+
+            return BufferDesc {
+                label,
+                usage,
+                memory_usage,
+                size
+            };
+        }
+
         inline static constexpr BufferDesc index_buffer(
             u32 size,
+            bool copyable = false,
             MemoryUsage memory_usage = MemoryUsage::Default,
             const char* label = "Tempeh Index Buffer")
         {
-            BufferUsageFlags usage = (memory_usage == MemoryUsage::Default)
-                ? BufferUsage::Index | BufferUsage::TransferDst
-                : BufferUsage::Index;
+            BufferUsageFlags usage =
+                copyable ? BufferUsage::Index | BufferUsage::TransferDst | BufferUsage::TransferSrc
+                         : BufferUsage::Index | BufferUsage::TransferDst;
 
             return BufferDesc {
                 label,
@@ -192,17 +283,66 @@ namespace Tempeh::GPU
 
         inline static constexpr BufferDesc vertex_buffer(
             u32 size,
+            bool copyable = false,
             MemoryUsage memory_usage = MemoryUsage::Default,
             const char* label = "Tempeh Vertex Buffer")
         {
-            BufferUsageFlags usage = (memory_usage == MemoryUsage::Default)
-                ? BufferUsage::Vertex | BufferUsage::TransferDst
-                : BufferUsage::Vertex;
+            BufferUsageFlags usage =
+                copyable ? BufferUsage::Vertex | BufferUsage::TransferDst | BufferUsage::TransferSrc
+                         : BufferUsage::Vertex | BufferUsage::TransferDst;
 
             return BufferDesc {
                 label,
                 usage,
                 memory_usage,
+                size
+            };
+        }
+
+        inline static constexpr BufferDesc dynamic_vertex_buffer(
+            u32 size,
+            bool copyable = false,
+            const char* label = "Tempeh Dynamic Vertex Buffer")
+        {
+            return vertex_buffer(size, copyable, MemoryUsage::Upload, label);
+        }
+
+        inline static constexpr BufferDesc storage_buffer(
+            u32 size,
+            bool copyable = false,
+            MemoryUsage memory_usage = MemoryUsage::Upload,
+            const char* label = "Tempeh Uniform Buffer")
+        {
+            BufferUsageFlags usage =
+                copyable ? BufferUsage::Storage | BufferUsage::TransferDst | BufferUsage::TransferSrc
+                         : BufferUsage::Storage | BufferUsage::TransferDst;
+
+            return BufferDesc {
+                label,
+                usage,
+                memory_usage,
+                size
+            };
+        }
+
+        inline static constexpr BufferDesc staging_buffer(
+            u32 size, const char* label = "Tempeh Staging Buffer")
+        {
+            return BufferDesc {
+                label,
+                BufferUsage::TransferSrc,
+                MemoryUsage::Upload,
+                size
+            };
+        }
+
+        inline static constexpr BufferDesc readback_buffer(
+            u32 size, const char* label = "Tempeh Staging Buffer")
+        {
+            return BufferDesc {
+                label,
+                BufferUsage::TransferDst,
+                MemoryUsage::Readback,
                 size
             };
         }

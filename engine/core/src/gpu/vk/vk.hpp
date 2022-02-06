@@ -116,14 +116,14 @@ namespace Tempeh::GPU
             (bit_match(usage, TextureUsage::Sampled) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0) |
             (bit_match(usage, TextureUsage::ColorAttachment) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0) |
             (bit_match(usage, TextureUsage::DepthStencilAttachment) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : 0) |
-            (bit_match(usage, TextureUsage::StorageRead) || bit_match(usage, TextureUsage::StorageWrite) ? VK_IMAGE_USAGE_STORAGE_BIT : 0);
+            (bit_match(usage, TextureUsage::Storage) ? VK_IMAGE_USAGE_STORAGE_BIT : 0);
 
         VkFormatFeatureFlags format_features = (bit_match(usage, TextureUsage::TransferSrc) ? VK_FORMAT_FEATURE_TRANSFER_SRC_BIT : 0) |
             (bit_match(usage, TextureUsage::TransferDst) ? VK_FORMAT_FEATURE_TRANSFER_DST_BIT : 0) |
             (bit_match(usage, TextureUsage::Sampled) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT : 0) |
             (bit_match(usage, TextureUsage::ColorAttachment) ? VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT : 0) |
             (bit_match(usage, TextureUsage::DepthStencilAttachment) ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT : 0) |
-            (bit_match(usage, TextureUsage::StorageRead) || bit_match(usage, TextureUsage::StorageWrite) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : 0);
+            (bit_match(usage, TextureUsage::Storage) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : 0);
 
         return std::make_pair(image_usage, format_features);
     }
@@ -135,7 +135,8 @@ namespace Tempeh::GPU
             (bit_match(usage, BufferUsage::Uniform) ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 0) |
             (bit_match(usage, BufferUsage::Index) ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : 0) |
             (bit_match(usage, BufferUsage::Vertex) ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT : 0) |
-            (bit_match(usage, BufferUsage::StorageRead) || bit_match(usage, BufferUsage::StorageWrite) ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0);
+            (bit_match(usage, BufferUsage::Storage) ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0) |
+            (bit_match(usage, BufferUsage::Indirect) ? VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT : 0);
     }
 
     static inline constexpr VkAttachmentLoadOp convert_load_op_vk(LoadOp load_op)
