@@ -47,6 +47,20 @@ namespace Tempeh::GPU
 
         ~BufferVK();
     };
+
+    struct RenderPassVK : public RenderPass
+    {
+        DeviceVK*           m_parent_device;
+        VkRenderPass        m_render_pass;
+        u32                 m_last_job_usage = 0;
+
+        RenderPassVK(
+            DeviceVK* parent_device,
+            VkRenderPass render_pass,
+            const RenderPassDesc& desc);
+
+        ~RenderPassVK();
+    };
 }
 
 #endif

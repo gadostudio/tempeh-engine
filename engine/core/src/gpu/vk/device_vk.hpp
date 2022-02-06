@@ -11,6 +11,7 @@
 #include "backend_vk.hpp"
 #include "vk.hpp"
 #include "template_descriptors_vk.hpp"
+#include "command_state_vk.hpp"
 
 namespace Tempeh::GPU
 {
@@ -93,10 +94,12 @@ namespace Tempeh::GPU
         VmaAllocator m_allocator;
         VkQueue m_main_queue = VK_NULL_HANDLE;
         u32 m_main_queue_index;
+        DeviceLimits m_device_limits{};
 
         std::mutex m_sync_mutex;
         std::vector<VkSurfaceFormatKHR> m_surface_formats;
         std::vector<VkPresentModeKHR> m_present_modes;
+        std::unordered_map<VkFormat, VkFormatProperties> m_format_properties;
 
         // Template descriptors for copying descriptors
         std::optional<StorageImageTemplateDescriptors> m_storage_image_template_descriptors;
@@ -105,7 +108,9 @@ namespace Tempeh::GPU
 
         std::unique_ptr<JobQueueVK> m_job_queue;
         VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
+        CommandStateVK m_cmd_states;
         bool m_is_recording_command = false;
+        bool m_is_inside_render_pass = false;
 
         DeviceVK(
             VkInstance instance,
@@ -123,11 +128,27 @@ namespace Tempeh::GPU
 
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
-        RefDeviceResult<Framebuffer> create_framebuffer(const FramebufferDesc& desc) override final;
         RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
+        RefDeviceResult<Framebuffer> create_framebuffer(const FramebufferDesc& desc) override final;
+        RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;
 
         void begin_cmd() override final;
         void bind_texture(u32 slot, const Util::Ref<Texture>& texture) override final;
+        
+        void begin_render_pass(
+            const Util::Ref<RenderPass>& render_pass,
+            const Util::Ref<Framebuffer>& framebuffer,
+            std::initializer_list<ClearValue> clear_values,
+            ClearValue depth_stencil_clear_value = {}) override final;
+
+        void set_viewport(float x, float y, float width, float height, float min_depth, float max_depth) override final;
+        void set_scissor_rect(u32 x, u32 y, u32 width, u32 height) override final;
+        void set_blend_constants(float r, float g, float b, float a) override final;
+        void set_blend_constants(float color[4]) override final;
+        void set_stencil_ref(u32 reference) override final;
+        
+        void end_render_pass() override final;
+        
         void end_cmd() override final;
 
         std::pair<bool, bool> is_texture_format_supported(VkFormat format, VkFormatFeatureFlags features) const;

@@ -4,8 +4,8 @@
 #include <string_view>
 
 // Used when a variable is unused. Prevents compiler warning.
-#define TEMPEH_UNREFERENCED(x) \
-    ((void)(x))
+#define TEMPEH_UNREFERENCED(...) \
+    ((void)(__VA_ARGS__))
 
 template <typename T = u8>
 static inline constexpr T bit(T n)

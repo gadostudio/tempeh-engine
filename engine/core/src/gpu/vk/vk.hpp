@@ -46,6 +46,15 @@ namespace Tempeh::GPU
         }
     }
 
+    static inline void convert_device_limits(const VkPhysicalDeviceLimits& limits, DeviceLimits& device_limits)
+    {
+        device_limits.max_texture_dimension_1d = limits.maxImageDimension1D;
+        device_limits.max_texture_dimension_2d = limits.maxImageDimension2D;
+        device_limits.max_texture_dimension_3d = limits.maxImageDimension3D;
+        device_limits.max_texture_dimension_cube = limits.maxImageDimensionCube;
+        device_limits.max_texture_array_layers = limits.maxImageArrayLayers;
+    }
+
     static inline constexpr VkFormat convert_format_vk(TextureFormat format)
     {
         switch (format) {
@@ -65,6 +74,10 @@ namespace Tempeh::GPU
                 return VK_FORMAT_R32G32_SFLOAT;
             case TextureFormat::RGBA_32_32_32_32_Float:
                 return VK_FORMAT_R32G32B32A32_SFLOAT;
+            case TextureFormat::D_16_Unorm:
+                return VK_FORMAT_D16_UNORM;
+            case TextureFormat::D_32_Float:
+                return VK_FORMAT_D32_SFLOAT;
             default:
                 break;
         }
@@ -123,6 +136,26 @@ namespace Tempeh::GPU
             (bit_match(usage, BufferUsage::Index) ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : 0) |
             (bit_match(usage, BufferUsage::Vertex) ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT : 0) |
             (bit_match(usage, BufferUsage::StorageRead) || bit_match(usage, BufferUsage::StorageWrite) ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0);
+    }
+
+    static inline constexpr VkAttachmentLoadOp convert_load_op_vk(LoadOp load_op)
+    {
+        switch (load_op) {
+            case LoadOp::Load:
+                return VK_ATTACHMENT_LOAD_OP_LOAD;
+            default:
+                return VK_ATTACHMENT_LOAD_OP_CLEAR;
+        }
+    }
+
+    static inline constexpr VkAttachmentStoreOp convert_store_op_vk(StoreOp store_op)
+    {
+        switch (store_op) {
+            case StoreOp::Store:
+                return VK_ATTACHMENT_STORE_OP_STORE;
+            default:
+                return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
     }
 
     static inline bool find_layer(

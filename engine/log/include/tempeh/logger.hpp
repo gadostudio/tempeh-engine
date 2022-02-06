@@ -1,3 +1,6 @@
+#ifndef _TEMPEH_LOGGER_HPP
+#define _TEMPEH_LOGGER_HPP
+
 #include <vector>
 #include <memory>
 #include <spdlog/async_logger.h>
@@ -5,7 +8,6 @@
 
 namespace Tempeh::Log
 {
-
 	class Logger
 	{
 	protected:
@@ -15,7 +17,6 @@ namespace Tempeh::Log
 		static void init(const char* logger_name);
 		static std::shared_ptr<spdlog::logger>& get_logger() { return logger; }
 	};
-
 }
 
 #define LOG_TRACE(...)    ::Tempeh::Log::Logger::get_logger()->trace(__VA_ARGS__)
@@ -23,3 +24,5 @@ namespace Tempeh::Log
 #define LOG_WARN(...)     ::Tempeh::Log::Logger::get_logger()->warn(__VA_ARGS__)
 #define LOG_ERROR(...)    ::Tempeh::Log::Logger::get_logger()->error(__VA_ARGS__)
 #define LOG_CRITICAL(...) ::Tempeh::Log::Logger::get_logger()->critical(__VA_ARGS__)
+
+#endif _TEMPEH_LOGGER_HPP

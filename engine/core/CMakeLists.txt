@@ -11,6 +11,8 @@ set(TEMPEH_USE_VULKAN_BACKEND ON)
 if (TEMPEH_USE_VULKAN_BACKEND)
     set(TEMPEH_GPU_VULKAN_BACKEND_SOURCES
         "src/gpu/vk/backend_vk.hpp"
+        "src/gpu/vk/command_state_vk.hpp"
+        "src/gpu/vk/command_state_vk.cpp"
         "src/gpu/vk/device_vk.cpp"
         "src/gpu/vk/device_vk.hpp"
         "src/gpu/vk/resource_vk.cpp"
@@ -31,7 +33,8 @@ set(TEMPEH_GPU_SOURCES
     "include/tempeh/gpu/surface.hpp"
     "include/tempeh/gpu/types.hpp"
 
-    "src/gpu/instance.cpp")
+    "src/gpu/instance.cpp"
+    "src/gpu/validator.hpp")
 
 add_library(tempeh_core STATIC
 	"include/tempeh/window/window.hpp"

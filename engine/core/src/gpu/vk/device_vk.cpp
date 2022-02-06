@@ -2,8 +2,10 @@
 #include "surface_vk.hpp"
 #include "resource_vk.hpp"
 #include "vk.hpp"
+#include "../validator.hpp"
 
 #include <tempeh/common/os.hpp>
+#include <tempeh/logger.hpp>
 #include <map>
 #include <GLFW/glfw3.h>
 
@@ -48,6 +50,14 @@ namespace Tempeh::GPU
     {
         vkGetDeviceQueue(m_device, m_main_queue_index, 0, &m_main_queue);
 
+        convert_device_limits(m_properties.limits, m_device_limits);
+
+        for (u32 fmt = VK_FORMAT_UNDEFINED; fmt < VK_FORMAT_ASTC_12x12_SRGB_BLOCK; fmt++) {
+            VkFormatProperties format_properties;
+            vkGetPhysicalDeviceFormatProperties(m_physical_device, (VkFormat)fmt, &format_properties);
+            m_format_properties.insert_or_assign((VkFormat)fmt, format_properties);
+        }
+        
         m_storage_image_template_descriptors.emplace(m_device);
         m_sampled_image_template_descriptors.emplace(m_device);
         m_sampler_template_descriptors.emplace(m_device);
@@ -76,9 +86,11 @@ namespace Tempeh::GPU
         VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
 
         if (desc.num_images > 3) {
+            LOG_ERROR("Too many surface images (max: 3)");
             return DeviceErrorCode::InvalidArgs;
         }
 
+        // Create window surface
         switch (window->get_window_type()) {
             case Window::WindowType::GLFW:
                 vk_surface = create_surface_glfw(window);
@@ -118,11 +130,10 @@ namespace Tempeh::GPU
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
         std::lock_guard lock(m_sync_mutex);
+        DeviceErrorCode err = validate_texture_desc(desc, m_device_limits);
 
-        if (desc.width < 1 || desc.height < 1 || desc.depth < 1 ||
-            desc.mip_levels < 1 || desc.array_layers < 1 || desc.num_samples < 1)
-        {
-            return DeviceErrorCode::OutOfRange;
+        if (err != DeviceErrorCode::Ok) {
+            return err;
         }
 
         VkImageCreateInfo image_info{};
@@ -135,6 +146,7 @@ namespace Tempeh::GPU
         auto [format_supported, is_optimal] = is_texture_format_supported(format, format_feature);
 
         if (!format_supported) {
+            LOG_ERROR("Failed to create texture: unsupported texture format.");
             return DeviceErrorCode::FormatNotSupported;
         }
 
@@ -173,21 +185,67 @@ namespace Tempeh::GPU
                 break;
         }
 
+        image_info.tiling =
+            is_optimal ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
+
+        VkImageFormatProperties image_format_properties;
+
+        VkResult result = vkGetPhysicalDeviceImageFormatProperties(
+            m_physical_device, format, image_type,
+            image_info.tiling, usage, create_flags,
+            &image_format_properties);
+
+        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+            LOG_ERROR("Failed to create texture: unsupported texture format.");
+            return DeviceErrorCode::FormatNotSupported;
+        }
+        else if (VULKAN_FAILED(result)) {
+            return DeviceErrorCode::InternalError;
+        }
+
+        if (desc.mip_levels > image_format_properties.maxMipLevels) {
+            LOG_ERROR("Failed to create texture: too many mipmap levels.");
+            return DeviceErrorCode::InvalidArgs;
+        }
+
         // Create image
         image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         image_info.flags = create_flags;
         image_info.imageType = image_type;
         image_info.format = format;
         image_info.extent.width = desc.width;
-        image_info.extent.height = desc.height;
-        image_info.extent.depth = desc.depth;
-        image_info.mipLevels = desc.mip_levels;
-        image_info.arrayLayers = desc.array_layers;
-        image_info.samples = (VkSampleCountFlagBits)desc.num_samples;
-        
-        image_info.tiling =
-            is_optimal ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
 
+        if (image_type == VK_IMAGE_TYPE_2D ||
+            image_type == VK_IMAGE_TYPE_3D)
+        {
+            image_info.extent.height = desc.height;
+        }
+        else {
+            image_info.extent.height = 1;
+        }
+
+        if (image_type == VK_IMAGE_TYPE_3D) {
+            image_info.extent.depth = desc.depth;
+        }
+        else {
+            image_info.extent.depth = 1;
+        }
+
+        image_info.mipLevels = desc.mip_levels;
+
+        switch (desc.type) {
+            case TextureType::TextureArray1D:
+            case TextureType::TextureArray2D:
+            case TextureType::TextureCube:
+            case TextureType::TextureArrayCube:
+                image_info.arrayLayers = desc.array_layers;
+                break;
+            default:
+                image_info.arrayLayers = 1;
+                break;
+        }
+
+        image_info.samples = (VkSampleCountFlagBits)desc.num_samples;
         image_info.usage = usage;
         image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -201,7 +259,7 @@ namespace Tempeh::GPU
         alloc_info.requiredFlags = required_flags;
         alloc_info.preferredFlags = preferred_flags;
 
-        VkResult result = vmaCreateImage(
+        result = vmaCreateImage(
             m_allocator, &image_info, &alloc_info,
             &image, &allocation, nullptr);
 
@@ -333,13 +391,93 @@ namespace Tempeh::GPU
         return std::make_shared<BufferVK>(this, buffer, allocation, desc);
     }
 
+    RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
+    {
+        std::lock_guard lock(m_sync_mutex);
+
+        static constexpr size_t max_color_attachments = 8;
+        static constexpr size_t max_att_descriptions = max_color_attachments * 2 + 1;
+        std::array<VkAttachmentDescription, max_att_descriptions> att_descriptions{};
+        std::array<VkAttachmentReference, max_color_attachments> color_attachments{};
+        std::array<VkAttachmentReference, max_color_attachments> resolve_attachments{};
+        VkAttachmentReference depth_stencil_attachment{};
+        u32 num_attachment_used = 0;
+
+        if (desc.color_attachments.size() > max_color_attachments) {
+            LOG_ERROR("Failed to create render pass: too many attachments. (max: {})", max_color_attachments);
+            return DeviceErrorCode::InvalidArgs;
+        }
+        
+        u32 color_attachment_index = 0;
+        for (const auto& color_att_desc : desc.color_attachments) {
+            VkAttachmentDescription& att = att_descriptions[num_attachment_used];
+            VkAttachmentReference& ref = color_attachments[color_attachment_index];
+
+            ref.attachment = num_attachment_used;
+            ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            att.format = convert_format_vk(color_att_desc->format);
+            att.samples = (VkSampleCountFlagBits)desc.num_samples;
+            att.loadOp = convert_load_op_vk(color_att_desc->load_op);
+            att.storeOp = convert_store_op_vk(color_att_desc->store_op);
+            att.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            att.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            color_attachment_index++;
+            num_attachment_used++;
+        }
+
+        // Add depth stencil attachment if available
+        if (desc.depth_stencil_attachment != nullptr) {
+            VkAttachmentDescription& att = att_descriptions[num_attachment_used];
+
+            depth_stencil_attachment.attachment = num_attachment_used;
+            depth_stencil_attachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            att.format = convert_format_vk(desc.depth_stencil_attachment->format);
+            att.samples = (VkSampleCountFlagBits)desc.num_samples;
+            att.loadOp = convert_load_op_vk(desc.depth_stencil_attachment->depth_load_op);
+            att.storeOp = convert_store_op_vk(desc.depth_stencil_attachment->depth_store_op);
+            att.stencilLoadOp = convert_load_op_vk(desc.depth_stencil_attachment->stencil_load_op);
+            att.stencilStoreOp = convert_store_op_vk(desc.depth_stencil_attachment->stencil_store_op);
+            att.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            att.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            num_attachment_used++;
+        }
+
+        VkSubpassDescription subpass_desc{};
+        subpass_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass_desc.colorAttachmentCount = color_attachment_index;
+        subpass_desc.pColorAttachments = color_attachments.data();
+
+        if (desc.depth_stencil_attachment != nullptr) {
+            subpass_desc.pDepthStencilAttachment = &depth_stencil_attachment;
+        }
+
+        VkRenderPassCreateInfo rp_info{};
+        rp_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        rp_info.attachmentCount = num_attachment_used;
+        rp_info.pAttachments = att_descriptions.data();
+        rp_info.subpassCount = 1;
+        rp_info.pSubpasses = &subpass_desc;
+
+        VkRenderPass render_pass;
+
+        if (VULKAN_FAILED(vkCreateRenderPass(m_device, &rp_info, nullptr, &render_pass))) {
+            return DeviceErrorCode::InternalError;
+        }
+
+        return std::make_shared<RenderPassVK>(this, render_pass, desc);
+    }
+
     RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const FramebufferDesc& desc)
     {
         TEMPEH_UNREFERENCED(desc);
         return DeviceErrorCode::Unimplemented;
     }
 
-    RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
+    RefDeviceResult<Sampler> DeviceVK::create_sampler(const SamplerDesc& desc)
     {
         TEMPEH_UNREFERENCED(desc);
         return DeviceErrorCode::Unimplemented;
@@ -348,31 +486,121 @@ namespace Tempeh::GPU
     void DeviceVK::begin_cmd()
     {
         if (m_is_recording_command) {
+            LOG_ERROR("Command list is currently being recorded!");
             return;
         }
 
         JobItemVK& job_item = m_job_queue->enqueue_job(); // Create new GPU job
 
-        job_item.wait(); // Wait previous submission on this job item
+        job_item.wait(); // Wait for previous submission on this job item
         job_item.destroy_pending_resources();
         m_current_cmd_buffer = job_item.begin();
+
         m_is_recording_command = true;
     }
 
     void DeviceVK::bind_texture(u32 slot, const Util::Ref<Texture>& texture)
     {
-        TEMPEH_UNREFERENCED(slot);
-        TEMPEH_UNREFERENCED(texture);
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        TEMPEH_UNREFERENCED(slot, texture);
+    }
+
+    void DeviceVK::begin_render_pass(
+        const Util::Ref<RenderPass>& render_pass,
+        const Util::Ref<Framebuffer>& framebuffer,
+        std::initializer_list<ClearValue> clear_values,
+        ClearValue depth_stencil_clear_value)
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        VkRenderPassBeginInfo begin_info{};
+
+        m_is_inside_render_pass = true;
+
+        // Reset states
+        m_cmd_states.set_default(0, 0);
+
+        TEMPEH_UNREFERENCED(render_pass, framebuffer, clear_values, depth_stencil_clear_value);
+    }
+
+    void DeviceVK::set_viewport(float x, float y, float width, float height, float min_depth, float max_depth)
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        m_cmd_states.set_viewport(x, y, width, height, min_depth, max_depth);
+    }
+
+    void DeviceVK::set_scissor_rect(u32 x, u32 y, u32 width, u32 height)
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        m_cmd_states.set_scissor_rect(x, y, width, height);
+    }
+
+    void DeviceVK::set_blend_constants(float r, float g, float b, float a)
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        float blend_constant[4] = {
+            r, g, b, a
+        };
+
+        m_cmd_states.set_blend_constants(blend_constant);
+    }
+
+    void DeviceVK::set_blend_constants(float color[4])
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        m_cmd_states.set_blend_constants(color);
+    }
+
+    void DeviceVK::set_stencil_ref(u32 reference)
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
+
+        m_cmd_states.set_stencil_ref(reference);
+    }
+
+    void DeviceVK::end_render_pass()
+    {
+        if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            return;
+        }
     }
 
     void DeviceVK::end_cmd()
     {
         if (!m_is_recording_command) {
+            LOG_ERROR("Attempting to finish invalid command list!");
             return;
         }
 
         vkEndCommandBuffer(m_current_cmd_buffer);
-        m_job_queue->dequeue_job(); // submit current job
+        m_job_queue->dequeue_job(); // submit the current command list
         m_is_recording_command = false;
     }
 
