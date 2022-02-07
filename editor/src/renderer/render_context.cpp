@@ -1,11 +1,11 @@
 #include "render_context.hpp"
 
 #include <dawn/webgpu_cpp.h>
-#include <dawn_native/DawnNative.h>
+#include <dawn/native/DawnNative.h>
 #include <tempeh/logger.hpp>
 #include <tempeh/common/util.hpp>
 #include <tempeh/common/os.hpp>
-#include <utils/BackendBinding.h>
+#include <dawn/utils/BackendBinding.h>
 //#include <utils/GLFWUtils.h>
 #if defined(TEMPEH_OS_WINDOWS)
 #    define GLFW_EXPOSE_NATIVE_WIN32
