@@ -4,10 +4,17 @@
 #include <tempeh/common/typedefs.hpp>
 #include <tempeh/common/util.hpp>
 #include <tempeh/util/result.hpp>
+#include <tempeh/util/ref_count.hpp>
 #include <initializer_list>
 
 namespace Tempeh::GPU
 {
+    class Device;
+    class Texture;
+    class Buffer;
+    class RenderPass;
+    class Framebuffer;
+
     using TextureUsageFlags = u32;
     using BufferUsageFlags = u32;
     using CommandUsageFlags = u32;
@@ -60,6 +67,7 @@ namespace Tempeh::GPU
 
     enum class TextureFormat : u8
     {
+        // Regular formats
         R_8_Sint,
         R_8_Uint,
         R_8_Snorm,
@@ -146,6 +154,8 @@ namespace Tempeh::GPU
         D_24_Unorm_S_8_Uint,
         D_32_Float,
         D_32_Float_S_8_Uint,
+
+        MaxFormats
     };
 
     struct BufferUsage
@@ -367,6 +377,7 @@ namespace Tempeh::GPU
 
     struct RenderPassDesc
     {
+        const char*                                         label;
         std::initializer_list<const ColorAttachmentDesc*>   color_attachments;
         const DepthStencilAttachmentDesc*                   depth_stencil_attachment;
         u32                                                 num_samples;
@@ -374,7 +385,9 @@ namespace Tempeh::GPU
     
     struct FramebufferDesc
     {
-
+        const char*                                 label;
+        std::initializer_list<Util::Ref<Texture>>   color_attachments;
+        Util::Ref<Texture>                          depth_stencil_attachment;
     };
 
     union ClearValue

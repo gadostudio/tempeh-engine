@@ -66,7 +66,7 @@ int main()
     render_pass_desc.depth_stencil_attachment = &ds_attachment;
     render_pass_desc.num_samples = 1;
 
-    //auto render_pass = device->create_render_pass(render_pass_desc);
+    auto render_pass = device->create_render_pass(render_pass_desc);
 
     while (!window->is_need_to_close()) {
         input_manager->clear();

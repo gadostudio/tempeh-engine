@@ -400,7 +400,7 @@ namespace Tempeh::GPU
         static constexpr size_t max_att_descriptions = max_color_attachments * 2 + 1;
         std::array<VkAttachmentDescription, max_att_descriptions> att_descriptions{};
         std::array<VkAttachmentReference, max_color_attachments> color_attachments{};
-        std::array<VkAttachmentReference, max_color_attachments> resolve_attachments{};
+        //std::array<VkAttachmentReference, max_color_attachments> resolve_attachments{};
         VkAttachmentReference depth_stencil_attachment{};
         u32 num_attachment_used = 0;
 
@@ -418,6 +418,17 @@ namespace Tempeh::GPU
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             att.format = convert_format_vk(color_att_desc->format);
+
+            auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
+
+            if (!supported) {
+                LOG_ERROR(
+                    "Failed to create render pass: the format in attachment #{} is not supported. "
+                    "The given format must support the color attachment feature (TextureFormatFeature::ColorAttachment).",
+                    color_attachment_index);
+                return DeviceErrorCode::FormatNotSupported;
+            }
+
             att.samples = (VkSampleCountFlagBits)desc.num_samples;
             att.loadOp = convert_load_op_vk(color_att_desc->load_op);
             att.storeOp = convert_store_op_vk(color_att_desc->store_op);
@@ -436,6 +447,16 @@ namespace Tempeh::GPU
             depth_stencil_attachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             att.format = convert_format_vk(desc.depth_stencil_attachment->format);
+
+            auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+            if (!supported) {
+                LOG_ERROR(
+                    "Failed to create render pass: the depth-stencil attachment format is not supported"
+                    "The given format must support the depth-stencil attachment feature (TextureFormatFeature::DepthStencilAttachment).");
+                return DeviceErrorCode::FormatNotSupported;
+            }
+
             att.samples = (VkSampleCountFlagBits)desc.num_samples;
             att.loadOp = convert_load_op_vk(desc.depth_stencil_attachment->depth_load_op);
             att.storeOp = convert_store_op_vk(desc.depth_stencil_attachment->depth_store_op);

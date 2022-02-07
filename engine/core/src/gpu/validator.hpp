@@ -14,7 +14,7 @@ namespace Tempeh::GPU
             case TextureType::Texture1D:
             case TextureType::TextureArray1D: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_1d) {
-                    LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_1d.");
+                    LOG_ERROR("Failed to create: width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_1d.");
                     return DeviceErrorCode::InvalidArgs;
                 }
                 
@@ -23,12 +23,12 @@ namespace Tempeh::GPU
             case TextureType::Texture2D: 
             case TextureType::TextureArray2D: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_2d) {
-                    LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_2d.");
+                    LOG_ERROR("Failed to create: width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_2d.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.height < 1 || desc.height > limits.max_texture_dimension_2d) {
-                    LOG_ERROR("Texture height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_2d.");
+                    LOG_ERROR("Failed to create: height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_2d.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
@@ -37,12 +37,12 @@ namespace Tempeh::GPU
             case TextureType::TextureCube:
             case TextureType::TextureArrayCube: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_cube) {
-                    LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_cube.");
+                    LOG_ERROR("Failed to create: width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_cube.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.height < 1 || desc.height > limits.max_texture_dimension_cube) {
-                    LOG_ERROR("Texture height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_cube.");
+                    LOG_ERROR("Failed to create: height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_cube.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
@@ -50,17 +50,17 @@ namespace Tempeh::GPU
             }
             case TextureType::Texture3D: {
                 if (desc.width < 1 || desc.width > limits.max_texture_dimension_3d) {
-                    LOG_ERROR("Texture width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
+                    LOG_ERROR("Failed to create: width must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.height < 1 || desc.height > limits.max_texture_dimension_3d) {
-                    LOG_ERROR("Texture height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
+                    LOG_ERROR("Failed to create: height must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
                 if (desc.depth < 1 || desc.depth > limits.max_texture_dimension_3d) {
-                    LOG_ERROR("Texture depth must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
+                    LOG_ERROR("Failed to create: depth must be greater than 0 and less than or equal to DeviceLimits::max_texture_dimension_3d.");
                     return DeviceErrorCode::InvalidArgs;
                 }
 
