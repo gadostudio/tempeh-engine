@@ -57,7 +57,7 @@ namespace Tempeh::GPU
             m_has_depth_stencil_attachment(desc.depth_stencil_attachment != nullptr),
             m_depth_stencil_attachment(m_has_depth_stencil_attachment ? *desc.depth_stencil_attachment : DepthStencilAttachmentDesc{}),
             m_num_samples(desc.num_samples),
-            m_num_color_attachments(static_cast<u32>(desc.color_attachments.size()))
+            m_num_color_attachments(desc.color_attachments.size())
         {
             std::transform(
                 desc.color_attachments.begin(),
@@ -83,14 +83,14 @@ namespace Tempeh::GPU
 
         bool has_depth_stencil_attachment() const { return m_has_depth_stencil_attachment; }
         u32 num_samples() const { return m_num_samples; }
-        u32 num_color_attachments() const { return m_num_color_attachments; }
+        size_t num_color_attachments() const { return m_num_color_attachments; }
 
     protected:
         std::array<ColorAttachmentDesc, max_color_attachments> m_color_attachments;
         DepthStencilAttachmentDesc m_depth_stencil_attachment;
         bool m_has_depth_stencil_attachment;
         u32 m_num_samples;
-        u32 m_num_color_attachments;
+        size_t m_num_color_attachments;
     };
 
     class GraphicsPipeline

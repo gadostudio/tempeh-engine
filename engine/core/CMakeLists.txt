@@ -34,6 +34,7 @@ set(TEMPEH_GPU_SOURCES
     "include/tempeh/gpu/types.hpp"
 
     "src/gpu/instance.cpp"
+    "src/gpu/validator.cpp"
     "src/gpu/validator.hpp")
 
 add_library(tempeh_core STATIC

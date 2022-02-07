@@ -129,7 +129,7 @@ namespace Tempeh::GPU
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
         RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
-        RefDeviceResult<Framebuffer> create_framebuffer(const FramebufferDesc& desc) override final;
+        RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc) override final;
         RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;
 
         void begin_cmd() override final;

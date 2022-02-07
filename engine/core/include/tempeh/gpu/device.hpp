@@ -39,7 +39,9 @@ namespace Tempeh::GPU
         virtual RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) = 0;
 
         [[nodiscard]]
-        virtual RefDeviceResult<Framebuffer> create_framebuffer(const FramebufferDesc& desc) = 0;
+        virtual RefDeviceResult<Framebuffer> create_framebuffer(
+            const Util::Ref<RenderPass>& render_pass,
+            const FramebufferDesc& desc) = 0;
 
         [[nodiscard]]
         virtual RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) = 0;

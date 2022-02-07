@@ -207,6 +207,8 @@ namespace Tempeh::GPU
         BackendNotSupported,
         SurfacePresentationNotSupported,
         FormatNotSupported,
+        IncompatibleFormat,
+        IncompatibleResourceUsage,
         MemoryUsageNotSupported,
         Unimplemented,
         InternalError
@@ -383,11 +385,19 @@ namespace Tempeh::GPU
         u32                                                 num_samples;
     };
     
+    struct FramebufferAttachment
+    {
+        Util::Ref<Texture>                                  color_attachment;
+        Util::Ref<Texture>                                  resolve_attachment;
+    };
+
     struct FramebufferDesc
     {
-        const char*                                 label;
-        std::initializer_list<Util::Ref<Texture>>   color_attachments;
-        Util::Ref<Texture>                          depth_stencil_attachment;
+        const char*                                         label;
+        std::initializer_list<FramebufferAttachment>        color_attachments;
+        Util::Ref<Texture>                                  depth_stencil_attachment;
+        u32                                                 width;
+        u32                                                 height;
     };
 
     union ClearValue

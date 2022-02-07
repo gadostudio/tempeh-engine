@@ -32,7 +32,7 @@ int main()
     GPU::TextureDesc texture_desc;
     texture_desc.label = "Test texture";
     texture_desc.type = GPU::TextureType::Texture2D;
-    texture_desc.usage = GPU::TextureUsage::Sampled;
+    texture_desc.usage = GPU::TextureUsage::Sampled | GPU::TextureUsage::ColorAttachment;
     texture_desc.memory_usage = GPU::MemoryUsage::Default;
     texture_desc.format = GPU::TextureFormat::RGBA_8_8_8_8_Unorm;
     texture_desc.width = 256;
@@ -58,15 +58,26 @@ int main()
     ds_attachment.stencil_store_op = GPU::StoreOp::Store;
 
     GPU::RenderPassDesc render_pass_desc{};
-    
     render_pass_desc.color_attachments = {
         &color_attachment
     };
 
-    render_pass_desc.depth_stencil_attachment = &ds_attachment;
     render_pass_desc.num_samples = 1;
 
     auto render_pass = device->create_render_pass(render_pass_desc);
+
+    GPU::FramebufferDesc framebuffer_desc{};
+
+    framebuffer_desc.color_attachments = {
+        GPU::FramebufferAttachment {
+            texture.value(),
+            nullptr
+        }
+    };
+
+
+
+    auto framebuffer = device->create_framebuffer(render_pass.value(), framebuffer_desc);
 
     while (!window->is_need_to_close()) {
         input_manager->clear();

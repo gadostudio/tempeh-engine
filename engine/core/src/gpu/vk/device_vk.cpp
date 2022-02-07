@@ -130,11 +130,8 @@ namespace Tempeh::GPU
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
         std::lock_guard lock(m_sync_mutex);
-        DeviceErrorCode err = validate_texture_desc(desc, m_device_limits);
 
-        if (err != DeviceErrorCode::Ok) {
-            return err;
-        }
+        TEMPEH_GPU_VALIDATE(prevalidate_texture_desc(desc, m_device_limits));
 
         VkImageCreateInfo image_info{};
         VkImageType image_type = VK_IMAGE_TYPE_1D;
@@ -396,7 +393,7 @@ namespace Tempeh::GPU
     {
         std::lock_guard lock(m_sync_mutex);
 
-        static constexpr size_t max_color_attachments = 8;
+        static constexpr size_t max_color_attachments = RenderPass::max_color_attachments;
         static constexpr size_t max_att_descriptions = max_color_attachments * 2 + 1;
         std::array<VkAttachmentDescription, max_att_descriptions> att_descriptions{};
         std::array<VkAttachmentReference, max_color_attachments> color_attachments{};
@@ -452,7 +449,7 @@ namespace Tempeh::GPU
 
             if (!supported) {
                 LOG_ERROR(
-                    "Failed to create render pass: the depth-stencil attachment format is not supported"
+                    "Failed to create render pass: the depth-stencil attachment format is not supported. "
                     "The given format must support the depth-stencil attachment feature (TextureFormatFeature::DepthStencilAttachment).");
                 return DeviceErrorCode::FormatNotSupported;
             }
@@ -493,9 +490,38 @@ namespace Tempeh::GPU
         return std::make_shared<RenderPassVK>(this, render_pass, desc);
     }
 
-    RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const FramebufferDesc& desc)
+    RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc)
     {
-        TEMPEH_UNREFERENCED(desc);
+        std::lock_guard lock(m_sync_mutex);
+
+        TEMPEH_GPU_VALIDATE(prevalidate_framebuffer_desc(render_pass, desc));
+
+        static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1;
+        std::array<VkImageView, max_att_descriptions> image_views;
+        Util::Ref<RenderPassVK> vk_render_pass = std::static_pointer_cast<RenderPassVK>(render_pass);
+        u32 num_attachments_used = 0;
+        
+        for (const auto& fb_att : desc.color_attachments) {
+            TEMPEH_GPU_VALIDATE(validate_framebuffer_attachment(num_attachments_used, render_pass, fb_att));
+            auto&& vk_texture = std::static_pointer_cast<TextureVK>(fb_att.color_attachment);
+            image_views[num_attachments_used] = vk_texture->m_image_view;
+            num_attachments_used++;
+        }
+
+        if (desc.depth_stencil_attachment) {
+            auto&& vk_texture = std::static_pointer_cast<TextureVK>(desc.depth_stencil_attachment);
+            image_views[num_attachments_used++] = vk_texture->m_image_view;
+        }
+
+        VkFramebufferCreateInfo fb_info{};
+        fb_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        fb_info.renderPass = std::static_pointer_cast<RenderPassVK>(render_pass)->m_render_pass;
+        fb_info.attachmentCount = num_attachments_used;
+        fb_info.pAttachments = image_views.data();
+        fb_info.width = desc.width;
+        fb_info.height = desc.height;
+        fb_info.layers = 1;
+
         return DeviceErrorCode::Unimplemented;
     }
 
