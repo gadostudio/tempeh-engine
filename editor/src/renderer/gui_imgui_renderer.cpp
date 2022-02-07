@@ -7,7 +7,7 @@
 #include <tempeh/logger.hpp>
 
 #include "render_context.hpp"
-#include <utils/WGPUHelpers.h>
+#include <dawn/utils/WGPUHelpers.h>
 #include "../gui/window_menubar_panel.hpp"
 #include <imgui_internal.h>
 
