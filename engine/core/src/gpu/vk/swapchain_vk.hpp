@@ -1,7 +1,7 @@
-#ifndef _TEMPEH_GPU_SURFACE_VK_HPP
-#define _TEMPEH_GPU_SURFACE_VK_HPP
+#ifndef _TEMPEH_GPU_SWAP_CHAIN_VK_HPP
+#define _TEMPEH_GPU_SWAP_CHAIN_VK_HPP
 
-#include <tempeh/gpu/surface.hpp>
+#include <tempeh/gpu/swapchain.hpp>
 #include <tempeh/window/window.hpp>
 #include "backend_vk.hpp"
 #include "vk.hpp"
@@ -10,7 +10,7 @@
 
 namespace Tempeh::GPU
 {
-    struct SurfaceVK : public Surface
+    struct SwapChainVK : public SwapChain
     {
         static constexpr size_t max_images = 3;
 
@@ -31,13 +31,13 @@ namespace Tempeh::GPU
         u32                                     m_image_index = 0;
         bool                                    m_initialized = false;
 
-        SurfaceVK(VkSurfaceKHR surface, DeviceVK* device);
-        virtual ~SurfaceVK();
+        SwapChainVK(VkSurfaceKHR surface, DeviceVK* device);
+        virtual ~SwapChainVK();
 
         void swap_buffer() override final;
         void resize(u32 width, u32 height) override final;
 
-        DeviceErrorCode initialize(const SurfaceDesc& desc);
+        DeviceErrorCode initialize(const SwapChainDesc& desc);
 
         void attach_window(const std::shared_ptr<Window::Window>& window);
         void destroy_objs(u32 num_images);

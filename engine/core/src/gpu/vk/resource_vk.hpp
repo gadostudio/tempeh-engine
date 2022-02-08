@@ -61,6 +61,23 @@ namespace Tempeh::GPU
 
         ~RenderPassVK();
     };
+
+    struct FramebufferVK : public Framebuffer
+    {
+        using ColorAttachments = std::array<Util::Ref<TextureVK>, RenderPass::max_color_attachments>;
+
+        DeviceVK*               m_parent_device;
+        VkFramebuffer           m_framebuffer;
+        u32                     m_last_job_usage = 0;
+
+        FramebufferVK(
+            DeviceVK* parent_device,
+            const Util::Ref<RenderPass>& parent_render_pass,
+            VkFramebuffer framebuffer,
+            const FramebufferDesc& desc);
+
+        ~FramebufferVK();
+    };
 }
 
 #endif

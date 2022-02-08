@@ -86,6 +86,8 @@ namespace Tempeh::GPU
         using StorageImageTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, max_resources>;
         using SampledImageTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, max_resources>;
         using SamplerTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_SAMPLER, max_resources>;
+        using UniformBufferTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, max_resources>;
+        using StorageBufferTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, max_resources>;
 
         VkInstance m_instance;
         VkPhysicalDevice m_physical_device;
@@ -122,12 +124,13 @@ namespace Tempeh::GPU
 
         ~DeviceVK();
 
-        RefDeviceResult<Surface> create_surface(
+        RefDeviceResult<SwapChain> create_swapchain(
             const std::shared_ptr<Window::Window>& window,
-            const SurfaceDesc& desc) override final;
+            const SwapChainDesc& desc) override final;
 
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
+        RefDeviceResult<BufferView> create_buffer_view(const BufferViewDesc& desc) override final;
         RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
         RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc) override final;
         RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;
@@ -136,7 +139,6 @@ namespace Tempeh::GPU
         void bind_texture(u32 slot, const Util::Ref<Texture>& texture) override final;
         
         void begin_render_pass(
-            const Util::Ref<RenderPass>& render_pass,
             const Util::Ref<Framebuffer>& framebuffer,
             std::initializer_list<ClearValue> clear_values,
             ClearValue depth_stencil_clear_value = {}) override final;

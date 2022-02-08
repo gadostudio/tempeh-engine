@@ -1,5 +1,5 @@
 #include "device_vk.hpp"
-#include "surface_vk.hpp"
+#include "swapchain_vk.hpp"
 #include "resource_vk.hpp"
 #include "vk.hpp"
 #include "../validator.hpp"
@@ -78,9 +78,9 @@ namespace Tempeh::GPU
         vkDestroyInstance(m_instance, nullptr);
     }
 
-    RefDeviceResult<Surface> DeviceVK::create_surface(
+    RefDeviceResult<SwapChain> DeviceVK::create_swapchain(
         const std::shared_ptr<Window::Window>& window,
-        const SurfaceDesc& desc)
+        const SwapChainDesc& desc)
     {
         std::lock_guard lock(m_sync_mutex);
         VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
@@ -113,7 +113,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::SurfacePresentationNotSupported;
         }
 
-        SurfaceVK* surface = new SurfaceVK(vk_surface, this);
+        SwapChainVK* surface = new SwapChainVK(vk_surface, this);
         DeviceErrorCode err = surface->initialize(desc);
 
         if (err != DeviceErrorCode::Ok) {
@@ -124,7 +124,7 @@ namespace Tempeh::GPU
 
         surface->attach_window(window);
 
-        return Util::Ref<Surface>(surface);
+        return Util::Ref<SwapChain>(surface);
     }
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
@@ -266,7 +266,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::MemoryUsageNotSupported;
         }
         else if (VULKAN_FAILED(result)) {
-            return DeviceErrorCode::InternalError;
+            return parse_error_vk(result);
         }
 
         // Create image view
@@ -297,7 +297,7 @@ namespace Tempeh::GPU
 
         if (VULKAN_FAILED(result)) {
             vmaDestroyImage(m_allocator, image, allocation);
-            return DeviceErrorCode::InternalError;
+            return parse_error_vk(result);
         }
 
         // Prepare template descriptor
@@ -387,6 +387,12 @@ namespace Tempeh::GPU
         }
 
         return std::make_shared<BufferVK>(this, buffer, allocation, desc);
+    }
+
+    RefDeviceResult<BufferView> DeviceVK::create_buffer_view(const BufferViewDesc& desc)
+    {
+        TEMPEH_UNREFERENCED(desc);
+        return DeviceErrorCode::Unimplemented;
     }
 
     RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
@@ -497,8 +503,7 @@ namespace Tempeh::GPU
         TEMPEH_GPU_VALIDATE(prevalidate_framebuffer_desc(render_pass, desc));
 
         static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1;
-        std::array<VkImageView, max_att_descriptions> image_views;
-        Util::Ref<RenderPassVK> vk_render_pass = std::static_pointer_cast<RenderPassVK>(render_pass);
+        std::array<VkImageView, max_att_descriptions> image_views{};
         u32 num_attachments_used = 0;
         
         for (const auto& fb_att : desc.color_attachments) {
@@ -522,7 +527,14 @@ namespace Tempeh::GPU
         fb_info.height = desc.height;
         fb_info.layers = 1;
 
-        return DeviceErrorCode::Unimplemented;
+        VkFramebuffer framebuffer;
+        VkResult result = vkCreateFramebuffer(m_device, &fb_info, nullptr, &framebuffer);
+
+        if (VULKAN_FAILED(result)) {
+            return parse_error_vk(result);
+        }
+
+        return std::make_shared<FramebufferVK>(this, render_pass, framebuffer, desc);
     }
 
     RefDeviceResult<Sampler> DeviceVK::create_sampler(const SamplerDesc& desc)
@@ -558,24 +570,78 @@ namespace Tempeh::GPU
     }
 
     void DeviceVK::begin_render_pass(
-        const Util::Ref<RenderPass>& render_pass,
         const Util::Ref<Framebuffer>& framebuffer,
         std::initializer_list<ClearValue> clear_values,
         ClearValue depth_stencil_clear_value)
     {
+        static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1;
+
         if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to record a command without beginning the command list!");
+            LOG_ERROR("Cannot begin render pass when the command list has not began.");
             return;
         }
 
+        const Util::Ref<RenderPass>& render_pass = framebuffer->parent_render_pass();
+        std::array<VkClearValue, max_att_descriptions> vk_clear_values;
         VkRenderPassBeginInfo begin_info{};
 
-        m_is_inside_render_pass = true;
+        // We don't use std::shared_pointer_cast here because it causes the reference counter to increments.
+        begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        begin_info.renderPass = static_cast<RenderPassVK*>(render_pass.get())->m_render_pass;
+        begin_info.framebuffer = static_cast<FramebufferVK*>(framebuffer.get())->m_framebuffer;
+        begin_info.renderArea.offset.x = 0;
+        begin_info.renderArea.offset.y = 0;
+        begin_info.renderArea.extent.width = framebuffer->width();
+        begin_info.renderArea.extent.height = framebuffer->height();
+
+        u32 color_att_index = 0;
+        for (const auto& clear_value : clear_values) {
+            const ColorAttachmentDesc& att_desc = render_pass->color_attachment_desc(color_att_index);
+            VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
+
+            switch (att_desc.component_type) {
+                case TextureComponentType::Float:
+                    vk_value.color.float32[0] = clear_value.color.float32[0];
+                    vk_value.color.float32[1] = clear_value.color.float32[1];
+                    vk_value.color.float32[2] = clear_value.color.float32[2];
+                    vk_value.color.float32[3] = clear_value.color.float32[3];
+                    break;
+                case TextureComponentType::Uint:
+                    vk_value.color.uint32[0] = clear_value.color.uint32[0];
+                    vk_value.color.uint32[1] = clear_value.color.uint32[1];
+                    vk_value.color.uint32[2] = clear_value.color.uint32[2];
+                    vk_value.color.uint32[3] = clear_value.color.uint32[3];
+                    break;
+                case TextureComponentType::Sint:
+                    vk_value.color.int32[0] = clear_value.color.int32[0];
+                    vk_value.color.int32[1] = clear_value.color.int32[1];
+                    vk_value.color.int32[2] = clear_value.color.int32[2];
+                    vk_value.color.int32[3] = clear_value.color.int32[3];
+                    break;
+            }
+
+            color_att_index++;
+            begin_info.clearValueCount++;
+        }
+
+        if (framebuffer->has_depth_stencil_attachment()) {
+            VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
+
+            vk_value.depthStencil.depth = depth_stencil_clear_value.depth_stencil.depth;
+            vk_value.depthStencil.stencil = depth_stencil_clear_value.depth_stencil.stencil;
+
+            begin_info.clearValueCount++;
+        }
+        
+        begin_info.pClearValues = vk_clear_values.data();
+
+        // BEGIN!
+        vkCmdBeginRenderPass(m_current_cmd_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
         // Reset states
         m_cmd_states.set_default(0, 0);
 
-        TEMPEH_UNREFERENCED(render_pass, framebuffer, clear_values, depth_stencil_clear_value);
+        m_is_inside_render_pass = true;
     }
 
     void DeviceVK::set_viewport(float x, float y, float width, float height, float min_depth, float max_depth)
@@ -638,12 +704,25 @@ namespace Tempeh::GPU
             LOG_ERROR("Attempting to record a graphics command outside render pass!");
             return;
         }
+
+        vkCmdEndRenderPass(m_current_cmd_buffer);
+        m_is_inside_render_pass = false;
     }
 
     void DeviceVK::end_cmd()
     {
+        if (m_is_inside_render_pass) {
+            LOG_WARN(
+                "Attempting to finish the command list when render pass is not yet finished. "
+                "Did you forget to call end_render_pass?");
+
+            vkCmdEndRenderPass(m_current_cmd_buffer);
+        }
+
         if (!m_is_recording_command) {
-            LOG_ERROR("Attempting to finish invalid command list!");
+            LOG_ERROR(
+                "Cannot finish and submit the command list when the command list hasn't began. "
+                "Did you forget to call begin_cmd?");
             return;
         }
 

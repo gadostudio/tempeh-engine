@@ -12,6 +12,7 @@ namespace Tempeh::GPU
     class Device;
     class Texture;
     class Buffer;
+    class BufferView;
     class RenderPass;
     class Framebuffer;
 
@@ -90,28 +91,28 @@ namespace Tempeh::GPU
         BGRA_8_8_8_8_Unorm,
         BGRA_8_8_8_8_Srgb,
         
-        R_16_Uint,
         R_16_Sint,
+        R_16_Uint,
         R_16_Float,
 
-        RG_16_16_Uint,
         RG_16_16_Sint,
+        RG_16_16_Uint,
         RG_16_16_Float,
 
-        RGBA_16_16_16_16_Uint,
         RGBA_16_16_16_16_Sint,
+        RGBA_16_16_16_16_Uint,
         RGBA_16_16_16_16_Float,
 
-        R_32_Uint,
         R_32_Sint,
+        R_32_Uint,
         R_32_Float,
 
-        RG_32_32_Uint,
         RG_32_32_Sint,
+        RG_32_32_Uint,
         RG_32_32_Float,
         
-        RGBA_32_32_32_32_Uint,
         RGBA_32_32_32_32_Sint,
+        RGBA_32_32_32_32_Uint,
         RGBA_32_32_32_32_Float,
 
         // Packed formats
@@ -156,6 +157,13 @@ namespace Tempeh::GPU
         D_32_Float_S_8_Uint,
 
         MaxFormats
+    };
+
+    enum class TextureComponentType
+    {
+        Float,
+        Uint,
+        Sint
     };
 
     struct BufferUsage
@@ -219,46 +227,46 @@ namespace Tempeh::GPU
 
     struct DeviceLimits
     {
-        u32                 max_texture_dimension_1d;
-        u32                 max_texture_dimension_2d;
-        u32                 max_texture_dimension_3d;
-        u32                 max_texture_dimension_cube;
-        u32                 max_texture_array_layers;
+        u32                     max_texture_dimension_1d;
+        u32                     max_texture_dimension_2d;
+        u32                     max_texture_dimension_3d;
+        u32                     max_texture_dimension_cube;
+        u32                     max_texture_array_layers;
     };
 
-    struct SurfaceDesc
+    struct SwapChainDesc
     {
-        TextureFormat       format;
-        u32                 width;
-        u32                 height;
-        u32                 num_images;
-        bool                vsync;
+        TextureFormat           format;
+        u32                     width;
+        u32                     height;
+        u32                     num_images;
+        bool                    vsync;
     };
 
     struct TextureDesc
     {
-        const char*         label;
-        TextureType         type;
-        TextureUsageFlags   usage;
-        MemoryUsage         memory_usage;
-        TextureFormat       format;
-        u32                 width;
-        u32                 height;
-        u32                 depth;
-        u32                 mip_levels;
-        u32                 array_layers;
-        u32                 num_samples;
+        const char*             label;
+        TextureType             type;
+        TextureUsageFlags       usage;
+        MemoryUsage             memory_usage;
+        TextureFormat           format;
+        u32                     width;
+        u32                     height;
+        u32                     depth;
+        u32                     mip_levels;
+        u32                     array_layers;
+        u32                     num_samples;
     };
 
     struct BufferDesc
     {
-        const char*         label;
-        BufferUsageFlags    usage;
-        MemoryUsage         memory_usage;
-        u32                 size;
+        const char*             label;
+        BufferUsageFlags        usage;
+        MemoryUsage             memory_usage;
+        size_t                  size;
 
         inline static constexpr BufferDesc uniform_buffer(
-            u32 size,
+            size_t size,
             bool copyable = false,
             MemoryUsage memory_usage = MemoryUsage::Upload,
             const char* label = "Tempeh Uniform Buffer")
@@ -276,7 +284,7 @@ namespace Tempeh::GPU
         }
 
         inline static constexpr BufferDesc index_buffer(
-            u32 size,
+            size_t size,
             bool copyable = false,
             MemoryUsage memory_usage = MemoryUsage::Default,
             const char* label = "Tempeh Index Buffer")
@@ -294,7 +302,7 @@ namespace Tempeh::GPU
         }
 
         inline static constexpr BufferDesc vertex_buffer(
-            u32 size,
+            size_t size,
             bool copyable = false,
             MemoryUsage memory_usage = MemoryUsage::Default,
             const char* label = "Tempeh Vertex Buffer")
@@ -312,7 +320,7 @@ namespace Tempeh::GPU
         }
 
         inline static constexpr BufferDesc dynamic_vertex_buffer(
-            u32 size,
+            size_t size,
             bool copyable = false,
             const char* label = "Tempeh Dynamic Vertex Buffer")
         {
@@ -320,7 +328,7 @@ namespace Tempeh::GPU
         }
 
         inline static constexpr BufferDesc storage_buffer(
-            u32 size,
+            size_t size,
             bool copyable = false,
             MemoryUsage memory_usage = MemoryUsage::Upload,
             const char* label = "Tempeh Uniform Buffer")
@@ -338,7 +346,7 @@ namespace Tempeh::GPU
         }
 
         inline static constexpr BufferDesc staging_buffer(
-            u32 size, const char* label = "Tempeh Staging Buffer")
+            size_t size, const char* label = "Tempeh Staging Buffer")
         {
             return BufferDesc {
                 label,
@@ -349,7 +357,7 @@ namespace Tempeh::GPU
         }
 
         inline static constexpr BufferDesc readback_buffer(
-            u32 size, const char* label = "Tempeh Staging Buffer")
+            size_t size, const char* label = "Tempeh Readback Buffer")
         {
             return BufferDesc {
                 label,
@@ -360,21 +368,29 @@ namespace Tempeh::GPU
         }
     };
 
+    struct BufferViewDesc
+    {
+        const char*             label;
+        size_t                  offset;
+        size_t                  range;
+    };
+
     struct ColorAttachmentDesc
     {
-        TextureFormat       format;
-        LoadOp              load_op;
-        StoreOp             store_op;
-        bool                resolve;
+        TextureFormat           format;
+        TextureComponentType    component_type;
+        LoadOp                  load_op;
+        StoreOp                 store_op;
+        bool                    resolve;
     };
 
     struct DepthStencilAttachmentDesc
     {
-        TextureFormat       format;
-        LoadOp              depth_load_op;
-        StoreOp             depth_store_op;
-        LoadOp              stencil_load_op;
-        StoreOp             stencil_store_op;
+        TextureFormat           format;
+        LoadOp                  depth_load_op;
+        StoreOp                 depth_store_op;
+        LoadOp                  stencil_load_op;
+        StoreOp                 stencil_store_op;
     };
 
     struct RenderPassDesc
@@ -407,22 +423,22 @@ namespace Tempeh::GPU
             float           float32[4];
             u32             uint32[4];
             i32             int32[4];
-        } color_value;
+        } color;
 
         struct
         {
             float           depth;
             u32             stencil;
-        } depth_stencil_value;
+        } depth_stencil;
 
         inline static constexpr ClearValue color_float(float r, float g, float b, float a)
         {
             ClearValue ret{};
 
-            ret.color_value.float32[0] = r;
-            ret.color_value.float32[1] = g;
-            ret.color_value.float32[2] = b;
-            ret.color_value.float32[3] = a;
+            ret.color.float32[0] = r;
+            ret.color.float32[1] = g;
+            ret.color.float32[2] = b;
+            ret.color.float32[3] = a;
 
             return ret;
         }
@@ -431,10 +447,10 @@ namespace Tempeh::GPU
         {
             ClearValue ret{};
 
-            ret.color_value.float32[0] = color[0];
-            ret.color_value.float32[1] = color[1];
-            ret.color_value.float32[2] = color[2];
-            ret.color_value.float32[3] = color[3];
+            ret.color.float32[0] = color[0];
+            ret.color.float32[1] = color[1];
+            ret.color.float32[2] = color[2];
+            ret.color.float32[3] = color[3];
 
             return ret;
         }
@@ -443,10 +459,10 @@ namespace Tempeh::GPU
         {
             ClearValue ret{};
 
-            ret.color_value.uint32[0] = r;
-            ret.color_value.uint32[1] = g;
-            ret.color_value.uint32[2] = b;
-            ret.color_value.uint32[3] = a;
+            ret.color.uint32[0] = r;
+            ret.color.uint32[1] = g;
+            ret.color.uint32[2] = b;
+            ret.color.uint32[3] = a;
 
             return ret;
         }
@@ -455,20 +471,20 @@ namespace Tempeh::GPU
         {
             ClearValue ret{};
 
-            ret.color_value.int32[0] = r;
-            ret.color_value.int32[1] = g;
-            ret.color_value.int32[2] = b;
-            ret.color_value.int32[3] = a;
+            ret.color.int32[0] = r;
+            ret.color.int32[1] = g;
+            ret.color.int32[2] = b;
+            ret.color.int32[3] = a;
 
             return ret;
         }
 
-        inline static constexpr ClearValue depth_stencil(float depth, u32 stencil)
+        inline static constexpr ClearValue depth_stencil_value(float depth, u32 stencil)
         {
             ClearValue ret{};
 
-            ret.depth_stencil_value.depth = depth;
-            ret.depth_stencil_value.stencil = stencil;
+            ret.depth_stencil.depth = depth;
+            ret.depth_stencil.stencil = stencil;
 
             return ret;
         }

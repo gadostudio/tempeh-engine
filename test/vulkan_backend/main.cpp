@@ -20,7 +20,7 @@ int main()
         Window::Window::create(Window::WindowSize{640, 480}, input_manager);
 
     auto size = window->get_window_size();
-    GPU::SurfaceDesc surface_desc;
+    GPU::SwapChainDesc surface_desc;
     surface_desc.format = GPU::TextureFormat::BGRA_8_8_8_8_Unorm;
     surface_desc.width = size.width;
     surface_desc.height = size.height;
@@ -67,7 +67,6 @@ int main()
     auto render_pass = device->create_render_pass(render_pass_desc);
 
     GPU::FramebufferDesc framebuffer_desc{};
-
     framebuffer_desc.color_attachments = {
         GPU::FramebufferAttachment {
             texture.value(),
@@ -75,17 +74,23 @@ int main()
         }
     };
 
-
+    framebuffer_desc.width = 256;
+    framebuffer_desc.height = 256;
 
     auto framebuffer = device->create_framebuffer(render_pass.value(), framebuffer_desc);
+
+    auto clear_values = {
+        GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f)
+    };
+
+    device->begin_cmd();
+    device->begin_render_pass(framebuffer.value(), clear_values);
+    device->end_render_pass();
+    device->end_cmd();
 
     while (!window->is_need_to_close()) {
         input_manager->clear();
         window->process_input(*input_manager);
-
-        device->begin_cmd();
-        device->set_blend_constants(0.0f, 0.0f, 0.0f, 1.0f);
-        device->end_cmd();
 
         surface->swap_buffer();
     }

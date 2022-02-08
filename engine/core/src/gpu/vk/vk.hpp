@@ -58,26 +58,97 @@ namespace Tempeh::GPU
     static inline constexpr VkFormat convert_format_vk(TextureFormat format)
     {
         switch (format) {
+            case TextureFormat::R_8_Sint:
+                return VK_FORMAT_R8_SINT;
+            case TextureFormat::R_8_Uint:
+                return VK_FORMAT_R8_UINT;
+            case TextureFormat::R_8_Snorm:
+                return VK_FORMAT_R8_SNORM;
+            case TextureFormat::R_8_Unorm:
+                return VK_FORMAT_R8_UNORM;
+
+            case TextureFormat::RG_8_8_Sint:
+                return VK_FORMAT_R8G8_SINT;
+            case TextureFormat::RG_8_8_Uint:
+                return VK_FORMAT_R8G8_UINT;
+            case TextureFormat::RG_8_8_Snorm:
+                return VK_FORMAT_R8G8_SNORM;
+            case TextureFormat::RG_8_8_Unorm:
+                return VK_FORMAT_R8G8_UNORM;
+
+            case TextureFormat::RGBA_8_8_8_8_Sint:
+                return VK_FORMAT_R8G8B8A8_SINT;
             case TextureFormat::RGBA_8_8_8_8_Uint:
                 return VK_FORMAT_R8G8B8A8_UINT;
+            case TextureFormat::RGBA_8_8_8_8_Snorm:
+                return VK_FORMAT_R8G8B8A8_SNORM;
             case TextureFormat::RGBA_8_8_8_8_Unorm:
                 return VK_FORMAT_R8G8B8A8_UNORM;
             case TextureFormat::RGBA_8_8_8_8_Srgb:
                 return VK_FORMAT_R8G8B8A8_SRGB;
+
+            case TextureFormat::BGRA_8_8_8_8_Sint:
+                return VK_FORMAT_B8G8R8A8_SINT;
             case TextureFormat::BGRA_8_8_8_8_Uint:
                 return VK_FORMAT_B8G8R8A8_UINT;
+            case TextureFormat::BGRA_8_8_8_8_Snorm:
+                return VK_FORMAT_B8G8R8A8_UNORM;
             case TextureFormat::BGRA_8_8_8_8_Unorm:
                 return VK_FORMAT_B8G8R8A8_UNORM;
             case TextureFormat::BGRA_8_8_8_8_Srgb:
                 return VK_FORMAT_B8G8R8A8_SRGB;
+
+            case TextureFormat::R_16_Sint:
+                return VK_FORMAT_R16_SINT;
+            case TextureFormat::R_16_Uint:
+                return VK_FORMAT_R16_UINT;
+            case TextureFormat::R_16_Float:
+                return VK_FORMAT_R16_SFLOAT;
+            
+            case TextureFormat::RG_16_16_Sint:
+                return VK_FORMAT_R16G16_SINT;
+            case TextureFormat::RG_16_16_Uint:
+                return VK_FORMAT_R16G16_UINT;
+            case TextureFormat::RG_16_16_Float:
+                return VK_FORMAT_R16G16_SFLOAT;
+
+            case TextureFormat::RGBA_16_16_16_16_Sint:
+                return VK_FORMAT_R16G16B16A16_SINT;
+            case TextureFormat::RGBA_16_16_16_16_Uint:
+                return VK_FORMAT_R16G16B16A16_UINT;
+            case TextureFormat::RGBA_16_16_16_16_Float:
+                return VK_FORMAT_R16G16B16A16_SFLOAT;
+
+            case TextureFormat::R_32_Sint:
+                return VK_FORMAT_R32_SINT;
+            case TextureFormat::R_32_Uint:
+                return VK_FORMAT_R32_UINT;
+            case TextureFormat::R_32_Float:
+                return VK_FORMAT_R32_SFLOAT;
+
+            case TextureFormat::RG_32_32_Sint:
+                return VK_FORMAT_R32G32_SINT;
+            case TextureFormat::RG_32_32_Uint:
+                return VK_FORMAT_R32G32_UINT;
             case TextureFormat::RG_32_32_Float:
                 return VK_FORMAT_R32G32_SFLOAT;
+
+            case TextureFormat::RGBA_32_32_32_32_Sint:
+                return VK_FORMAT_R32G32B32A32_SINT;
+            case TextureFormat::RGBA_32_32_32_32_Uint:
+                return VK_FORMAT_R32G32B32A32_UINT;
             case TextureFormat::RGBA_32_32_32_32_Float:
                 return VK_FORMAT_R32G32B32A32_SFLOAT;
+
             case TextureFormat::D_16_Unorm:
                 return VK_FORMAT_D16_UNORM;
+            case TextureFormat::D_24_Unorm_S_8_Uint:
+                return VK_FORMAT_D24_UNORM_S8_UINT;
             case TextureFormat::D_32_Float:
                 return VK_FORMAT_D32_SFLOAT;
+            case TextureFormat::D_32_Float_S_8_Uint:
+                return VK_FORMAT_D32_SFLOAT_S8_UINT;
+
             default:
                 break;
         }

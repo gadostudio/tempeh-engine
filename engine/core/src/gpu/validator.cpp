@@ -6,8 +6,6 @@ namespace Tempeh::GPU
 {
     DeviceErrorCode prevalidate_texture_desc(const TextureDesc& desc, const DeviceLimits& limits)
     {
-        bool err = false;
-
         switch (desc.type) {
             case TextureType::Texture1D:
             case TextureType::TextureArray1D: {
@@ -116,7 +114,7 @@ namespace Tempeh::GPU
             case 16:
                 break;
             default:
-                LOG_ERROR("Failed to create texture: number of texture samples (num_samples) must be either 1, 2, 4, 8, or 16 samples.");
+                LOG_ERROR("Failed to create texture: the number of texture samples (num_samples) must be either 1, 2, 4, 8, or 16 samples.");
                 return DeviceErrorCode::InvalidArgs;
         }
 
@@ -154,7 +152,7 @@ namespace Tempeh::GPU
         bool ds_specified = render_pass->has_depth_stencil_attachment();
 
         if (ds_specified && !desc.depth_stencil_attachment) {
-            LOG_ERROR("Failed to create framebuffer: depth-stencil attachment is not specified.");
+            LOG_ERROR("Failed to create framebuffer: depth-stencil attachment is nullptr.");
             return DeviceErrorCode::InvalidArgs;
         }
 
@@ -165,10 +163,10 @@ namespace Tempeh::GPU
 
         if (desc.depth_stencil_attachment) {
             const TextureDesc& texture_desc = desc.depth_stencil_attachment->desc();
-            auto att_desc = render_pass->depth_stencil_attachment_desc();
+            auto& att_desc = render_pass->depth_stencil_attachment_desc();
 
             if (!bit_match(texture_desc.usage, TextureUsage::DepthStencilAttachment)) {
-                LOG_ERROR("Failed to create framebuffer: the depth-stencil attachment texture is not created with TextureUsage::DepthStencilAttachment usage");
+                LOG_ERROR("Failed to create framebuffer: the depth-stencil attachment texture is not created with TextureUsage::DepthStencilAttachment usage.");
                 return DeviceErrorCode::IncompatibleResourceUsage;
             }
 
@@ -193,32 +191,33 @@ namespace Tempeh::GPU
         const Util::Ref<RenderPass>& render_pass,
         const FramebufferAttachment& fb_att)
     {
-        if (fb_att.color_attachment) {
-            auto texture_desc = fb_att.color_attachment->desc();
-            auto att_desc = render_pass->color_attachment_desc(att_index);
-            
-            if (!bit_match(texture_desc.usage, TextureUsage::ColorAttachment)) {
-                LOG_ERROR("Failed to create framebuffer: color attachment #{} texture is not created with TextureUsage::ColorAttachment usage", att_index);
-                return DeviceErrorCode::IncompatibleResourceUsage;
-            }
+        if (!fb_att.color_attachment) {
+            LOG_ERROR("Failed to create framebuffer: color attachment #{} is nullptr.", att_index);
+            return DeviceErrorCode::InvalidArgs;
+        }
 
-            if (texture_desc.format != att_desc.format) {
-                LOG_ERROR("Failed to create framebuffer: color attachment #{} format does not match with the color attachment format in render pass.", att_index);
-                return DeviceErrorCode::IncompatibleFormat;
-            }
+        auto texture_desc = fb_att.color_attachment->desc();
+        auto& att_desc = render_pass->color_attachment_desc(att_index);
 
-            if (att_desc.resolve && (texture_desc.num_samples != render_pass->num_samples())) {
-                LOG_ERROR(
-                    "Failed to create framebuffer: the number of samples in color attachment #{} texture "
-                    "does not match with the number of samples in render pass.",
-                    att_index);
-                return DeviceErrorCode::InvalidArgs;
-            }
+        if (!bit_match(texture_desc.usage, TextureUsage::ColorAttachment)) {
+            LOG_ERROR("Failed to create framebuffer: color attachment #{} texture is not created with TextureUsage::ColorAttachment usage.", att_index);
+            return DeviceErrorCode::IncompatibleResourceUsage;
+        }
+
+        if (texture_desc.format != att_desc.format) {
+            LOG_ERROR("Failed to create framebuffer: color attachment #{} format does not match with the color attachment format in render pass.", att_index);
+            return DeviceErrorCode::IncompatibleFormat;
+        }
+
+        if (att_desc.resolve && (texture_desc.num_samples != render_pass->num_samples())) {
+            LOG_ERROR(
+                "Failed to create framebuffer: the number of samples in color attachment #{} texture "
+                "does not match with the number of samples in render pass.",
+                att_index);
+            return DeviceErrorCode::InvalidArgs;
         }
 
         if (fb_att.resolve_attachment) {
-            auto texture_desc = fb_att.resolve_attachment->desc();
-
             if (!bit_match(texture_desc.usage, TextureUsage::ColorAttachment)) {
                 LOG_ERROR("Failed to create framebuffer: resolve attachment #{} is not created with TextureUsage::ColorAttachment usage", att_index);
                 return DeviceErrorCode::IncompatibleResourceUsage;

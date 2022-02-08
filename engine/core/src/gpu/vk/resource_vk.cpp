@@ -80,4 +80,21 @@ namespace Tempeh::GPU
         m_parent_device->wait_idle();
         vkDestroyRenderPass(m_parent_device->m_device, m_render_pass, nullptr);
     }
+
+    // Framebuffer resource
+
+    FramebufferVK::FramebufferVK(
+        DeviceVK* parent_device,
+        const Util::Ref<RenderPass>& parent_render_pass,
+        VkFramebuffer framebuffer,
+        const FramebufferDesc& desc)
+        : Framebuffer(parent_render_pass, desc),
+          m_parent_device(parent_device),
+          m_framebuffer(framebuffer)
+    {
+    }
+
+    FramebufferVK::~FramebufferVK()
+    {
+    }
 }

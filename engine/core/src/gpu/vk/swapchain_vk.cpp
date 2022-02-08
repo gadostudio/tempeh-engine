@@ -1,10 +1,10 @@
-#include "surface_vk.hpp"
+#include "swapchain_vk.hpp"
 #include "device_vk.hpp"
 
 namespace Tempeh::GPU
 {
-    SurfaceVK::SurfaceVK(VkSurfaceKHR surface, DeviceVK* device) :
-        Surface(SurfaceDesc{}),
+    SwapChainVK::SwapChainVK(VkSurfaceKHR surface, DeviceVK* device) :
+        SwapChain(SwapChainDesc{}),
         m_parent_device(device),
         m_surface(surface)
     {
@@ -21,7 +21,7 @@ namespace Tempeh::GPU
         }
     }
 
-    SurfaceVK::~SurfaceVK()
+    SwapChainVK::~SwapChainVK()
     {
         m_parent_device->wait_idle();
         destroy_objs(m_desc.num_images);
@@ -36,7 +36,7 @@ namespace Tempeh::GPU
         m_surface = VK_NULL_HANDLE;
     }
 
-    DeviceErrorCode SurfaceVK::initialize(const SurfaceDesc& desc)
+    DeviceErrorCode SwapChainVK::initialize(const SwapChainDesc& desc)
     {
         // Detect surface capabilities
         VkSurfaceCapabilitiesKHR surface_caps{};
@@ -203,7 +203,7 @@ namespace Tempeh::GPU
         return DeviceErrorCode::Ok;
     }
 
-    void SurfaceVK::swap_buffer()
+    void SwapChainVK::swap_buffer()
     {
         VkDevice device = m_parent_device->m_device;
 
@@ -279,18 +279,18 @@ namespace Tempeh::GPU
         m_current_frame = (m_current_frame + 1) % m_desc.num_images;
     }
 
-    void SurfaceVK::resize(u32 width, u32 height)
+    void SwapChainVK::resize(u32 width, u32 height)
     {
         TEMPEH_UNREFERENCED(width);
         TEMPEH_UNREFERENCED(height);
     }
 
-    void SurfaceVK::attach_window(const std::shared_ptr<Window::Window>& window)
+    void SwapChainVK::attach_window(const std::shared_ptr<Window::Window>& window)
     {
         m_attached_window = window;
     }
 
-    void SurfaceVK::destroy_objs(u32 num_images)
+    void SwapChainVK::destroy_objs(u32 num_images)
     {
         for (u32 i = 0; i < num_images; i++) {
             if (m_image_available_semaphores[i] != VK_NULL_HANDLE) {
@@ -326,7 +326,7 @@ namespace Tempeh::GPU
         }
     }
 
-    void SurfaceVK::init_cmd_buffers(u32 num_images)
+    void SwapChainVK::init_cmd_buffers(u32 num_images)
     {
         VkDevice device = m_parent_device->m_device;
         vkResetCommandPool(device, m_cmd_pool, 0);
