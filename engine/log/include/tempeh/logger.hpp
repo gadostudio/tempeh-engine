@@ -25,4 +25,4 @@ namespace Tempeh::Log
 #define LOG_ERROR(...)    ::Tempeh::Log::Logger::get_logger()->error(__VA_ARGS__)
 #define LOG_CRITICAL(...) ::Tempeh::Log::Logger::get_logger()->critical(__VA_ARGS__)
 
-#endif _TEMPEH_LOGGER_HPP
+#endif
