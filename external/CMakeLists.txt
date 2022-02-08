@@ -13,6 +13,9 @@ set(DAWN_ENABLE_D3D12 OFF) # Not stable yet!
 add_subdirectory("dawn")
 
 add_subdirectory("sentry-native")
+
+set(SPDLOG_NO_EXCEPTIONS ON)
+
 add_subdirectory("spdlog")
 add_subdirectory("entt")
 add_subdirectory("magic-enum")
