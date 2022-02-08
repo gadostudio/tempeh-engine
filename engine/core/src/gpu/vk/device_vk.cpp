@@ -61,6 +61,8 @@ namespace Tempeh::GPU
         m_storage_image_template_descriptors.emplace(m_device);
         m_sampled_image_template_descriptors.emplace(m_device);
         m_sampler_template_descriptors.emplace(m_device);
+        m_uniform_buffer_template_descriptors.emplace(m_device);
+        m_storage_buffer_template_descriptors.emplace(m_device);
 
         m_job_queue = std::make_unique<JobQueueVK>(
             m_device, m_main_queue, m_main_queue_index);
@@ -73,6 +75,8 @@ namespace Tempeh::GPU
         m_storage_image_template_descriptors.reset();
         m_sampled_image_template_descriptors.reset();
         m_sampler_template_descriptors.reset();
+        m_uniform_buffer_template_descriptors.reset();
+        m_storage_buffer_template_descriptors.reset();
         vmaDestroyAllocator(m_allocator);
         vkDestroyDevice(m_device, nullptr);
         vkDestroyInstance(m_instance, nullptr);
@@ -389,10 +393,60 @@ namespace Tempeh::GPU
         return std::make_shared<BufferVK>(this, buffer, allocation, desc);
     }
 
-    RefDeviceResult<BufferView> DeviceVK::create_buffer_view(const BufferViewDesc& desc)
+    RefDeviceResult<BufferView> DeviceVK::create_buffer_view(
+        const Util::Ref<Buffer>& buffer,
+        const BufferViewDesc& desc)
     {
-        TEMPEH_UNREFERENCED(desc);
-        return DeviceErrorCode::Unimplemented;
+        const auto& buffer_desc = buffer->desc();
+        VkBuffer vk_buffer = static_cast<BufferVK*>(buffer.get())->m_buffer;
+        VkDescriptorSet uniform_template_descriptor = VK_NULL_HANDLE;
+        bool has_uniform_usage_bit = bit_match(buffer_desc.usage, BufferUsage::Uniform);
+        bool has_storage_usage_bit = bit_match(buffer_desc.usage, BufferUsage::Storage);
+
+        if (!(has_uniform_usage_bit && has_storage_usage_bit)) {
+            LOG_ERROR("Failed to create buffer view: the given buffer is not created with BufferUsage::Uniform or BufferUsage::Storage usage.");
+            return DeviceErrorCode::IncompatibleResourceUsage;
+        }
+
+        VkDescriptorBufferInfo descriptor_buffer_info{};
+        descriptor_buffer_info.buffer = vk_buffer;
+        
+        VkWriteDescriptorSet write_descriptor{};
+        write_descriptor.dstBinding = 0;
+        write_descriptor.dstArrayElement = 0;
+        write_descriptor.descriptorCount = 1;
+
+        if (has_uniform_usage_bit) {
+            uniform_template_descriptor = m_uniform_buffer_template_descriptors.value().allocate_set();
+
+            descriptor_buffer_info.offset = desc.offset;
+            descriptor_buffer_info.range = desc.range;
+
+            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor.dstSet = uniform_template_descriptor;
+            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            write_descriptor.pBufferInfo = &descriptor_buffer_info;
+
+            vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
+        }
+        
+        VkDescriptorSet storage_template_descriptor = VK_NULL_HANDLE;
+
+        if (has_storage_usage_bit) {
+            storage_template_descriptor = m_storage_buffer_template_descriptors.value().allocate_set();
+
+            descriptor_buffer_info.offset = desc.offset;
+            descriptor_buffer_info.range = desc.range;
+
+            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor.dstSet = storage_template_descriptor;
+            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            write_descriptor.pBufferInfo = &descriptor_buffer_info;
+
+            vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
+        }
+
+        return std::make_shared<BufferViewVK>(this, uniform_template_descriptor, storage_template_descriptor);
     }
 
     RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
@@ -634,6 +688,8 @@ namespace Tempeh::GPU
         }
         
         begin_info.pClearValues = vk_clear_values.data();
+
+        // TODO: Add pipeline barier before beginning the render pass
 
         // BEGIN!
         vkCmdBeginRenderPass(m_current_cmd_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);

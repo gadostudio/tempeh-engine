@@ -83,10 +83,12 @@ int main()
         GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f)
     };
 
+    /*
     device->begin_cmd();
     device->begin_render_pass(framebuffer.value(), clear_values);
     device->end_render_pass();
     device->end_cmd();
+    */
 
     while (!window->is_need_to_close()) {
         input_manager->clear();

@@ -36,7 +36,7 @@ namespace Tempeh::GPU
         virtual RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) = 0;
 
         [[nodiscard]]
-        virtual RefDeviceResult<BufferView> create_buffer_view(const BufferViewDesc& desc) = 0;
+        virtual RefDeviceResult<BufferView> create_buffer_view(const Util::Ref<Buffer>& buffer, const BufferViewDesc& desc) = 0;
 
         [[nodiscard]]
         virtual RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) = 0;

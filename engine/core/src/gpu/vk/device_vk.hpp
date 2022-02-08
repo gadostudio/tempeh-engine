@@ -107,6 +107,8 @@ namespace Tempeh::GPU
         std::optional<StorageImageTemplateDescriptors> m_storage_image_template_descriptors;
         std::optional<SampledImageTemplateDescriptors> m_sampled_image_template_descriptors;
         std::optional<SamplerTemplateDescriptors> m_sampler_template_descriptors;
+        std::optional<UniformBufferTemplateDescriptors> m_uniform_buffer_template_descriptors;
+        std::optional<StorageBufferTemplateDescriptors> m_storage_buffer_template_descriptors;
 
         std::unique_ptr<JobQueueVK> m_job_queue;
         VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
@@ -130,7 +132,7 @@ namespace Tempeh::GPU
 
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
-        RefDeviceResult<BufferView> create_buffer_view(const BufferViewDesc& desc) override final;
+        RefDeviceResult<BufferView> create_buffer_view(const Util::Ref<Buffer>& buffer, const BufferViewDesc& desc) override final;
         RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
         RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc) override final;
         RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;

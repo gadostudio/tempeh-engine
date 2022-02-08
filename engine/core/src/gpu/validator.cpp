@@ -217,6 +217,16 @@ namespace Tempeh::GPU
             return DeviceErrorCode::InvalidArgs;
         }
 
+        if (att_desc.resolve && !fb_att.resolve_attachment) {
+            LOG_ERROR("Failed to create framebuffer: resolve attachment #{} is nullptr.", att_index);
+            return DeviceErrorCode::InvalidArgs;
+        }
+
+        if (!att_desc.resolve && fb_att.resolve_attachment) {
+            LOG_ERROR("Failed to create framebuffer: resolve attachment should not be specified.", att_index);
+            return DeviceErrorCode::InvalidArgs;
+        }
+
         if (fb_att.resolve_attachment) {
             if (!bit_match(texture_desc.usage, TextureUsage::ColorAttachment)) {
                 LOG_ERROR("Failed to create framebuffer: resolve attachment #{} is not created with TextureUsage::ColorAttachment usage", att_index);

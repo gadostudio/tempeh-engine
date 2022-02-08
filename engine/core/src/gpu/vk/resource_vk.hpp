@@ -48,6 +48,20 @@ namespace Tempeh::GPU
         ~BufferVK();
     };
 
+    struct BufferViewVK : public BufferView
+    {
+        DeviceVK*           m_parent_device;
+        VkDescriptorSet     m_uniform_template_descriptor;
+        VkDescriptorSet     m_storage_template_descriptor;
+
+        BufferViewVK(
+            DeviceVK* parent_device,
+            VkDescriptorSet uniform_template_descriptor,
+            VkDescriptorSet storage_template_descriptor);
+
+        ~BufferViewVK();
+    };
+
     struct RenderPassVK : public RenderPass
     {
         DeviceVK*           m_parent_device;
@@ -66,9 +80,9 @@ namespace Tempeh::GPU
     {
         using ColorAttachments = std::array<Util::Ref<TextureVK>, RenderPass::max_color_attachments>;
 
-        DeviceVK*               m_parent_device;
-        VkFramebuffer           m_framebuffer;
-        u32                     m_last_job_usage = 0;
+        DeviceVK*           m_parent_device;
+        VkFramebuffer       m_framebuffer;
+        u32                 m_last_job_usage = 0;
 
         FramebufferVK(
             DeviceVK* parent_device,

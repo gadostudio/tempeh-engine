@@ -63,6 +63,34 @@ namespace Tempeh::GPU
         vmaDestroyBuffer(m_parent_device->m_allocator, m_buffer, m_allocation);
     }
 
+    // Buffer view resource
+
+    BufferViewVK::BufferViewVK(
+        DeviceVK* parent_device,
+        VkDescriptorSet uniform_template_descriptor,
+        VkDescriptorSet storage_template_descriptor)
+        : m_parent_device(parent_device),
+          m_uniform_template_descriptor(uniform_template_descriptor),
+          m_storage_template_descriptor(storage_template_descriptor)
+    {
+    }
+    
+    BufferViewVK::~BufferViewVK()
+    {
+        m_parent_device->wait_idle();
+        if (m_uniform_template_descriptor != VK_NULL_HANDLE) {
+            m_parent_device->m_uniform_buffer_template_descriptors
+                .value()
+                .free_set(m_uniform_template_descriptor);
+        }
+
+        if (m_storage_template_descriptor != VK_NULL_HANDLE) {
+            m_parent_device->m_storage_buffer_template_descriptors
+                .value()
+                .free_set(m_storage_template_descriptor);
+        }
+    }
+
     // Render pass resource
 
     RenderPassVK::RenderPassVK(
@@ -96,5 +124,7 @@ namespace Tempeh::GPU
 
     FramebufferVK::~FramebufferVK()
     {
+        m_parent_device->wait_idle();
+        vkDestroyFramebuffer(m_parent_device->m_device, m_framebuffer, nullptr);
     }
 }
