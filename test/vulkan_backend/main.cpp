@@ -27,7 +27,7 @@ int main()
     surface_desc.num_images = 2;
     surface_desc.vsync = true;
 
-    auto surface = device->create_surface(window, surface_desc).value();
+    auto surface = device->create_swapchain(window, surface_desc).value();
     
     GPU::TextureDesc texture_desc;
     texture_desc.label = "Test texture";
