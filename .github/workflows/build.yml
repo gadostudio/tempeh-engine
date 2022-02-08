@@ -34,16 +34,20 @@ jobs:
           cp scripts/standalone.gclient .gclient
           gclient sync
       - name: Cache
+        id: cmake-cache
         uses: actions/cache@v2
         with:
           path: |
             build/
           key: ${{ runner.os }}-master
+      - name: Create build dir
+        if: steps.cmake-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir build
       - name: Build
         run: |
           export MONO_PROJECT=/usr/include/mono-2.0/
 
-          mkdir build
           cd build
           cmake .. -DTEMPEH_ENABLE_TEST=ON
           cmake --build .
@@ -73,16 +77,20 @@ jobs:
           copy scripts\standalone.gclient .gclient
           gclient sync
       - name: Cache
+        id: cmake-cache
         uses: actions/cache@v2
         with:
           path: |
             build/
           key: ${{ runner.os }}-master
+      - name: Create build dir
+        if: steps.cmake-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir build
       - name: Build
         run: |
           $env:MONO_INCLUDE_DIR = "C:\Program Files\Mono\include\mono-2.0\"
 
-          mkdir build
           cd build
           cmake .. -DTEMPEH_ENABLE_TEST=ON -G "Ninja"
           cmake --build .
