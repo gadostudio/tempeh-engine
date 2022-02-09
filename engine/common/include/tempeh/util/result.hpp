@@ -2,6 +2,7 @@
 #define _TEMPEH_UTIL_RESULT_H
 
 #include <variant>
+#include <type_traits>
 
 namespace Tempeh::Util
 {
@@ -23,13 +24,13 @@ namespace Tempeh::Util
         {
         }
 
-        constexpr explicit Result(T&& value) noexcept :
-            m_var(std::move(value))
+        constexpr Result(T&& value) noexcept :
+            m_var{ std::in_place_index<0>, std::move(value) }
         {
         }
 
-        constexpr explicit Result(E&& err) noexcept :
-            m_var(std::move(err))
+        constexpr Result(E&& err) noexcept :
+            m_var{ std::in_place_index<1>, std::move(err) }
         {
         }
 

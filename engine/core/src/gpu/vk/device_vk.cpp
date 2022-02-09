@@ -125,14 +125,17 @@ namespace Tempeh::GPU
 
         surface->attach_window(window);
 
-        return std::move(Util::Ref<SwapChain>(surface));
+        return { Util::Ref<SwapChain>(surface) };
     }
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
         std::lock_guard lock(m_sync_mutex);
 
-        TEMPEH_GPU_VALIDATE(prevalidate_texture_desc(desc, m_device_limits));
+        DeviceErrorCode err = prevalidate_texture_desc(desc, m_device_limits);
+        if (err != DeviceErrorCode::Ok) {
+            return RefDeviceResult<Texture>(err);
+        }
 
         VkImageCreateInfo image_info{};
         VkImageType image_type = VK_IMAGE_TYPE_1D;
@@ -354,10 +357,12 @@ namespace Tempeh::GPU
             }
         }
 
-        return std::move(std::make_shared<TextureVK>(
-            this, image, image_view, allocation,
-            storage_template_descriptor,
-            sampled_template_descriptor, desc));
+        return {
+            std::make_shared<TextureVK>(
+                this, image, image_view, allocation,
+                storage_template_descriptor,
+                sampled_template_descriptor, desc)
+        };
     }
 
     RefDeviceResult<Buffer> DeviceVK::create_buffer(const BufferDesc& desc)
@@ -387,7 +392,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::InternalError;
         }
 
-        return std::move(std::make_shared<BufferVK>(this, buffer, allocation, desc));
+        return { std::make_shared<BufferVK>(this, buffer, allocation, desc) };
     }
 
     RefDeviceResult<BufferView> DeviceVK::create_buffer_view(
@@ -443,7 +448,9 @@ namespace Tempeh::GPU
             vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
         }
 
-        return std::move(std::make_shared<BufferViewVK>(this, uniform_template_descriptor, storage_template_descriptor));
+        return {
+            std::make_shared<BufferViewVK>(this, uniform_template_descriptor, storage_template_descriptor)
+        };
     }
 
     RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
@@ -544,7 +551,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::InternalError;
         }
 
-        return std::move(std::make_shared<RenderPassVK>(this, render_pass, desc));
+        return { std::make_shared<RenderPassVK>(this, render_pass, desc) };
     }
 
     RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc)
@@ -585,7 +592,7 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        return std::make_shared<FramebufferVK>(this, render_pass, framebuffer, desc);
+        return { std::make_shared<FramebufferVK>(this, render_pass, framebuffer, desc) };
     }
 
     RefDeviceResult<Sampler> DeviceVK::create_sampler(const SamplerDesc& desc)
@@ -648,7 +655,7 @@ namespace Tempeh::GPU
 
         vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
 
-        return std::move(std::make_shared<SamplerVK>(this, sampler, sampler_template_descriptor, desc));
+        return { std::make_shared<SamplerVK>(this, sampler, sampler_template_descriptor, desc) };
     }
 
     void DeviceVK::begin_cmd()
@@ -674,7 +681,8 @@ namespace Tempeh::GPU
             return;
         }
 
-        TEMPEH_UNREFERENCED(slot, texture);
+        TEMPEH_UNREFERENCED(slot);
+        TEMPEH_UNREFERENCED(texture);
     }
 
     void DeviceVK::begin_render_pass(

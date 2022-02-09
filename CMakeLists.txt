@@ -12,6 +12,8 @@ add_subdirectory("external")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 # https://github.com/izenecloud/cmake/blob/master/SetCompilerWarningAll.cmake
+
+if(0)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Use the highest warning level for Visual Studio.
   set(CMAKE_CXX_WARNING_LEVEL 4)
@@ -46,6 +48,7 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   string(REGEX REPLACE "-frtti" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+endif()
 
 add_subdirectory("engine")
 add_subdirectory("editor")
