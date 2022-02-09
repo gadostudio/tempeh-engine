@@ -25,7 +25,9 @@ namespace Tempeh::GPU
     static const char* instance_extensions[] = {
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
         VK_KHR_SURFACE_EXTENSION_NAME,
+#ifdef VK_USE_PLATFORM_WIN32_KHR
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+#endif
     };
 
     static const char* device_extensions[] = {
