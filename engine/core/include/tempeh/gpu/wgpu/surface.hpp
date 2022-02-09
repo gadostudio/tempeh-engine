@@ -1,0 +1,15 @@
+#ifndef TEMPEH_ENGINE_ENGINE_CORE_INCLUDE_TEMPEH_GPU_WGPU_SURFACE_HPP
+#define TEMPEH_ENGINE_ENGINE_CORE_INCLUDE_TEMPEH_GPU_WGPU_SURFACE_HPP
+
+#include <tempeh/gpu/surface.hpp>
+
+namespace Tempeh::GPU::WGPU
+{
+
+    class Surface : public GPU::Surface
+    {
+    };
+
+}
+
+#endif //TEMPEH_ENGINE_ENGINE_CORE_INCLUDE_TEMPEH_GPU_WGPU_SURFACE_HPP

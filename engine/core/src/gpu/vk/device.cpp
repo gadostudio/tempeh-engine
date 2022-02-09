@@ -1,10 +1,13 @@
-#include "device_vk.hpp"
-#include "surface_vk.hpp"
-#include "vk.hpp"
-
+#include <tempeh/gpu/device.hpp>
+#include <tempeh/gpu/surface.hpp>
+#include <tempeh/gpu/types.hpp>
+#include <tempeh/gpu/vk/device.hpp>
+#include <tempeh/gpu/vk/surface.hpp>
+#include <tempeh/gpu/vk/vk.hpp>
 #include <tempeh/common/os.hpp>
 #include <map>
 #include <GLFW/glfw3.h>
+#include <memory>
 
 #ifdef TEMPEH_OS_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -12,29 +15,20 @@
 
 #include <GLFW/glfw3native.h>
 
-namespace Tempeh::GPU
+namespace Tempeh::GPU::Vk
 {
-    static const char* layers[] = {
-        "VK_LAYER_KHRONOS_validation"
-    };
-
-    static const char* instance_extensions[] = {
-        VK_KHR_SURFACE_EXTENSION_NAME,
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-    };
 
     static const char* device_extensions[] = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_MAINTENANCE1_EXTENSION_NAME
     };
 
-    DeviceVK::DeviceVK(
+    Device::Device(
         VkInstance instance,
         VkPhysicalDevice physical_device,
         VkDevice device,
         u32 main_queue_index)
-        : Device(BackendType::Vulkan, "Vulkan"),
-          m_instance(instance),
+        : m_instance(instance),
           m_physical_device(physical_device),
           m_device(device),
           m_main_queue_index(main_queue_index)
@@ -45,7 +39,7 @@ namespace Tempeh::GPU
             m_device, m_main_queue_index);
     }
 
-    DeviceVK::~DeviceVK()
+    Device::~Device()
     {
         vkDeviceWaitIdle(m_device);
         m_cmd_manager.reset();
@@ -53,7 +47,7 @@ namespace Tempeh::GPU
         vkDestroyInstance(m_instance, nullptr);
     }
 
-    RefDeviceResult<Surface> DeviceVK::create_surface(
+    RefDeviceResult<GPU::Surface> Device::create_surface(
         const std::shared_ptr<Window::Window>& window,
         const SurfaceDesc& desc)
     {
@@ -81,7 +75,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::SurfacePresentationNotSupported;
         }
 
-        SurfaceVK* surface = new SurfaceVK(vk_surface, this);
+        Surface* surface = new Surface(vk_surface, this);
         DeviceErrorCode err = surface->initialize(desc);
 
         if (err != DeviceErrorCode::Ok) {
@@ -92,92 +86,34 @@ namespace Tempeh::GPU
 
         surface->attach_window(window);
 
-        return Util::Ref<Surface>(surface);
+        return Util::Rc<GPU::Surface>(surface);
     }
 
-    RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
+    RefDeviceResult<GPU::Texture> Device::create_texture(const TextureDesc& desc)
     {
         return DeviceErrorCode::Unimplemented;
     }
 
-    RefDeviceResult<Buffer> DeviceVK::create_buffer(const BufferDesc& desc)
+    RefDeviceResult<GPU::Buffer> Device::create_buffer(const BufferDesc& desc)
     {
         return DeviceErrorCode::Unimplemented;
     }
 
-    void DeviceVK::begin_frame()
+    void Device::begin_frame()
     {
     }
 
-    void DeviceVK::end_frame()
+    void Device::end_frame()
     {
     }
 
-    void DeviceVK::wait_idle()
+    void Device::wait_idle()
     {
         vkDeviceWaitIdle(m_device);
     }
 
-    RefDeviceResult<Device> DeviceVK::initialize(bool prefer_high_performance)
+    RefDeviceResult<Device> create_device(bool prefer_high_performance)
     {
-        if (VULKAN_FAILED(volkInitialize())) {
-            return DeviceErrorCode::InitializationFailed;
-        }
-
-        // ---- Vulkan instance initialization ----
-
-        VkApplicationInfo app_info{};
-        app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        app_info.pApplicationName = "Tempeh Engine";
-        app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.pEngineName = "Tempeh Engine";
-        app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.apiVersion = VK_API_VERSION_1_0;
-
-        u32 num_layers;
-        std::vector<VkLayerProperties> layer_properties;
-        std::vector<const char*> enabled_layers;
-
-        vkEnumerateInstanceLayerProperties(&num_layers, nullptr);
-        layer_properties.resize(num_layers);
-        vkEnumerateInstanceLayerProperties(&num_layers, layer_properties.data());
-
-        for (const auto layer : layers) {
-            if (find_layer(layer_properties, layer)) {
-                enabled_layers.push_back(layer);
-            }
-        }
-
-        std::vector<const char*> enabled_exts;
-        std::vector<VkExtensionProperties> ext_properties;
-        u32 num_extensions;
-
-        vkEnumerateInstanceExtensionProperties(nullptr, &num_extensions, nullptr);
-        ext_properties.resize(num_extensions);
-        vkEnumerateInstanceExtensionProperties(nullptr, &num_extensions, ext_properties.data());
-
-        for (const auto ext : instance_extensions) {
-            if (find_extension(ext_properties, ext)) {
-                enabled_exts.push_back(ext);
-            }
-        }
-
-        VkInstanceCreateInfo instance_info{};
-        instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instance_info.pApplicationInfo = &app_info;
-        instance_info.enabledLayerCount = static_cast<uint32_t>(enabled_layers.size());
-        instance_info.ppEnabledLayerNames = enabled_layers.data();
-        instance_info.enabledExtensionCount = static_cast<uint32_t>(enabled_exts.size());
-        instance_info.ppEnabledExtensionNames = enabled_exts.data();
-
-        VkInstance instance = VK_NULL_HANDLE;
-        VkResult result = vkCreateInstance(&instance_info, nullptr, &instance);
-
-        if (VULKAN_FAILED(result)) {
-            return parse_error_vk(result);
-        }
-
-        volkLoadInstance(instance); // Load instance functions
 
         // ---- Vulkan device initialization ----
 
@@ -208,14 +144,15 @@ namespace Tempeh::GPU
             vkGetPhysicalDeviceFeatures(physical_device, &features);
         }
 
-        ext_properties.clear();
+        std::vector<const char*> enabled_exts;
+        std::vector<VkExtensionProperties> ext_properties;
+        u32 num_extensions;
 
         // Query physical device extensions
         vkEnumerateDeviceExtensionProperties(
             physical_device, nullptr, &num_extensions, nullptr);
 
         ext_properties.resize(num_extensions);
-        enabled_exts.clear();
 
         vkEnumerateDeviceExtensionProperties(
             physical_device, nullptr, &num_extensions, ext_properties.data());
@@ -272,20 +209,20 @@ namespace Tempeh::GPU
         device_info.pEnabledFeatures = &features;
 
         VkDevice device = VK_NULL_HANDLE;
-        result = vkCreateDevice(physical_device, &device_info, nullptr, &device);
+        VkResult result = vkCreateDevice(physical_device, &device_info, nullptr, &device);
 
         if (VULKAN_FAILED(result)) {
             vkDestroyInstance(instance, nullptr);
-            return parse_error_vk(result);
+            return parse_error(result);
         }
 
         return std::static_pointer_cast<Device>(
-            std::make_shared<DeviceVK>(
+            std::make_shared<Device>(
                 instance, physical_device,
                 device, queue_info.queueFamilyIndex));
     }
 
-    VkSurfaceKHR DeviceVK::create_surface_glfw(const std::shared_ptr<Window::Window>& window)
+    VkSurfaceKHR Device::create_surface_glfw(const std::shared_ptr<Window::Window>& window)
     {
         VkSurfaceKHR ret = VK_NULL_HANDLE;
 

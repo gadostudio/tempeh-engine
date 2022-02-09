@@ -6,15 +6,16 @@
 
 namespace Tempeh::Util
 {
-    class RefCount
+    // Atomically Reference Counted
+    class Arc
     {
     public:
-        RefCount() :
+        Arc() :
             m_counter(1)
         {
         }
 
-        virtual ~RefCount()
+        virtual ~Arc()
         {
         }
 
@@ -59,8 +60,18 @@ namespace Tempeh::Util
         return ptr;
     }
 
+    // Reference Counted
     template<typename T>
-    using Ref = std::shared_ptr<T>;
+    using Rc = std::shared_ptr<T>;
+
+    template<typename T>
+    using Box = std::unique_ptr<T>;
+
+    template<typename T>
+    FUNCTION_ALIAS(make_rc, std::make_shared<T>);
+    template<typename T>
+    FUNCTION_ALIAS(make_box, std::make_unique<T>);
+
 }
 
 #endif

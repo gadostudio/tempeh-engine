@@ -1,10 +1,15 @@
-#include "surface_vk.hpp"
-#include "device_vk.hpp"
+#include <tempeh/gpu/device.hpp>
+#include <tempeh/gpu/surface.hpp>
+#include <tempeh/gpu/types.hpp>
+#include <tempeh/gpu/vk/device.hpp>
+#include <tempeh/gpu/vk/surface.hpp>
+#include <tempeh/gpu/vk/vk.hpp>
+#include <tempeh/common/os.hpp>
 
-namespace Tempeh::GPU
+namespace Tempeh::GPU::Vk
 {
-    SurfaceVK::SurfaceVK(VkSurfaceKHR surface, DeviceVK* device) :
-        Surface(SurfaceDesc{}),
+    Surface::Surface(VkSurfaceKHR surface, Device* device) :
+        GPU::Surface(SurfaceDesc{}),
         m_parent_device(device),
         m_surface(surface)
     {
@@ -21,7 +26,7 @@ namespace Tempeh::GPU
         }
     }
 
-    SurfaceVK::~SurfaceVK()
+    Surface::~Surface()
     {
         m_parent_device->wait_idle();
         destroy_objs(m_desc.num_images);
@@ -36,7 +41,7 @@ namespace Tempeh::GPU
         m_surface = VK_NULL_HANDLE;
     }
 
-    DeviceErrorCode SurfaceVK::initialize(const SurfaceDesc& desc)
+    DeviceErrorCode Surface::initialize(const SurfaceDesc& desc)
     {
         // Detect surface capabilities
         VkSurfaceCapabilitiesKHR surface_caps{};
@@ -62,7 +67,7 @@ namespace Tempeh::GPU
 
         // Detect supported formats
         if (desc.format != m_desc.format || !m_initialized) {
-            VkFormat fmt = convert_format_vk(desc.format);
+            VkFormat fmt = convert_format(desc.format);
             std::vector<VkSurfaceFormatKHR> surface_formats;
             u32 num_surface_formats;
 
@@ -142,7 +147,7 @@ namespace Tempeh::GPU
         m_swapchain = new_swapchain;
 
         if (VULKAN_FAILED(ret)) {
-            return parse_error_vk(ret);
+            return parse_error(ret);
         }
 
         u32 num_images = desc.num_images;
@@ -203,7 +208,7 @@ namespace Tempeh::GPU
         return DeviceErrorCode::Ok;
     }
 
-    void SurfaceVK::swap_buffer()
+    void Surface::swap_buffer()
     {
         VkDevice device = m_parent_device->m_device;
 
@@ -279,16 +284,16 @@ namespace Tempeh::GPU
         m_current_frame = (m_current_frame + 1) % m_desc.num_images;
     }
 
-    void SurfaceVK::resize(u32 width, u32 height)
+    void Surface::resize(u32 width, u32 height)
     {
     }
 
-    void SurfaceVK::attach_window(const std::shared_ptr<Window::Window>& window)
+    void Surface::attach_window(const std::shared_ptr<Window::Window>& window)
     {
         m_attached_window = window;
     }
 
-    void SurfaceVK::destroy_objs(u32 num_images)
+    void Surface::destroy_objs(u32 num_images)
     {
         for (u32 i = 0; i < num_images; i++) {
             if (m_image_available_semaphores[i] != VK_NULL_HANDLE) {
@@ -324,7 +329,7 @@ namespace Tempeh::GPU
         }
     }
 
-    void SurfaceVK::init_cmd_buffers(u32 num_images)
+    void Surface::init_cmd_buffers(u32 num_images)
     {
         VkDevice device = m_parent_device->m_device;
         vkResetCommandPool(device, m_cmd_pool, 0);

@@ -2,19 +2,19 @@
 #define _TEMPEH_GPU_SURFACE_VK_HPP
 
 #include <tempeh/gpu/surface.hpp>
+#include <tempeh/gpu/device.hpp>
 #include <tempeh/window/window.hpp>
-#include "backend_vk.hpp"
-#include "vk.hpp"
+#include <tempeh/gpu/vk/surface.hpp>
 
 #include <array>
 
-namespace Tempeh::GPU
+namespace Tempeh::GPU::Vk
 {
-    struct SurfaceVK : public Surface
+    struct Surface : public GPU::Surface
     {
         static constexpr size_t max_images = 3;
 
-        DeviceVK* m_parent_device;
+        Device* m_parent_device;
         std::shared_ptr<Window::Window> m_attached_window;
         VkSurfaceKHR m_surface;
         VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
@@ -31,8 +31,8 @@ namespace Tempeh::GPU
         u32 m_image_index = 0;
         bool m_initialized = false;
 
-        SurfaceVK(VkSurfaceKHR surface, DeviceVK* device);
-        virtual ~SurfaceVK();
+        Surface(VkSurfaceKHR surface, Device* device);
+        virtual ~Surface();
 
         void swap_buffer() override final;
         void resize(u32 width, u32 height) override final;

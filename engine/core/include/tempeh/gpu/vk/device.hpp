@@ -3,13 +3,12 @@
 
 #include <tempeh/gpu/device.hpp>
 #include <tempeh/gpu/types.hpp>
+#include <tempeh/gpu/vk/vk.hpp>
+#include <tempeh/gpu/vk/instance.hpp>
 #include <memory>
 #include <array>
 
-#include "backend_vk.hpp"
-#include "vk.hpp"
-
-namespace Tempeh::GPU
+namespace Tempeh::GPU::Vk
 {
     template<size_t MaxBuffer>
     class CommandManagerVK
@@ -55,11 +54,12 @@ namespace Tempeh::GPU
         std::array<PoolBufferPair, MaxBuffer> m_cmds{};
     };
 
-    struct DeviceVK : public Device
+    class Device final : public Tempeh::GPU::Device
     {
+    public:
         static constexpr size_t max_command_buffers = 3;
 
-        VkInstance m_instance;
+        Util::Rc<Instance> m_instance;
         VkPhysicalDevice m_physical_device;
         VkDevice m_device;
         u32 m_main_queue_index;
@@ -69,31 +69,33 @@ namespace Tempeh::GPU
         std::vector<VkPresentModeKHR> m_present_modes;
         std::unique_ptr<CommandManagerVK<max_command_buffers>> m_cmd_manager;
 
-        DeviceVK(
-            VkInstance instance,
+        Device() = delete;
+        Device(
+            Util::Rc<Instance> instance,
             VkPhysicalDevice physical_device,
             VkDevice device,
             u32 main_queue_index);
+        ~Device() final;
 
-        ~DeviceVK();
-
-        RefDeviceResult<Surface> create_surface(
+        RefDeviceResult<GPU::Surface> create_surface(
             const std::shared_ptr<Window::Window>& window,
-            const SurfaceDesc& desc) override final;
+            const SurfaceDesc& desc) final;
 
-        RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
-        RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
+        RefDeviceResult<GPU::Texture> create_texture(const TextureDesc& desc) final;
+        RefDeviceResult<GPU::Buffer> create_buffer(const BufferDesc& desc) final;
 
-        void begin_frame() override final;
-        void end_frame() override final;
+        void begin_frame() final;
+        void end_frame() final;
 
         void wait_idle();
 
-        static RefDeviceResult<Device> initialize(bool prefer_high_performance);
+        [[nodiscard]] BackendType type() const override { return BackendType::Vulkan; }
 
     private:
         VkSurfaceKHR create_surface_glfw(const std::shared_ptr<Window::Window>& window);
     };
+
+    RefDeviceResult<Device> create_device(bool prefer_high_performance);
 }
 
 #endif

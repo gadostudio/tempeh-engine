@@ -8,7 +8,7 @@
 #define VK_NO_PROTOTYPES
 
 #include <vulkan/vulkan.h>
-#include "volk.h"
+#include <tempeh/gpu/vk/volk.h>
 
 #define VULKAN_FAILED(x) \
     ((x) < VK_SUCCESS)
@@ -19,9 +19,17 @@
 #include <cstring>
 #include <memory>
 
-namespace Tempeh::GPU
+namespace Tempeh::GPU::Vk
 {
-    static inline constexpr DeviceErrorCode parse_error_vk(VkResult result)
+
+    // Forward Declarations
+    struct Device;
+    struct Surface;
+    struct Texture;
+    struct Buffer;
+    struct GraphicsPipeline;
+
+    static inline constexpr DeviceErrorCode parse_error(VkResult result)
     {
         switch (result) {
             case VK_ERROR_OUT_OF_HOST_MEMORY:
@@ -35,7 +43,7 @@ namespace Tempeh::GPU
         }
     }
 
-    static inline constexpr VkFormat convert_format_vk(TextureFormat format)
+    static inline constexpr VkFormat convert_format(TextureFormat format)
     {
         switch (format) {
             case TextureFormat::RGBA_8_8_8_8_Uint:

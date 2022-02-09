@@ -10,8 +10,8 @@ using namespace Tempeh;
 int main()
 {
     Log::Logger::init("test");
-    GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
-    Util::Ref<GPU::Device> device = GPU::Instance::get_device();
+    GPU::Instance instance(GPU::BackendType::Vulkan, true);
+    Util::Rc<GPU::Device> device = instance.get_device();
     
     std::shared_ptr<Event::InputManager> input_manager =
         std::make_shared<Event::InputManager>();

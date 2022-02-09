@@ -6,7 +6,7 @@
 
 namespace Tempeh::GPU
 {
-    class CommandList
+    INTERFACE class CommandList
     {
     public:
         CommandList();

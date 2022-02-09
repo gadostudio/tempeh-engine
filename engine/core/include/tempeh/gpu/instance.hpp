@@ -6,15 +6,17 @@
 
 namespace Tempeh::GPU
 {
-    class Instance
+    INTERFACE class Instance
     {
     public:
-        static void initialize(BackendType type, bool prefer_high_performance);
-        static Util::Ref<Device> get_device();
-
+        inline Util::Rc<Device> get_device() { return m_device; }
+        inline BackendType get_type() { return m_type; }
     private:
-        static Util::Ref<Device> device_;
+        Util::Rc<Device> m_device;
+        BackendType m_type;
     };
+
+    Util::Rc<Instance> create_instance(BackendType type, bool prefer_high_performance);
 }
 
 #endif

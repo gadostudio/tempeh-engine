@@ -3,6 +3,13 @@
 
 #include <cstdint>
 
+#define FUNCTION_ALIAS(NEW_NAME, ...)                                          \
+  inline auto NEW_NAME = [](auto &&... args)                                   \
+    noexcept(noexcept(__VA_ARGS__(std::forward<decltype(args)>(args)...)))     \
+    -> decltype(auto) {                                                        \
+    return __VA_ARGS__(std::forward<decltype(args)>(args)...);                 \
+  };
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;

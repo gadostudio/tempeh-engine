@@ -5,34 +5,34 @@
 
 namespace Tempeh::GPU
 {
-    class Texture
+    INTERFACE class Texture
     {
     public:
         Texture();
         virtual ~Texture();
     };
 
-    class Buffer
+    INTERFACE class Buffer
     {
     public:
         Buffer();
         virtual ~Buffer();
     };
 
-    class Framebuffer
+    INTERFACE class Framebuffer
     {
     public:
         Framebuffer();
         virtual ~Framebuffer();
     };
 
-    class RenderPass
+    INTERFACE class RenderPass
     {
         RenderPass();
         virtual ~RenderPass();
     };
 
-    class GraphicsPipeline
+    INTERFACE class GraphicsPipeline
     {
     public:
         GraphicsPipeline() { }

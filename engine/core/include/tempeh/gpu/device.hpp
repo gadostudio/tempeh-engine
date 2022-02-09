@@ -7,23 +7,17 @@
 #include <tempeh/gpu/surface.hpp>
 #include <tempeh/window/window.hpp>
 
-#include <tempeh/util/ref_count.hpp>
+#include <tempeh/util/smart_ptr.hpp>
 
 namespace Tempeh::GPU
 {
     template<typename T>
-    using RefDeviceResult = DeviceResult<Util::Ref<T>>;
+    using RefDeviceResult = DeviceResult<Util::Rc<T>>;
 
-    class Device
+    INTERFACE class Device
     {
     public:
-        Device(BackendType type, const char* name) :
-            m_backend_type(type),
-            m_backend_name(name)
-        {
-        }
-        
-        virtual ~Device() { }
+        virtual ~Device() = default;
 
         virtual RefDeviceResult<Surface> create_surface(
             const std::shared_ptr<Window::Window>& window,
@@ -35,12 +29,7 @@ namespace Tempeh::GPU
         virtual void begin_frame() = 0;
         virtual void end_frame() = 0;
 
-        BackendType type() const;
-        const char* name() const;
-
-    protected:
-        BackendType m_backend_type;
-        const char* m_backend_name;
+        [[nodiscard]] virtual BackendType type() const = 0;
     };
 }
 

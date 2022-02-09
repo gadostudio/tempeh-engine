@@ -9,16 +9,14 @@ namespace Tempeh::Util
     class Result
     {
     public:
-        constexpr Result()
-        {
-        }
+        constexpr Result() = default;
 
-        constexpr Result(T&& value) noexcept :
+        constexpr explicit Result(T&& value) noexcept :
             m_var(std::move(value))
         {
         }
 
-        constexpr Result(E&& err) noexcept :
+        constexpr explicit Result(E&& err) noexcept :
             m_var(std::move(err))
         {
         }
@@ -57,7 +55,7 @@ namespace Tempeh::Util
             return *this;
         }
 
-        bool is_ok() const
+        [[nodiscard]] bool is_ok() const
         {
             return std::holds_alternative<T>(m_var);
         }

@@ -5,7 +5,7 @@
 
 namespace Tempeh::GPU
 {
-    class Surface
+    INTERFACE class Surface
     {
     public:
         Surface(const SurfaceDesc& desc) :
@@ -13,7 +13,7 @@ namespace Tempeh::GPU
         {
         }
 
-        virtual ~Surface() { }
+        virtual ~Surface() = default;
 
         virtual void swap_buffer() = 0;
         virtual void resize(u32 width, u32 height) = 0;

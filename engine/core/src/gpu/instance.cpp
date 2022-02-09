@@ -1,32 +1,26 @@
 #include <tempeh/gpu/instance.hpp>
-#include "vk/device_vk.hpp"
+#include <tempeh/gpu/vk/instance.hpp>
+#include <tempeh/gpu/wgpu/instance.hpp>
 
 #include <cassert>
 
 namespace Tempeh::GPU
 {
-    void Instance::initialize(BackendType type, bool prefer_high_performance)
+    RefDeviceResult<Instance> create_instance(BackendType type, const Util::Rc<Window::Window>& window)
     {
-        if (device_) {
-            return;
-        }
-
+        RefDeviceResult<Instance> result;
         switch (type) {
             case BackendType::Vulkan: {
-                auto result = DeviceVK::initialize(prefer_high_performance);
-                assert(result.is_ok() && "Failed to initialize device");
-                device_ = std::move(result.value());
+                result = Vk::create_instance(window);
+                break;
+            }
+            case BackendType::WebGPU: {
+                result = WGPU::create_instance(window);
                 break;
             }
             default:
-                assert("Backend not supported");
+                assert(false && "Backend not supported");
         }
+        return result;
     }
-
-    Util::Ref<Device> Instance::get_device()
-    {
-        return device_;
-    }
-
-    Util::Ref<Device> Instance::device_;
 }
