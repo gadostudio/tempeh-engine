@@ -4,11 +4,23 @@
 
 namespace Tempeh::Renderer
 {
+	void OrthogonalCamera::set_camera_position(Math::vec2& pos) {}
 
+	const Math::mat4& OrthogonalCamera::get_view_matrix() const
+	{
+		return m_view_matrix;
+	}
+	
+	const Math::mat4& OrthogonalCamera::get_projection_matrix() const
+	{
+		return m_projection_matrix;
+	}
+	
+	const Math::mat4& OrthogonalCamera::get_view_projection_matrix() const
+	{
+		return m_combined_matrix;
+	}
+	
 	void OrthogonalCamera::recalculate_matrix() {}
-	const Tempeh::Math::mat4& OrthogonalCamera::get_view_matrix() { return Tempeh::Math::mat4{}; }
-	const Tempeh::Math::mat4& OrthogonalCamera::get_projection_matrix() { return Tempeh::Math::mat4{}; }
-	const Tempeh::Math::mat4& OrthogonalCamera::get_view_projection_matrix() { return Tempeh::Math::mat4{}; }
-	void OrthogonalCamera::set_camera_position(Tempeh::Math::vec2& pos) {}
 
 }
