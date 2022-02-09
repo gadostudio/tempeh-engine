@@ -50,4 +50,7 @@ endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 add_subdirectory("engine")
 add_subdirectory("editor")
 add_subdirectory("test/vulkan_backend")
-add_subdirectory("test")
+
+if(TEMPEH_ENABLE_TEST)
+    add_subdirectory("test")
+endif()

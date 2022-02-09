@@ -78,6 +78,7 @@ namespace Tempeh::GPU
     BufferViewVK::~BufferViewVK()
     {
         m_parent_device->wait_idle();
+
         if (m_uniform_template_descriptor != VK_NULL_HANDLE) {
             m_parent_device->m_uniform_buffer_template_descriptors
                 .value()
@@ -126,5 +127,23 @@ namespace Tempeh::GPU
     {
         m_parent_device->wait_idle();
         vkDestroyFramebuffer(m_parent_device->m_device, m_framebuffer, nullptr);
+    }
+
+    SamplerVK::SamplerVK(
+        DeviceVK* parent_device,
+        VkSampler sampler,
+        VkDescriptorSet template_descriptor,
+        const Sampler& desc)
+        : Sampler(desc),
+          m_parent_device(parent_device),
+          m_sampler(sampler),
+          m_template_descriptor(template_descriptor)
+    {
+    }
+
+    SamplerVK::~SamplerVK()
+    {
+        m_parent_device->wait_idle();
+        vkDestroySampler(m_parent_device->m_device, m_sampler, nullptr);
     }
 }

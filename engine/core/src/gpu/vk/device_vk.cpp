@@ -4,16 +4,9 @@
 #include "vk.hpp"
 #include "../validator.hpp"
 
-#include <tempeh/common/os.hpp>
 #include <tempeh/logger.hpp>
 #include <map>
 #include <GLFW/glfw3.h>
-
-#ifdef TEMPEH_OS_WINDOWS
-#define GLFW_EXPOSE_NATIVE_WIN32
-#endif
-
-#include <GLFW/glfw3native.h>
 
 namespace Tempeh::GPU
 {
@@ -25,8 +18,10 @@ namespace Tempeh::GPU
     static const char* instance_extensions[] = {
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
         VK_KHR_SURFACE_EXTENSION_NAME,
-#ifdef VK_USE_PLATFORM_WIN32_KHR
+#if defined(TEMPEH_OS_WINDOWS)
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+#elif defined(TEMPEH_OS_LINUX)
+        
 #endif
     };
 
@@ -130,7 +125,7 @@ namespace Tempeh::GPU
 
         surface->attach_window(window);
 
-        return Util::Ref<SwapChain>(surface);
+        return std::move(Util::Ref<SwapChain>(surface));
     }
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
@@ -359,10 +354,10 @@ namespace Tempeh::GPU
             }
         }
 
-        return std::make_shared<TextureVK>(
+        return std::move(std::make_shared<TextureVK>(
             this, image, image_view, allocation,
             storage_template_descriptor,
-            sampled_template_descriptor, desc);
+            sampled_template_descriptor, desc));
     }
 
     RefDeviceResult<Buffer> DeviceVK::create_buffer(const BufferDesc& desc)
@@ -392,7 +387,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::InternalError;
         }
 
-        return std::make_shared<BufferVK>(this, buffer, allocation, desc);
+        return std::move(std::make_shared<BufferVK>(this, buffer, allocation, desc));
     }
 
     RefDeviceResult<BufferView> DeviceVK::create_buffer_view(
@@ -448,7 +443,7 @@ namespace Tempeh::GPU
             vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
         }
 
-        return std::make_shared<BufferViewVK>(this, uniform_template_descriptor, storage_template_descriptor);
+        return std::move(std::make_shared<BufferViewVK>(this, uniform_template_descriptor, storage_template_descriptor));
     }
 
     RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
@@ -549,7 +544,7 @@ namespace Tempeh::GPU
             return DeviceErrorCode::InternalError;
         }
 
-        return std::make_shared<RenderPassVK>(this, render_pass, desc);
+        return std::move(std::make_shared<RenderPassVK>(this, render_pass, desc));
     }
 
     RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc)
@@ -595,8 +590,65 @@ namespace Tempeh::GPU
 
     RefDeviceResult<Sampler> DeviceVK::create_sampler(const SamplerDesc& desc)
     {
-        TEMPEH_UNREFERENCED(desc);
-        return DeviceErrorCode::Unimplemented;
+        VkSamplerCreateInfo sampler_info{};
+        sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sampler_info.magFilter = convert_texture_filtering_vk(desc.mag_filter);
+        sampler_info.minFilter = convert_texture_filtering_vk(desc.min_filter);
+        sampler_info.mipmapMode = convert_mipmap_filtering_vk(desc.mip_filter);
+        sampler_info.addressModeU = convert_texture_addressing_vk(desc.address_mode_u);
+        sampler_info.addressModeV = convert_texture_addressing_vk(desc.address_mode_v);
+        sampler_info.addressModeW = convert_texture_addressing_vk(desc.address_mode_w);
+        sampler_info.mipLodBias = desc.mip_lod_bias;
+        
+        if (desc.max_anisotropy > 1) {
+            sampler_info.anisotropyEnable = VK_TRUE;
+            sampler_info.maxAnisotropy = static_cast<float>(desc.max_anisotropy);
+        }
+        else {
+            sampler_info.anisotropyEnable = VK_FALSE;
+            sampler_info.maxAnisotropy = 1.0f;
+        }
+
+        if (desc.compare_op != CompareOp::Never) {
+            sampler_info.compareEnable = VK_TRUE;
+            sampler_info.compareOp = convert_compare_op_vk(desc.compare_op);
+        }
+        else {
+            sampler_info.compareEnable = VK_FALSE;
+            sampler_info.compareOp = VK_COMPARE_OP_NEVER;
+        }
+
+        sampler_info.minLod = desc.min_lod;
+        sampler_info.maxLod = desc.max_lod;
+        sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+        sampler_info.unnormalizedCoordinates = VK_TRUE;
+
+        VkSampler sampler;
+        VkResult result = vkCreateSampler(m_device, &sampler_info, nullptr, &sampler);
+
+        if (VULKAN_FAILED(result)) {
+            return parse_error_vk(result);
+        }
+
+        // Write template descriptor for the sampler
+        VkDescriptorSet sampler_template_descriptor =
+            m_sampler_template_descriptors.value().allocate_set();
+
+        VkDescriptorImageInfo descriptor_image_info{};
+        descriptor_image_info.sampler = sampler;
+
+        VkWriteDescriptorSet write_descriptor{};
+        write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write_descriptor.dstSet = sampler_template_descriptor;
+        write_descriptor.dstBinding = 0;
+        write_descriptor.dstArrayElement = 0;
+        write_descriptor.descriptorCount = 1;
+        write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        write_descriptor.pImageInfo = &descriptor_image_info;
+
+        vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
+
+        return std::move(std::make_shared<SamplerVK>(this, sampler, sampler_template_descriptor, desc));
     }
 
     void DeviceVK::begin_cmd()

@@ -6,24 +6,24 @@
 #elif __APPLE__
 #   include <TargetConditionals.h>
 #   if TARGET_IPHONE_SIMULATOR
-#      error "Unimplemented"
+#      error "Unimplemented target operating system"
 #   elif TARGET_OS_MACCATALYST
-#      error "Unimplemented"
+#      error "Unimplemented target operating system"
 #   elif TARGET_OS_IPHONE
-#      error "Unimplemented"
+#      error "Unimplemented target operating system"
 #   elif TARGET_OS_MAC
-#      error "Unimplemented"
+#      error "Unimplemented target operating system"
 #   else
 #      error "Unknown Apple platform"
 #   endif
 #elif __linux__
 #   define TEMPEH_OS_LINUX
 #elif __unix__
-#   error "Unimplemented"
+#   error "Unimplemented target operating system"
 #elif defined(_POSIX_VERSION)
-#   error "Unimplemented"
+#   error "Unimplemented target operating system"
 #else
-#   error "Unknown compiler"
+#   error "Unknown OS"
 #endif
 
 #endif

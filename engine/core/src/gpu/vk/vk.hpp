@@ -1,7 +1,9 @@
 #ifndef _TEMPEH_GPU_VK_HPP
 #define _TEMPEH_GPU_VK_HPP
 
-#ifdef WIN32
+#include <tempeh/common/os.hpp>
+
+#ifdef TEMPEH_OS_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
@@ -227,6 +229,60 @@ namespace Tempeh::GPU
                 return VK_ATTACHMENT_STORE_OP_STORE;
             default:
                 return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+    }
+
+    static inline constexpr VkFilter convert_texture_filtering_vk(TextureFiltering filter)
+    {
+        switch (filter) {
+            case TextureFiltering::Linear:
+                return VK_FILTER_LINEAR;
+            default:
+                return VK_FILTER_NEAREST;
+        }
+    }
+
+    static inline constexpr VkSamplerMipmapMode convert_mipmap_filtering_vk(TextureFiltering filter)
+    {
+        switch (filter) {
+            case TextureFiltering::Linear:
+                return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            default:
+                return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        }
+    }
+
+    static inline constexpr VkSamplerAddressMode convert_texture_addressing_vk(TextureAddressing addressing)
+    {
+        switch (addressing) {
+            case TextureAddressing::Mirror:
+                return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            case TextureAddressing::Clamp:
+                return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            default:
+                return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        }
+    }
+
+    static inline constexpr VkCompareOp convert_compare_op_vk(CompareOp compare_op)
+    {
+        switch (compare_op) {
+            case CompareOp::Less:
+                return VK_COMPARE_OP_LESS;
+            case CompareOp::Equal:
+                return VK_COMPARE_OP_EQUAL;
+            case CompareOp::LessEqual:
+                return VK_COMPARE_OP_LESS_OR_EQUAL;
+            case CompareOp::Greater:
+                return VK_COMPARE_OP_GREATER;
+            case CompareOp::NotEqual:
+                return VK_COMPARE_OP_NOT_EQUAL;
+            case CompareOp::GreaterEqual:
+                return VK_COMPARE_OP_GREATER_OR_EQUAL;
+            case CompareOp::Always:
+                return VK_COMPARE_OP_ALWAYS;
+            default:
+                return VK_COMPARE_OP_NEVER;
         }
     }
 

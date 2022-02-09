@@ -13,12 +13,22 @@ namespace Tempeh::Util
         {
         }
 
-        constexpr Result(T&& value) noexcept :
+        constexpr Result(const T& value) :
+            m_var(value)
+        {
+        }
+
+        constexpr Result(const E& err) :
+            m_var(err)
+        {
+        }
+
+        constexpr explicit Result(T&& value) noexcept :
             m_var(std::move(value))
         {
         }
 
-        constexpr Result(E&& err) noexcept :
+        constexpr explicit Result(E&& err) noexcept :
             m_var(std::move(err))
         {
         }

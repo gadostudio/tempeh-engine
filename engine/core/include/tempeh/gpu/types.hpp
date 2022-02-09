@@ -166,6 +166,31 @@ namespace Tempeh::GPU
         Sint
     };
 
+    enum class TextureFiltering
+    {
+        Nearest,
+        Linear
+    };
+
+    enum class TextureAddressing
+    {
+        Wrap,
+        Mirror,
+        Clamp
+    };
+
+    enum class CompareOp
+    {
+        Never,
+        Less,
+        Equal,
+        LessEqual,
+        Greater,
+        NotEqual,
+        GreaterEqual,
+        Always
+    };
+
     struct BufferUsage
     {
         enum
@@ -492,7 +517,18 @@ namespace Tempeh::GPU
 
     struct SamplerDesc
     {
-
+        const char*         label;
+        TextureFiltering    mag_filter;
+        TextureFiltering    min_filter;
+        TextureFiltering    mip_filter;
+        TextureAddressing   address_mode_u;
+        TextureAddressing   address_mode_v;
+        TextureAddressing   address_mode_w;
+        float               mip_lod_bias;
+        u32                 max_anisotropy;
+        CompareOp           compare_op;
+        float               min_lod;
+        float               max_lod;
     };
 
     struct DrawInstancedIndirectCommand
