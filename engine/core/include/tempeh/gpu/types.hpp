@@ -229,7 +229,7 @@ namespace Tempeh::GPU
         DontCare
     };
 
-    enum class DeviceErrorCode : u8
+    enum class ResultCode : u8
     {
         Ok,
         InitializationFailed,
@@ -248,7 +248,7 @@ namespace Tempeh::GPU
     };
 
     template<typename T>
-    using DeviceResult = Util::Result<T, DeviceErrorCode>;
+    using DeviceResult = Util::Result<T, ResultCode>;
 
     struct DeviceLimits
     {

@@ -36,7 +36,7 @@ namespace Tempeh::GPU
         m_surface = VK_NULL_HANDLE;
     }
 
-    DeviceErrorCode SwapChainVK::initialize(const SwapChainDesc& desc)
+    ResultCode SwapChainVK::initialize(const SwapChainDesc& desc)
     {
         // Detect surface capabilities
         VkSurfaceCapabilitiesKHR surface_caps{};
@@ -192,7 +192,7 @@ namespace Tempeh::GPU
                 device, &fence_info, nullptr, &m_wait_fences[i]);
 
             if (VULKAN_FAILED(result)) {
-                return DeviceErrorCode::InternalError;
+                return ResultCode::InternalError;
             }
         }
 
@@ -200,7 +200,7 @@ namespace Tempeh::GPU
         //m_current_frame = 0;
         m_initialized = true;
 
-        return DeviceErrorCode::Ok;
+        return ResultCode::Ok;
     }
 
     void SwapChainVK::swap_buffer()

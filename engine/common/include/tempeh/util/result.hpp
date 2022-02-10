@@ -14,16 +14,6 @@ namespace Tempeh::Util
         {
         }
 
-        constexpr Result(const T& value) :
-            m_var(value)
-        {
-        }
-
-        constexpr Result(const E& err) :
-            m_var(err)
-        {
-        }
-
         constexpr Result(T&& value) noexcept :
             m_var{ std::in_place_index<0>, std::move(value) }
         {

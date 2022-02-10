@@ -37,7 +37,7 @@ namespace Tempeh::GPU
         void swap_buffer() override final;
         void resize(u32 width, u32 height) override final;
 
-        DeviceErrorCode initialize(const SwapChainDesc& desc);
+        ResultCode initialize(const SwapChainDesc& desc);
 
         void attach_window(const std::shared_ptr<Window::Window>& window);
         void destroy_objs(u32 num_images);

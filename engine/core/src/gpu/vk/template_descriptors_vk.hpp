@@ -48,8 +48,9 @@ namespace Tempeh::GPU
             alloc_info.descriptorSetCount = 1;
             alloc_info.pSetLayouts = &m_set_layout;
 
-            VULKAN_ASSERT(!VULKAN_FAILED(
-                vkAllocateDescriptorSets(m_device, &alloc_info, &descriptor_set)));
+            if (VULKAN_FAILED(vkAllocateDescriptorSets(m_device, &alloc_info, &descriptor_set))) {
+                return VK_NULL_HANDLE;
+            }
 
             return descriptor_set;
         }

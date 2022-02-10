@@ -5,22 +5,28 @@
 
 namespace Tempeh::GPU
 {
-    void Instance::initialize(BackendType type, bool prefer_high_performance)
+    ResultCode Instance::initialize(BackendType type, bool prefer_high_performance)
     {
         if (device_) {
-            return;
+            return ResultCode::Ok;
         }
 
         switch (type) {
             case BackendType::Vulkan: {
                 auto result = DeviceVK::initialize(prefer_high_performance);
-                assert(result.is_ok() && "Failed to initialize device");
+                
+                if (!result.is_ok()) {
+                    return result.err();
+                }
+
                 device_ = std::move(result.value());
                 break;
             }
             default:
-                assert("Backend not supported");
+                break;
         }
+
+        return ResultCode::BackendNotSupported;
     }
 
     Util::Ref<Device> Instance::get_device()

@@ -34,17 +34,17 @@
 
 namespace Tempeh::GPU
 {
-    static inline constexpr DeviceErrorCode parse_error_vk(VkResult result)
+    static inline constexpr ResultCode parse_error_vk(VkResult result)
     {
         switch (result) {
             case VK_ERROR_OUT_OF_HOST_MEMORY:
-                return DeviceErrorCode::OutOfHostMemory;
+                return ResultCode::OutOfHostMemory;
             case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-                return DeviceErrorCode::OutOfDeviceMemory;
+                return ResultCode::OutOfDeviceMemory;
             case VK_ERROR_INITIALIZATION_FAILED:
-                return DeviceErrorCode::InitializationFailed;
+                return ResultCode::InitializationFailed;
             default:
-                return DeviceErrorCode::InternalError;
+                return ResultCode::InternalError;
         }
     }
 

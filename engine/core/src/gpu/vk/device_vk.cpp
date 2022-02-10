@@ -21,7 +21,7 @@ namespace Tempeh::GPU
 #if defined(TEMPEH_OS_WINDOWS)
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 #elif defined(TEMPEH_OS_LINUX)
-        
+        // TODO
 #endif
     };
 
@@ -88,7 +88,7 @@ namespace Tempeh::GPU
 
         if (desc.num_images > 3) {
             LOG_ERROR("Too many surface images (max: 3)");
-            return DeviceErrorCode::InvalidArgs;
+            return { ResultCode::InvalidArgs };
         }
 
         // Create window surface
@@ -97,11 +97,11 @@ namespace Tempeh::GPU
                 vk_surface = create_surface_glfw(window);
                 break;
             default:
-                return DeviceErrorCode::Unimplemented;
+                return { ResultCode::Unimplemented };
         }
 
         if (vk_surface == VK_NULL_HANDLE) {
-            return DeviceErrorCode::InternalError;
+            return { ResultCode::InternalError };
         }
 
         VkBool32 present_supported = VK_FALSE;
@@ -111,13 +111,13 @@ namespace Tempeh::GPU
 
         if (present_supported != VK_TRUE) {
             vkDestroySurfaceKHR(m_instance, vk_surface, nullptr);
-            return DeviceErrorCode::SurfacePresentationNotSupported;
+            return { ResultCode::SurfacePresentationNotSupported };
         }
 
         SwapChainVK* surface = new SwapChainVK(vk_surface, this);
-        DeviceErrorCode err = surface->initialize(desc);
+        ResultCode err = surface->initialize(desc);
 
-        if (err != DeviceErrorCode::Ok) {
+        if (err != ResultCode::Ok) {
             delete surface;
             vkDestroySurfaceKHR(m_instance, vk_surface, nullptr);
             return err;
@@ -132,9 +132,10 @@ namespace Tempeh::GPU
     {
         std::lock_guard lock(m_sync_mutex);
 
-        DeviceErrorCode err = prevalidate_texture_desc(desc, m_device_limits);
-        if (err != DeviceErrorCode::Ok) {
-            return RefDeviceResult<Texture>(err);
+        ResultCode err = prevalidate_texture_desc(desc, m_device_limits);
+
+        if (err != ResultCode::Ok) {
+            return { std::move(err) };
         }
 
         VkImageCreateInfo image_info{};
@@ -148,7 +149,7 @@ namespace Tempeh::GPU
 
         if (!format_supported) {
             LOG_ERROR("Failed to create texture: unsupported texture format.");
-            return DeviceErrorCode::FormatNotSupported;
+            return { ResultCode::FormatNotSupported };
         }
 
         switch (desc.type) {
@@ -199,15 +200,15 @@ namespace Tempeh::GPU
 
         if (result == VK_ERROR_FORMAT_NOT_SUPPORTED) {
             LOG_ERROR("Failed to create texture: unsupported texture format.");
-            return DeviceErrorCode::FormatNotSupported;
+            return ResultCode::FormatNotSupported;
         }
         else if (VULKAN_FAILED(result)) {
-            return DeviceErrorCode::InternalError;
+            return ResultCode::InternalError;
         }
 
         if (desc.mip_levels > image_format_properties.maxMipLevels) {
             LOG_ERROR("Failed to create texture: too many mipmap levels.");
-            return DeviceErrorCode::InvalidArgs;
+            return ResultCode::InvalidArgs;
         }
         */
 
@@ -267,7 +268,7 @@ namespace Tempeh::GPU
             &image, &allocation, nullptr);
 
         if (result == VK_ERROR_FEATURE_NOT_PRESENT) {
-            return DeviceErrorCode::MemoryUsageNotSupported;
+            return { ResultCode::MemoryUsageNotSupported };
         }
         else if (VULKAN_FAILED(result)) {
             return parse_error_vk(result);
@@ -311,6 +312,10 @@ namespace Tempeh::GPU
         if (bit_match(desc.usage, TextureUsage::Storage))
         {
             storage_template_descriptor = m_storage_image_template_descriptors.value().allocate_set();
+
+            if (storage_template_descriptor == VK_NULL_HANDLE) {
+                return { ResultCode::InternalError };
+            }
             
             VkDescriptorImageInfo descriptor_image_info{};
             descriptor_image_info.sampler = VK_NULL_HANDLE;
@@ -333,6 +338,10 @@ namespace Tempeh::GPU
 
         if (bit_match(desc.usage, TextureUsage::Sampled)) {
             sampled_template_descriptor = m_sampled_image_template_descriptors.value().allocate_set();
+
+            if (sampled_template_descriptor == VK_NULL_HANDLE) {
+                return { ResultCode::InternalError };
+            }
             
             VkDescriptorImageInfo descriptor_image_info{};
             descriptor_image_info.sampler = VK_NULL_HANDLE;
@@ -386,10 +395,10 @@ namespace Tempeh::GPU
                 &alloc_info, &buffer, &allocation, nullptr);
 
         if (result == VK_ERROR_FEATURE_NOT_PRESENT) {
-            return DeviceErrorCode::MemoryUsageNotSupported;
+            return { ResultCode::MemoryUsageNotSupported };
         }
         else if (VULKAN_FAILED(result)) {
-            return DeviceErrorCode::InternalError;
+            return { ResultCode::InternalError };
         }
 
         return { std::make_shared<BufferVK>(this, buffer, allocation, desc) };
@@ -407,7 +416,7 @@ namespace Tempeh::GPU
 
         if (!(has_uniform_usage_bit && has_storage_usage_bit)) {
             LOG_ERROR("Failed to create buffer view: the given buffer is not created with BufferUsage::Uniform or BufferUsage::Storage usage.");
-            return DeviceErrorCode::IncompatibleResourceUsage;
+            return { ResultCode::IncompatibleResourceUsage };
         }
 
         VkDescriptorBufferInfo descriptor_buffer_info{};
@@ -420,6 +429,10 @@ namespace Tempeh::GPU
 
         if (has_uniform_usage_bit) {
             uniform_template_descriptor = m_uniform_buffer_template_descriptors.value().allocate_set();
+
+            if (uniform_template_descriptor == VK_NULL_HANDLE) {
+                return { ResultCode::InternalError };
+            }
 
             descriptor_buffer_info.offset = desc.offset;
             descriptor_buffer_info.range = desc.range;
@@ -436,6 +449,10 @@ namespace Tempeh::GPU
 
         if (has_storage_usage_bit) {
             storage_template_descriptor = m_storage_buffer_template_descriptors.value().allocate_set();
+
+            if (storage_template_descriptor == VK_NULL_HANDLE) {
+                return { ResultCode::InternalError };
+            }
 
             descriptor_buffer_info.offset = desc.offset;
             descriptor_buffer_info.range = desc.range;
@@ -467,7 +484,7 @@ namespace Tempeh::GPU
 
         if (desc.color_attachments.size() > max_color_attachments) {
             LOG_ERROR("Failed to create render pass: too many attachments. (max: {})", max_color_attachments);
-            return DeviceErrorCode::InvalidArgs;
+            return { ResultCode::InvalidArgs };
         }
         
         u32 color_attachment_index = 0;
@@ -487,7 +504,7 @@ namespace Tempeh::GPU
                     "Failed to create render pass: the format in attachment #{} is not supported. "
                     "The given format must support the color attachment feature (TextureFormatFeature::ColorAttachment).",
                     color_attachment_index);
-                return DeviceErrorCode::FormatNotSupported;
+                return { ResultCode::FormatNotSupported };
             }
 
             att.samples = (VkSampleCountFlagBits)desc.num_samples;
@@ -515,7 +532,7 @@ namespace Tempeh::GPU
                 LOG_ERROR(
                     "Failed to create render pass: the depth-stencil attachment format is not supported. "
                     "The given format must support the depth-stencil attachment feature (TextureFormatFeature::DepthStencilAttachment).");
-                return DeviceErrorCode::FormatNotSupported;
+                return { ResultCode::FormatNotSupported };
             }
 
             att.samples = (VkSampleCountFlagBits)desc.num_samples;
@@ -548,7 +565,7 @@ namespace Tempeh::GPU
         VkRenderPass render_pass;
 
         if (VULKAN_FAILED(vkCreateRenderPass(m_device, &rp_info, nullptr, &render_pass))) {
-            return DeviceErrorCode::InternalError;
+            return { ResultCode::InternalError };
         }
 
         return { std::make_shared<RenderPassVK>(this, render_pass, desc) };
@@ -640,6 +657,10 @@ namespace Tempeh::GPU
         // Write template descriptor for the sampler
         VkDescriptorSet sampler_template_descriptor =
             m_sampler_template_descriptors.value().allocate_set();
+
+        if (sampler_template_descriptor == VK_NULL_HANDLE) {
+            return { ResultCode::InternalError };
+        }
 
         VkDescriptorImageInfo descriptor_image_info{};
         descriptor_image_info.sampler = sampler;
@@ -871,7 +892,7 @@ namespace Tempeh::GPU
     RefDeviceResult<Device> DeviceVK::initialize(bool prefer_high_performance)
     {
         if (VULKAN_FAILED(volkInitialize())) {
-            return DeviceErrorCode::InitializationFailed;
+            return ResultCode::InitializationFailed;
         }
 
         // ---- Vulkan instance initialization ----
@@ -1011,7 +1032,7 @@ namespace Tempeh::GPU
         }
 
         if (!has_suitable_queue) {
-            return DeviceErrorCode::BackendNotSupported;
+            return ResultCode::BackendNotSupported;
         }
 
         VkDeviceCreateInfo device_info{};
