@@ -23,10 +23,10 @@ namespace Tempeh::GPU
                 break;
             }
             default:
-                break;
+                return ResultCode::BackendNotSupported;
         }
 
-        return ResultCode::BackendNotSupported;
+        return ResultCode::Ok;
     }
 
     Util::Ref<Device> Instance::get_device()
