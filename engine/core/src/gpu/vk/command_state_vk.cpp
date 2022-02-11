@@ -21,6 +21,10 @@ namespace Tempeh::GPU
 
     void CommandStateVK::flush(VkCommandBuffer cmd_buffer)
     {
+        if (m_dirty_state == 0) {
+            return; // No states need to be flushed
+        }
+
         if (m_dirty_state & DirtyState_Viewports) {
             vkCmdSetViewport(cmd_buffer, 0, 1, &m_viewport);
         }

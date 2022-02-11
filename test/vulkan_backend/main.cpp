@@ -10,7 +10,7 @@ using namespace Tempeh;
 int main()
 {
     Log::Logger::init("test");
-    GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
+    GPU::Instance::initialize(GPU::BackendType::Vulkan, false);
     Util::Ref<GPU::Device> device = GPU::Instance::get_device();
     
     std::shared_ptr<Event::InputManager> input_manager =
@@ -79,16 +79,13 @@ int main()
 
     auto framebuffer = device->create_framebuffer(render_pass.value(), framebuffer_desc);
 
-    auto clear_values = {
-        GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f)
-    };
 
-    /*
     device->begin_cmd();
-    device->begin_render_pass(framebuffer.value(), clear_values);
+    device->begin_render_pass(framebuffer.value(), { GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f) });
+    device->end_render_pass();
+    device->begin_render_pass(framebuffer.value(), { GPU::ClearValue::color_float(0.0f, 1.0f, 0.0f, 1.0f) });
     device->end_render_pass();
     device->end_cmd();
-    */
 
     while (!window->is_need_to_close()) {
         input_manager->clear();

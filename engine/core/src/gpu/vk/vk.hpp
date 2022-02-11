@@ -286,6 +286,57 @@ namespace Tempeh::GPU
         }
     }
 
+    static inline void texture_layout_transition_vk(
+        VkImageLayout new_layout,
+        const VkImageSubresourceRange& subresource_range,
+        VkImage image,
+        VkImageLayout& old_layout,
+        VkPipelineStageFlags& stage_src,
+        VkPipelineStageFlags& stage_dst,
+        VkImageMemoryBarrier& barrier)
+    {
+        switch (old_layout) {
+            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                stage_src |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                stage_src |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                break;
+            default:
+                stage_src |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                barrier.srcAccessMask = 0;
+                break;
+        }
+
+        switch (new_layout) {
+            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                stage_dst |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                stage_dst |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                break;
+            default:
+                stage_src |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                barrier.srcAccessMask = 0;
+                break;
+        }
+
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.pNext = nullptr;
+        barrier.oldLayout = old_layout;
+        barrier.newLayout = new_layout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange = subresource_range;
+
+        old_layout = new_layout;
+    }
+
     static inline bool find_layer(
         const std::vector<VkLayerProperties>& layers,
         const char* layer)

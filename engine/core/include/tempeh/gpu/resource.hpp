@@ -130,6 +130,8 @@ namespace Tempeh::GPU
         }
 
         bool has_depth_stencil_attachment() const { return m_depth_stencil_attachment != nullptr; }
+        size_t num_color_attachments() const { return m_parent_render_pass->num_color_attachments(); }
+
         u32 width() const { return m_width; }
         u32 height() const { return m_height; }
 

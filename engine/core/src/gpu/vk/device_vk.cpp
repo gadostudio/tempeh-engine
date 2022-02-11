@@ -369,6 +369,7 @@ namespace Tempeh::GPU
         return {
             std::make_shared<TextureVK>(
                 this, image, image_view, allocation,
+                view_info.subresourceRange,
                 storage_template_descriptor,
                 sampled_template_descriptor, desc)
         };
@@ -708,18 +709,24 @@ namespace Tempeh::GPU
 
     void DeviceVK::begin_render_pass(
         const Util::Ref<Framebuffer>& framebuffer,
-        std::initializer_list<ClearValue> clear_values,
-        ClearValue depth_stencil_clear_value)
+        std::initializer_list<ClearValue> clear_color_values,
+        ClearValue clear_depth_stencil_value)
     {
         static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1;
 
         if (!m_is_recording_command) {
-            LOG_ERROR("Cannot begin render pass when the command list has not began.");
+            LOG_ERROR("Cannot begin render pass: command list has not began.");
+            return;
+        }
+
+        if (clear_color_values.size() != framebuffer->num_color_attachments()) {
+            LOG_ERROR("Cannot begin render pass: the number of clear color attachment values does not match with the number of color attachment in framebuffer");
             return;
         }
 
         const Util::Ref<RenderPass>& render_pass = framebuffer->parent_render_pass();
-        std::array<VkClearValue, max_att_descriptions> vk_clear_values;
+        std::array<VkClearValue, max_att_descriptions> vk_clear_values{};
+        std::array<VkImageMemoryBarrier, max_att_descriptions> image_barriers;
         VkRenderPassBeginInfo begin_info{};
 
         // We don't use std::shared_pointer_cast here because it causes the reference counter to increments.
@@ -731,10 +738,21 @@ namespace Tempeh::GPU
         begin_info.renderArea.extent.width = framebuffer->width();
         begin_info.renderArea.extent.height = framebuffer->height();
 
-        u32 color_att_index = 0;
-        for (const auto& clear_value : clear_values) {
-            const ColorAttachmentDesc& att_desc = render_pass->color_attachment_desc(color_att_index);
+        const ClearValue* clear_value_data = clear_color_values.begin();
+        size_t num_color_attachments = framebuffer->num_color_attachments();
+        VkPipelineStageFlags stage_dst = 0;
+        VkPipelineStageFlags stage_src = 0;
+
+        for (u32 i = 0; i < num_color_attachments; i++) {
+            TextureVK* attachment = static_cast<TextureVK*>(framebuffer->color_attachment(i).color_attachment.get());
+            const ColorAttachmentDesc& att_desc = render_pass->color_attachment_desc(i);
+            const FramebufferAttachment& fb_att = framebuffer->color_attachment(i);
+            const ClearValue& clear_value = clear_value_data[i];
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
+
+            if (att_desc.load_op != LoadOp::Clear) {
+                continue;
+            }
 
             switch (att_desc.component_type) {
                 case TextureComponentType::Float:
@@ -757,23 +775,48 @@ namespace Tempeh::GPU
                     break;
             }
 
-            color_att_index++;
+            texture_layout_transition_vk(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                attachment->m_subresource_range,
+                attachment->m_image,
+                attachment->m_last_layout,
+                stage_src,
+                stage_dst,
+                image_barriers[i]);
+
             begin_info.clearValueCount++;
         }
 
         if (framebuffer->has_depth_stencil_attachment()) {
+            TextureVK* attachment = static_cast<TextureVK*>(framebuffer->depth_stencil_attachment().get());
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
 
-            vk_value.depthStencil.depth = depth_stencil_clear_value.depth_stencil.depth;
-            vk_value.depthStencil.stencil = depth_stencil_clear_value.depth_stencil.stencil;
+            vk_value.depthStencil.depth = clear_depth_stencil_value.depth_stencil.depth;
+            vk_value.depthStencil.stencil = clear_depth_stencil_value.depth_stencil.stencil;
+
+            texture_layout_transition_vk(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                attachment->m_subresource_range,
+                attachment->m_image,
+                attachment->m_last_layout,
+                stage_src,
+                stage_dst,
+                image_barriers[begin_info.clearValueCount]);
 
             begin_info.clearValueCount++;
         }
         
         begin_info.pClearValues = vk_clear_values.data();
 
-        // TODO: Add pipeline barier before beginning the render pass
-
+        // Add the barrier
+        vkCmdPipelineBarrier(
+            m_current_cmd_buffer,
+            stage_src, stage_dst, 0,
+            0, nullptr,
+            0, nullptr,
+            begin_info.clearValueCount,
+            image_barriers.data());
+        
         // BEGIN!
         vkCmdBeginRenderPass(m_current_cmd_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -835,6 +878,21 @@ namespace Tempeh::GPU
         }
 
         m_cmd_states.set_stencil_ref(reference);
+    }
+
+    void DeviceVK::draw(u32 num_vertices, u32 first_vertex)
+    {
+        draw_instanced(num_vertices, 1, first_vertex, 0);
+    }
+
+    void DeviceVK::draw_indexed(u32 num_indices, u32 first_index, i32 vertex_offset)
+    {
+        m_cmd_states.flush(m_current_cmd_buffer);
+    }
+
+    void DeviceVK::draw_instanced(u32 num_vertices, u32 num_instances, u32 first_vertex, u32 first_instance)
+    {
+        m_cmd_states.flush(m_current_cmd_buffer);
     }
 
     void DeviceVK::end_render_pass()
@@ -1052,6 +1110,45 @@ namespace Tempeh::GPU
         }
 
         volkLoadDevice(device);
+
+        LOG_INFO("Initialized Vulkan backend:");
+        LOG_INFO("  Device: {}", properties.deviceName);
+
+        switch (properties.deviceType) {
+            case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+                LOG_INFO("  Device type: Discrete GPU");
+                break;
+            case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+                LOG_INFO("  Device type: Integrated GPU");
+                break;
+            case VK_PHYSICAL_DEVICE_TYPE_CPU:
+                LOG_INFO("  Device type: CPU/Software-based");
+                break;
+            default:
+                LOG_INFO("  Device type: Unknown");
+                break;
+        }
+
+        switch (properties.vendorID) {
+            case 4318:
+                LOG_INFO("  Vendor ID: NVIDIA Corporation");
+                break;
+            case 4098:
+                LOG_INFO("  Vendor ID: Advanced Micro Devices, Inc.");
+                break;
+            case 8086:
+                LOG_INFO("  Vendor ID: Intel Corporation");
+                break;
+            default:
+                LOG_INFO("  Vendor ID: Unknown");
+                break;
+        }
+
+        LOG_INFO("  Vulkan version: {}.{}.{}.{}",
+            VK_API_VERSION_MAJOR(properties.apiVersion),
+            VK_API_VERSION_MINOR(properties.apiVersion),
+            VK_API_VERSION_PATCH(properties.apiVersion),
+            VK_API_VERSION_VARIANT(properties.apiVersion));
 
         VmaVulkanFunctions vma_fn{};
         vma_fn.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;

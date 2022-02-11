@@ -10,6 +10,7 @@ namespace Tempeh::GPU
         VkImage image,
         VkImageView view,
         VmaAllocation allocation,
+        const VkImageSubresourceRange& subresource_range,
         VkDescriptorSet storage_template_descriptor,
         VkDescriptorSet sampled_template_descriptor,
         const TextureDesc& desc)
@@ -18,6 +19,7 @@ namespace Tempeh::GPU
           m_image(image),
           m_image_view(view),
           m_allocation(allocation),
+          m_subresource_range(subresource_range),
           m_storage_template_descriptor(storage_template_descriptor),
           m_sampled_template_descriptor(sampled_template_descriptor)
     {

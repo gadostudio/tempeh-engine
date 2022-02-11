@@ -504,7 +504,7 @@ namespace Tempeh::GPU
             return ret;
         }
 
-        inline static constexpr ClearValue depth_stencil_value(float depth, u32 stencil)
+        inline static constexpr ClearValue depth_stencil_value(float depth = 1.0f, u32 stencil = 0)
         {
             ClearValue ret{};
 

@@ -143,13 +143,16 @@ namespace Tempeh::GPU
         void begin_render_pass(
             const Util::Ref<Framebuffer>& framebuffer,
             std::initializer_list<ClearValue> clear_values,
-            ClearValue depth_stencil_clear_value = {}) override final;
+            ClearValue clear_depth_stencil_value = {}) override final;
 
         void set_viewport(float x, float y, float width, float height, float min_depth, float max_depth) override final;
         void set_scissor_rect(u32 x, u32 y, u32 width, u32 height) override final;
         void set_blend_constants(float r, float g, float b, float a) override final;
         void set_blend_constants(float color[4]) override final;
         void set_stencil_ref(u32 reference) override final;
+        void draw(u32 num_vertices, u32 first_vertex) override final;
+        void draw_indexed(u32 num_indices, u32 first_index, i32 vertex_offset) override final;
+        void draw_instanced(u32 num_vertices, u32 num_instances, u32 first_vertex, u32 first_instance) override final;
 
         void end_render_pass() override final;
         
