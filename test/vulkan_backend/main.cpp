@@ -10,7 +10,7 @@ using namespace Tempeh;
 int main()
 {
     Log::Logger::init("test");
-    GPU::Instance::initialize(GPU::BackendType::Vulkan, false);
+    GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
     Util::Ref<GPU::Device> device = GPU::Instance::get_device();
     
     std::shared_ptr<Event::InputManager> input_manager =
@@ -24,7 +24,7 @@ int main()
     surface_desc.format = GPU::TextureFormat::BGRA_8_8_8_8_Unorm;
     surface_desc.width = size.width;
     surface_desc.height = size.height;
-    surface_desc.num_images = 2;
+    surface_desc.num_images = 3;
     surface_desc.vsync = true;
 
     auto surface = device->create_swapchain(window, surface_desc).value();
@@ -44,12 +44,6 @@ int main()
 
     auto texture = device->create_texture(texture_desc);
 
-    GPU::ColorAttachmentDesc color_attachment{};
-    color_attachment.format = GPU::TextureFormat::RGBA_8_8_8_8_Unorm;
-    color_attachment.load_op = GPU::LoadOp::Clear;
-    color_attachment.store_op = GPU::StoreOp::Store;
-    color_attachment.resolve = false;
-
     GPU::DepthStencilAttachmentDesc ds_attachment{};
     ds_attachment.format = GPU::TextureFormat::D_32_Float;
     ds_attachment.depth_load_op = GPU::LoadOp::Clear;
@@ -59,7 +53,13 @@ int main()
 
     GPU::RenderPassDesc render_pass_desc{};
     render_pass_desc.color_attachments = {
-        &color_attachment
+        GPU::ColorAttachmentDesc {
+            GPU::TextureFormat::RGBA_8_8_8_8_Unorm,
+            GPU::TextureComponentType::Float,
+            GPU::LoadOp::Clear,
+            GPU::StoreOp::Store,
+            false
+        }
     };
 
     render_pass_desc.num_samples = 1;
@@ -78,7 +78,6 @@ int main()
     framebuffer_desc.height = 256;
 
     auto framebuffer = device->create_framebuffer(render_pass.value(), framebuffer_desc);
-
 
     device->begin_cmd();
     device->begin_render_pass(framebuffer.value(), { GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f) });

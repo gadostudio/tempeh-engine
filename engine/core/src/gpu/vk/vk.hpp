@@ -304,6 +304,14 @@ namespace Tempeh::GPU
                 stage_src |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
                 barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                stage_src |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                stage_src |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
             default:
                 stage_src |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                 barrier.srcAccessMask = 0;
@@ -319,9 +327,17 @@ namespace Tempeh::GPU
                 stage_dst |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
                 barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                stage_dst |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+                barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                stage_dst |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+                barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
             default:
-                stage_src |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-                barrier.srcAccessMask = 0;
+                stage_dst |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                barrier.dstAccessMask = 0;
                 break;
         }
 

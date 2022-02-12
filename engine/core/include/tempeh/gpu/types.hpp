@@ -6,6 +6,7 @@
 #include <tempeh/util/result.hpp>
 #include <tempeh/util/ref_count.hpp>
 #include <initializer_list>
+#include <optional>
 
 namespace Tempeh::GPU
 {
@@ -421,8 +422,8 @@ namespace Tempeh::GPU
     struct RenderPassDesc
     {
         const char*                                         label;
-        std::initializer_list<const ColorAttachmentDesc*>   color_attachments;
-        const DepthStencilAttachmentDesc*                   depth_stencil_attachment;
+        std::initializer_list<const ColorAttachmentDesc>    color_attachments;
+        std::optional<const DepthStencilAttachmentDesc>     depth_stencil_attachment;
         u32                                                 num_samples;
     };
     

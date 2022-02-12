@@ -1,5 +1,6 @@
 #include "swapchain_vk.hpp"
 #include "device_vk.hpp"
+#include "resource_vk.hpp"
 
 namespace Tempeh::GPU
 {
@@ -10,7 +11,9 @@ namespace Tempeh::GPU
     {
         VkCommandPoolCreateInfo cmd_pool_info{};
         cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        cmd_pool_info.flags =
+            VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         cmd_pool_info.queueFamilyIndex = m_parent_device->m_main_queue_index;
 
         if (VULKAN_FAILED(vkCreateCommandPool(
@@ -170,8 +173,6 @@ namespace Tempeh::GPU
             vkAllocateCommandBuffers(device, &cmd_buffer_info, m_cmd_buffers.data());
         }
 
-        init_cmd_buffers(num_images);
-
         VkSemaphoreCreateInfo semaphore_info{};
         semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -196,8 +197,20 @@ namespace Tempeh::GPU
             }
         }
 
+        m_swapchain_blit_region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        m_swapchain_blit_region.dstSubresource.baseArrayLayer = 0;
+        m_swapchain_blit_region.dstSubresource.layerCount = 1;
+        m_swapchain_blit_region.dstSubresource.mipLevel = 0;
+        m_swapchain_blit_region.dstOffsets[1].x = surface_caps.maxImageExtent.width;
+        m_swapchain_blit_region.dstOffsets[1].y = surface_caps.maxImageExtent.height;
+        m_swapchain_blit_region.dstOffsets[1].z = 1;
+
         m_desc = desc;
-        //m_current_frame = 0;
+
+        if (!m_initialized) {
+            resize(desc.width, desc.height);
+        }
+        
         m_initialized = true;
 
         return ResultCode::Ok;
@@ -230,6 +243,87 @@ namespace Tempeh::GPU
         else if (VULKAN_FAILED(result)) {
             assert(false && "Cannot acquire next image");
         }
+
+        VkCommandBuffer current_cmd_buffer = m_cmd_buffers[m_image_index];
+        VkImage current_image = m_images[m_image_index];
+
+        VkCommandBufferBeginInfo begin_info{};
+        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        begin_info.pInheritanceInfo = nullptr;
+
+        vkBeginCommandBuffer(current_cmd_buffer, &begin_info);
+
+        TextureVK* backbuffer_texture = m_backbuffers[m_current_frame].get();
+        VkImage backbuffer_image = backbuffer_texture->m_image;
+
+        VkImageSubresourceRange subresource_range{};
+        subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresource_range.baseMipLevel = 0;
+        subresource_range.levelCount = 1;
+        subresource_range.baseArrayLayer = 0;
+        subresource_range.layerCount = 1;
+
+        VkImageMemoryBarrier image_barrier[2];
+        VkPipelineStageFlags src_stage = 0;
+        VkPipelineStageFlags dst_stage = 0;
+        VkImageLayout swapchain_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        texture_layout_transition_vk(
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            subresource_range,
+            backbuffer_image,
+            backbuffer_texture->m_last_layout,
+            src_stage,
+            dst_stage,
+            image_barrier[0]);
+
+        texture_layout_transition_vk(
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            subresource_range,
+            m_images[m_image_index],
+            swapchain_image_layout,
+            src_stage,
+            dst_stage,
+            image_barrier[1]);
+
+        vkCmdPipelineBarrier(
+            current_cmd_buffer,
+            src_stage,
+            dst_stage,
+            0, 0, nullptr, 0, nullptr,
+            2, image_barrier);
+
+        vkCmdBlitImage(
+            current_cmd_buffer,
+            backbuffer_image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            current_image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &m_swapchain_blit_region,
+            VK_FILTER_LINEAR);
+        
+        src_stage = VK_PIPELINE_STAGE_NONE;
+        dst_stage = VK_PIPELINE_STAGE_NONE;
+
+        texture_layout_transition_vk(
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            subresource_range,
+            m_images[m_image_index],
+            swapchain_image_layout,
+            src_stage,
+            dst_stage,
+            image_barrier[1]);
+
+        vkCmdPipelineBarrier(
+            current_cmd_buffer,
+            src_stage,
+            dst_stage,
+            0, 0, nullptr, 0, nullptr,
+            1, &image_barrier[1]);
+
+        vkEndCommandBuffer(current_cmd_buffer);
 
         static const VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
         VkSubmitInfo submit_info{};
@@ -281,8 +375,38 @@ namespace Tempeh::GPU
 
     void SwapChainVK::resize(u32 width, u32 height)
     {
-        TEMPEH_UNREFERENCED(width);
-        TEMPEH_UNREFERENCED(height);
+        TextureDesc backbuffer_desc{};
+        backbuffer_desc.label = "Swapchain back buffer";
+        backbuffer_desc.type = TextureType::Texture2D;
+        backbuffer_desc.usage = TextureUsage::ColorAttachment | TextureUsage::TransferSrc;
+        backbuffer_desc.memory_usage = MemoryUsage::Default;
+        backbuffer_desc.format = m_desc.format;
+        backbuffer_desc.width = width;
+        backbuffer_desc.height = height;
+        backbuffer_desc.depth = 1;
+        backbuffer_desc.mip_levels = 1;
+        backbuffer_desc.array_layers = 1;
+        backbuffer_desc.num_samples = 1;
+
+        for (u32 i = 0; i < m_desc.num_images; i++) {
+            m_backbuffers[i] = std::static_pointer_cast<TextureVK>(m_parent_device->create_texture(backbuffer_desc).value());
+        }
+
+        m_swapchain_blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        m_swapchain_blit_region.srcSubresource.baseArrayLayer = 0;
+        m_swapchain_blit_region.srcSubresource.layerCount = 1;
+        m_swapchain_blit_region.srcSubresource.mipLevel = 0;
+        m_swapchain_blit_region.srcOffsets[1].x = width;
+        m_swapchain_blit_region.srcOffsets[1].y = height;
+        m_swapchain_blit_region.srcOffsets[1].z = 1;
+
+        m_desc.width = width;
+        m_desc.height = height;
+    }
+
+    const Util::Ref<Texture>& SwapChainVK::get_swapchain_backbuffer(u32 index) const
+    {
+        return m_backbuffers[index];
     }
 
     void SwapChainVK::attach_window(const std::shared_ptr<Window::Window>& window)
@@ -323,76 +447,6 @@ namespace Tempeh::GPU
                 m_images_in_flight.begin(),
                 m_images_in_flight.end(),
                 VK_NULL_HANDLE);
-        }
-    }
-
-    void SwapChainVK::init_cmd_buffers(u32 num_images)
-    {
-        VkDevice device = m_parent_device->m_device;
-        vkResetCommandPool(device, m_cmd_pool, 0);
-
-        VkImageMemoryBarrier image_barrier{};
-        image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_barrier.subresourceRange.baseMipLevel = 0;
-        image_barrier.subresourceRange.levelCount = 1;
-        image_barrier.subresourceRange.baseArrayLayer = 0;
-        image_barrier.subresourceRange.layerCount = 1;
-
-        VkClearColorValue clear_color{};
-        clear_color.float32[0] = 1.0f;
-        clear_color.float32[1] = 0.0f;
-        clear_color.float32[2] = 0.0f;
-        clear_color.float32[3] = 1.0f;
-
-        // Here we didn't actually expose the swapchain image.
-        // But instead, we create our own images and pass them to the swapchain images.
-        for (u32 i = 0; i < num_images; i++) {
-            VkCommandBuffer current = m_cmd_buffers[i];
-
-            VkCommandBufferBeginInfo begin_info{};
-            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.flags = 0;
-            begin_info.pInheritanceInfo = nullptr;
-
-            vkBeginCommandBuffer(current, &begin_info);
-
-            // Undefined -> Transfer destination
-            image_barrier.srcAccessMask = 0;
-            image_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            image_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            image_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            image_barrier.image = m_images[i];
-
-            vkCmdPipelineBarrier(
-                current,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                0, 0, nullptr, 0, nullptr, 1,
-                &image_barrier);
-
-            vkCmdClearColorImage(
-                current, m_images[i],
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                &clear_color, 1, &image_barrier.subresourceRange);
-
-            // Transfer destination -> Present
-            image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            image_barrier.dstAccessMask = 0;
-            image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            image_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            image_barrier.image = m_images[i];
-
-            vkCmdPipelineBarrier(
-                current,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                0, 0, nullptr, 0, nullptr, 1,
-                &image_barrier);
-
-            vkEndCommandBuffer(current);
         }
     }
 }

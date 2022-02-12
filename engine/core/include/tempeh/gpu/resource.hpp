@@ -54,7 +54,7 @@ namespace Tempeh::GPU
 
         RenderPass(const RenderPassDesc& desc) :
             m_color_attachments(),
-            m_has_depth_stencil_attachment(desc.depth_stencil_attachment != nullptr),
+            m_has_depth_stencil_attachment(desc.depth_stencil_attachment.has_value()),
             m_depth_stencil_attachment(),
             m_num_samples(desc.num_samples),
             m_num_color_attachments(desc.color_attachments.size())
@@ -66,8 +66,8 @@ namespace Tempeh::GPU
                 desc.color_attachments.begin(),
                 desc.color_attachments.end(),
                 m_color_attachments.begin(),
-                [](const ColorAttachmentDesc* desc) {
-                    return *desc;
+                [](const ColorAttachmentDesc& desc) {
+                    return desc;
                 });
         }
 

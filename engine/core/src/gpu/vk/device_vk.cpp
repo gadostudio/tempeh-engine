@@ -130,8 +130,6 @@ namespace Tempeh::GPU
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
-        std::lock_guard lock(m_sync_mutex);
-
         ResultCode err = prevalidate_texture_desc(desc, m_device_limits);
 
         if (err != ResultCode::Ok) {
@@ -496,7 +494,7 @@ namespace Tempeh::GPU
             ref.attachment = num_attachment_used;
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-            att.format = convert_format_vk(color_att_desc->format);
+            att.format = convert_format_vk(color_att_desc.format);
 
             auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
 
@@ -509,8 +507,8 @@ namespace Tempeh::GPU
             }
 
             att.samples = (VkSampleCountFlagBits)desc.num_samples;
-            att.loadOp = convert_load_op_vk(color_att_desc->load_op);
-            att.storeOp = convert_store_op_vk(color_att_desc->store_op);
+            att.loadOp = convert_load_op_vk(color_att_desc.load_op);
+            att.storeOp = convert_store_op_vk(color_att_desc.store_op);
             att.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             att.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -519,7 +517,7 @@ namespace Tempeh::GPU
         }
 
         // Add depth stencil attachment if available
-        if (desc.depth_stencil_attachment != nullptr) {
+        if (desc.depth_stencil_attachment.has_value()) {
             VkAttachmentDescription& att = att_descriptions[num_attachment_used];
 
             depth_stencil_attachment.attachment = num_attachment_used;
@@ -552,7 +550,7 @@ namespace Tempeh::GPU
         subpass_desc.colorAttachmentCount = color_attachment_index;
         subpass_desc.pColorAttachments = color_attachments.data();
 
-        if (desc.depth_stencil_attachment != nullptr) {
+        if (desc.depth_stencil_attachment.has_value()) {
             subpass_desc.pDepthStencilAttachment = &depth_stencil_attachment;
         }
 
@@ -720,7 +718,9 @@ namespace Tempeh::GPU
         }
 
         if (clear_color_values.size() != framebuffer->num_color_attachments()) {
-            LOG_ERROR("Cannot begin render pass: the number of clear color attachment values does not match with the number of color attachment in framebuffer");
+            LOG_ERROR(
+                "Cannot begin render pass: the number of clear color attachment values "
+                "does not match with the number of color attachment in framebuffer.");
             return;
         }
 
@@ -750,6 +750,15 @@ namespace Tempeh::GPU
             const ClearValue& clear_value = clear_value_data[i];
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
 
+            texture_layout_transition_vk(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                attachment->m_subresource_range,
+                attachment->m_image,
+                attachment->m_last_layout,
+                stage_src,
+                stage_dst,
+                image_barriers[i]);
+
             if (att_desc.load_op != LoadOp::Clear) {
                 continue;
             }
@@ -775,15 +784,6 @@ namespace Tempeh::GPU
                     break;
             }
 
-            texture_layout_transition_vk(
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                attachment->m_subresource_range,
-                attachment->m_image,
-                attachment->m_last_layout,
-                stage_src,
-                stage_dst,
-                image_barriers[i]);
-
             begin_info.clearValueCount++;
         }
 
@@ -795,7 +795,7 @@ namespace Tempeh::GPU
             vk_value.depthStencil.stencil = clear_depth_stencil_value.depth_stencil.stencil;
 
             texture_layout_transition_vk(
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 attachment->m_subresource_range,
                 attachment->m_image,
                 attachment->m_last_layout,
