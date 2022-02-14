@@ -87,11 +87,11 @@ namespace Tempeh::GPU
         VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
 
         if (desc.num_images > 3) {
-            LOG_ERROR("Too many surface images (max: 3)");
+            LOG_ERROR("Too many swapchain images (max: 3)");
             return { ResultCode::InvalidArgs };
         }
 
-        // Create window surface
+        // Create window swapchain
         switch (window->get_window_type()) {
             case Window::WindowType::GLFW:
                 vk_surface = create_surface_glfw(window);
@@ -114,18 +114,18 @@ namespace Tempeh::GPU
             return { ResultCode::SurfacePresentationNotSupported };
         }
 
-        SwapChainVK* surface = new SwapChainVK(vk_surface, this);
-        ResultCode err = surface->initialize(desc);
+        SwapChainVK* swapchain = new SwapChainVK(vk_surface, this);
+        ResultCode err = swapchain->initialize(desc);
 
         if (err != ResultCode::Ok) {
-            delete surface;
+            delete swapchain;
             vkDestroySurfaceKHR(m_instance, vk_surface, nullptr);
             return err;
         }
 
-        surface->attach_window(window);
+        swapchain->attach_window(window);
 
-        return { Util::Ref<SwapChain>(surface) };
+        return { Util::Ref<SwapChain>(swapchain) };
     }
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
@@ -493,7 +493,6 @@ namespace Tempeh::GPU
 
             ref.attachment = num_attachment_used;
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
             att.format = convert_format_vk(color_att_desc.format);
 
             auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);

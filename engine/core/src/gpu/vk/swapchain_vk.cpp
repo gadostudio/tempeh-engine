@@ -404,7 +404,7 @@ namespace Tempeh::GPU
         m_desc.height = height;
     }
 
-    const Util::Ref<Texture>& SwapChainVK::get_swapchain_backbuffer(u32 index) const
+    Util::Ref<Texture> SwapChainVK::get_swapchain_backbuffer(u32 index) const
     {
         return m_backbuffers[index];
     }

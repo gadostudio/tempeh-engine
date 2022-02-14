@@ -7,6 +7,12 @@
 
 using namespace Tempeh;
 
+struct Test
+{
+    const GPU::ColorAttachmentDesc* att;
+    u32                             num;
+};
+
 int main()
 {
     Log::Logger::init("test");

@@ -421,25 +421,25 @@ namespace Tempeh::GPU
 
     struct RenderPassDesc
     {
-        const char*                                         label;
-        std::initializer_list<const ColorAttachmentDesc>    color_attachments;
-        std::optional<const DepthStencilAttachmentDesc>     depth_stencil_attachment;
-        u32                                                 num_samples;
+        const char*                                     label;
+        std::initializer_list<ColorAttachmentDesc>      color_attachments;
+        std::optional<DepthStencilAttachmentDesc>       depth_stencil_attachment;
+        u32                                             num_samples;
     };
     
     struct FramebufferAttachment
     {
-        Util::Ref<Texture>                                  color_attachment;
-        Util::Ref<Texture>                                  resolve_attachment;
+        Util::Ref<Texture>                              color_attachment;
+        Util::Ref<Texture>                              resolve_attachment;
     };
 
     struct FramebufferDesc
     {
-        const char*                                         label;
-        std::initializer_list<FramebufferAttachment>        color_attachments;
-        Util::Ref<Texture>                                  depth_stencil_attachment;
-        u32                                                 width;
-        u32                                                 height;
+        const char*                                     label;
+        std::initializer_list<FramebufferAttachment>    color_attachments;
+        Util::Ref<Texture>                              depth_stencil_attachment;
+        u32                                             width;
+        u32                                             height;
     };
 
     union ClearValue

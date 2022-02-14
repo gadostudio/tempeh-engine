@@ -39,7 +39,7 @@ namespace Tempeh::GPU
 
         void swap_buffer() override final;
         void resize(u32 width, u32 height) override final;
-        const Util::Ref<Texture>& get_swapchain_backbuffer(u32 index) const override final;
+        Util::Ref<Texture> get_swapchain_backbuffer(u32 index) const override final;
 
         ResultCode initialize(const SwapChainDesc& desc);
 
