@@ -61,14 +61,14 @@ namespace Tempeh::GPU
         m_uniform_buffer_template_descriptors.emplace(m_device);
         m_storage_buffer_template_descriptors.emplace(m_device);
 
-        m_job_queue = std::make_unique<JobQueueVK>(
+        m_cmd_queue = std::make_unique<CommandQueueVK>(
             m_device, m_main_queue, m_main_queue_index);
     }
 
     DeviceVK::~DeviceVK()
     {
         vkDeviceWaitIdle(m_device);
-        m_job_queue.reset();
+        m_cmd_queue.reset();
         m_storage_image_template_descriptors.reset();
         m_sampled_image_template_descriptors.reset();
         m_sampler_template_descriptors.reset();
@@ -677,6 +677,12 @@ namespace Tempeh::GPU
         return { std::make_shared<SamplerVK>(this, sampler, sampler_template_descriptor, desc) };
     }
 
+    RefDeviceResult<GraphicsPipeline> DeviceVK::create_graphics_pipeline(const GraphicsPipelineDesc& desc)
+    {
+        TEMPEH_UNREFERENCED(desc);
+        return { ResultCode::Unimplemented };
+    }
+
     void DeviceVK::begin_cmd()
     {
         if (m_is_recording_command) {
@@ -684,12 +690,13 @@ namespace Tempeh::GPU
             return;
         }
 
-        JobItemVK& job_item = m_job_queue->enqueue_job(); // Create new GPU job
+        auto [submission, id] = m_cmd_queue->enqueue_submission(); // Create new GPU submission
 
-        job_item.wait(); // Wait for previous submission on this job item
-        job_item.destroy_pending_resources();
-        m_current_cmd_buffer = job_item.begin();
+        submission->wait(); // Wait for previous work on this submission item
+        submission->destroy_pending_resources();
 
+        m_submission_id = id;
+        m_current_cmd_buffer = submission->begin_cmd_buffer();
         m_is_recording_command = true;
     }
 
@@ -716,6 +723,11 @@ namespace Tempeh::GPU
             return;
         }
 
+        if (m_is_inside_render_pass) {
+            LOG_ERROR("Cannot begin render pass: another render pass is being recorded.");
+            return;
+        }
+
         if (clear_color_values.size() != framebuffer->num_color_attachments()) {
             LOG_ERROR(
                 "Cannot begin render pass: the number of clear color attachment values "
@@ -723,15 +735,16 @@ namespace Tempeh::GPU
             return;
         }
 
-        const Util::Ref<RenderPass>& render_pass = framebuffer->parent_render_pass();
+        FramebufferVK* vk_framebuffer = static_cast<FramebufferVK*>(framebuffer.get());
+        RenderPassVK* vk_render_pass = static_cast<RenderPassVK*>(vk_framebuffer->parent_render_pass().get());
         std::array<VkClearValue, max_att_descriptions> vk_clear_values{};
         std::array<VkImageMemoryBarrier, max_att_descriptions> image_barriers;
         VkRenderPassBeginInfo begin_info{};
 
         // We don't use std::shared_pointer_cast here because it causes the reference counter to increments.
         begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        begin_info.renderPass = static_cast<RenderPassVK*>(render_pass.get())->m_render_pass;
-        begin_info.framebuffer = static_cast<FramebufferVK*>(framebuffer.get())->m_framebuffer;
+        begin_info.renderPass = vk_render_pass->m_render_pass;
+        begin_info.framebuffer = vk_framebuffer->m_framebuffer;
         begin_info.renderArea.offset.x = 0;
         begin_info.renderArea.offset.y = 0;
         begin_info.renderArea.extent.width = framebuffer->width();
@@ -744,10 +757,11 @@ namespace Tempeh::GPU
 
         for (u32 i = 0; i < num_color_attachments; i++) {
             TextureVK* attachment = static_cast<TextureVK*>(framebuffer->color_attachment(i).color_attachment.get());
-            const ColorAttachmentDesc& att_desc = render_pass->color_attachment_desc(i);
-            const FramebufferAttachment& fb_att = framebuffer->color_attachment(i);
+            const ColorAttachmentDesc& att_desc = vk_render_pass->color_attachment_desc(i);
             const ClearValue& clear_value = clear_value_data[i];
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
+
+            attachment->m_last_submission_usage = m_submission_id;
 
             texture_layout_transition_vk(
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -790,6 +804,8 @@ namespace Tempeh::GPU
             TextureVK* attachment = static_cast<TextureVK*>(framebuffer->depth_stencil_attachment().get());
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
 
+            attachment->m_last_submission_usage = m_submission_id;
+
             vk_value.depthStencil.depth = clear_depth_stencil_value.depth_stencil.depth;
             vk_value.depthStencil.stencil = clear_depth_stencil_value.depth_stencil.stencil;
 
@@ -822,13 +838,15 @@ namespace Tempeh::GPU
         // Reset states
         m_cmd_states.set_default(0, 0);
 
+        vk_framebuffer->m_last_submission_usage = m_submission_id;
+        vk_render_pass->m_last_submission_usage = m_submission_id;
         m_is_inside_render_pass = true;
     }
 
     void DeviceVK::set_viewport(float x, float y, float width, float height, float min_depth, float max_depth)
     {
         if (!m_is_inside_render_pass) {
-            LOG_ERROR("Attempting to record a graphics command outside render pass!");
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
             return;
         }
 
@@ -838,7 +856,7 @@ namespace Tempeh::GPU
     void DeviceVK::set_scissor_rect(u32 x, u32 y, u32 width, u32 height)
     {
         if (!m_is_inside_render_pass) {
-            LOG_ERROR("Attempting to record a graphics command outside render pass!");
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
             return;
         }
 
@@ -848,7 +866,7 @@ namespace Tempeh::GPU
     void DeviceVK::set_blend_constants(float r, float g, float b, float a)
     {
         if (!m_is_inside_render_pass) {
-            LOG_ERROR("Attempting to record a graphics command outside render pass!");
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
             return;
         }
 
@@ -862,7 +880,7 @@ namespace Tempeh::GPU
     void DeviceVK::set_blend_constants(float color[4])
     {
         if (!m_is_inside_render_pass) {
-            LOG_ERROR("Attempting to record a graphics command outside render pass!");
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
             return;
         }
 
@@ -872,7 +890,7 @@ namespace Tempeh::GPU
     void DeviceVK::set_stencil_ref(u32 reference)
     {
         if (!m_is_inside_render_pass) {
-            LOG_ERROR("Attempting to record a graphics command outside render pass!");
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
             return;
         }
 
@@ -881,23 +899,71 @@ namespace Tempeh::GPU
 
     void DeviceVK::draw(u32 num_vertices, u32 first_vertex)
     {
-        draw_instanced(num_vertices, 1, first_vertex, 0);
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
+            return;
+        }
+
+        m_cmd_states.flush(m_current_cmd_buffer);
+
+        vkCmdDraw(m_current_cmd_buffer, num_vertices, 1, first_vertex, 0);
     }
 
     void DeviceVK::draw_indexed(u32 num_indices, u32 first_index, i32 vertex_offset)
     {
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
+            return;
+        }
+
         m_cmd_states.flush(m_current_cmd_buffer);
+
+        vkCmdDrawIndexed(
+            m_current_cmd_buffer, num_indices, 1,
+            first_index, vertex_offset, 0);
     }
 
     void DeviceVK::draw_instanced(u32 num_vertices, u32 num_instances, u32 first_vertex, u32 first_instance)
     {
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
+            return;
+        }
+
         m_cmd_states.flush(m_current_cmd_buffer);
+        
+        vkCmdDraw(
+            m_current_cmd_buffer,
+            num_vertices,
+            num_instances,
+            first_vertex,
+            first_instance);
+    }
+
+    void DeviceVK::draw_indexed_instanced(u32 num_indices, u32 num_instances, u32 first_index, i32 vertex_offset, u32 first_instance)
+    {
+        if (!m_is_inside_render_pass) {
+            LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
+            return;
+        }
+
+        m_cmd_states.flush(m_current_cmd_buffer);
+
+        vkCmdDrawIndexed(
+            m_current_cmd_buffer,
+            num_indices,
+            num_instances,
+            first_index,
+            vertex_offset,
+            first_instance);
     }
 
     void DeviceVK::end_render_pass()
     {
         if (!m_is_inside_render_pass) {
-            LOG_ERROR("Attempting to record a graphics command outside render pass!");
+            LOG_ERROR(
+                "Cannot finish render pass: attempting to finish render pass when there is no render pass scope to finish. "
+                "Did you forget to call GPU::Device::begin_render_pass()?");
             return;
         }
 
@@ -908,22 +974,19 @@ namespace Tempeh::GPU
     void DeviceVK::end_cmd()
     {
         if (m_is_inside_render_pass) {
-            LOG_WARN(
-                "Attempting to finish the command list when render pass is not yet finished. "
-                "Did you forget to call end_render_pass?");
-
+            LOG_WARN("Render pass is not yet finished. Did you forget to call GPU::Device::end_render_pass()?");
             vkCmdEndRenderPass(m_current_cmd_buffer);
         }
 
         if (!m_is_recording_command) {
             LOG_ERROR(
-                "Cannot finish and submit the command list when the command list hasn't began. "
-                "Did you forget to call begin_cmd?");
+                "Cannot finish and submit command list: the command list hasn't began. "
+                "Did you forget to call GPU::Device::begin_cmd()?");
             return;
         }
 
         vkEndCommandBuffer(m_current_cmd_buffer);
-        m_job_queue->dequeue_job(); // submit the current command list
+        m_cmd_queue->dequeue_submission(); // submit the current command list
         m_is_recording_command = false;
     }
 
@@ -1195,96 +1258,5 @@ namespace Tempeh::GPU
             &ret);
 
         return ret;
-    }
-
-    JobItemVK::JobItemVK(VkDevice vk_device, u32 queue_family_index) :
-        device(vk_device)
-    {
-        VkCommandPoolCreateInfo pool_info{};
-        pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        pool_info.queueFamilyIndex = queue_family_index;
-
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkCreateCommandPool(vk_device, &pool_info, nullptr, &cmd_pool)) &&
-            "Failed to create job command pool");
-
-        VkCommandBufferAllocateInfo alloc_info{};
-        alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        alloc_info.commandPool = cmd_pool;
-        alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        alloc_info.commandBufferCount = 1;
-
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkAllocateCommandBuffers(vk_device, &alloc_info, &cmd_buffer)) &&
-            "Failed to create job command buffer");
-
-        /*
-        VkSemaphoreCreateInfo semaphore_info{};
-        semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkCreateSemaphore(device, &semaphore_info, nullptr, &semaphore)) &&
-            "Failed to create job semaphore");
-        */
-
-        VkFenceCreateInfo fence_info{};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkCreateFence(device, &fence_info, nullptr, &fence)) &&
-            "Failed to create job fence");
-    }
-    
-    JobItemVK::~JobItemVK()
-    {
-    }
-
-    void JobItemVK::wait()
-    {
-        vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
-        vkResetFences(device, 1, &fence);
-    }
-
-    VkCommandBuffer JobItemVK::begin()
-    {
-        VkCommandBufferBeginInfo begin_info{};
-        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkResetCommandPool(device, cmd_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkBeginCommandBuffer(cmd_buffer, &begin_info)));
-
-        return cmd_buffer;
-    }
-
-    void JobItemVK::destroy_cmd_buffer()
-    {
-        // Will also destroy command buffers
-        vkDestroyCommandPool(device, cmd_pool, nullptr);
-        vkDestroyFence(device, fence, nullptr);
-    }
-
-    void JobItemVK::destroy_pending_resources()
-    {
-        
-    }
-
-    void JobQueueVK::dequeue_job()
-    {
-        VkSubmitInfo submission{};
-        JobItemVK& job_item = job_list[read_pointer];
-
-        submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submission.commandBufferCount = 1;
-        submission.pCommandBuffers = &job_item.cmd_buffer;
-
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkQueueSubmit(cmd_queue, 1, &submission, job_item.fence)));
-
-        read_pointer = (read_pointer + 1) % max_job;
     }
 }

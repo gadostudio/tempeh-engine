@@ -144,13 +144,6 @@ namespace Tempeh::GPU
         u32 m_width, m_height;
     };
 
-    class GraphicsPipeline
-    {
-    public:
-        GraphicsPipeline() { }
-        virtual ~GraphicsPipeline() { }
-    };
-
     class Sampler
     {
     public:
@@ -165,6 +158,13 @@ namespace Tempeh::GPU
 
     protected:
         SamplerDesc m_desc;
+    };
+    
+    class GraphicsPipeline
+    {
+    public:
+        GraphicsPipeline() { }
+        virtual ~GraphicsPipeline() { }
     };
 }
 

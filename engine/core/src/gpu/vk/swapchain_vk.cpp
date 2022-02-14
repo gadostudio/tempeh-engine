@@ -404,8 +404,14 @@ namespace Tempeh::GPU
         m_desc.height = height;
     }
 
+    u32 SwapChainVK::current_image_index() const
+    {
+        return m_current_frame;
+    }
+
     Util::Ref<Texture> SwapChainVK::get_swapchain_backbuffer(u32 index) const
     {
+        assert(index < m_desc.num_images && "Index out of range");
         return m_backbuffers[index];
     }
 

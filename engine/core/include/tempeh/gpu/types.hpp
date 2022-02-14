@@ -3,6 +3,7 @@
 
 #include <tempeh/common/typedefs.hpp>
 #include <tempeh/common/util.hpp>
+#include <tempeh/container/static_vector.hpp>
 #include <tempeh/util/result.hpp>
 #include <tempeh/util/ref_count.hpp>
 #include <initializer_list>
@@ -16,6 +17,7 @@ namespace Tempeh::GPU
     class BufferView;
     class RenderPass;
     class Framebuffer;
+    class GraphicsPipeline;
 
     using TextureUsageFlags = u32;
     using BufferUsageFlags = u32;
@@ -422,7 +424,7 @@ namespace Tempeh::GPU
     struct RenderPassDesc
     {
         const char*                                     label;
-        std::initializer_list<ColorAttachmentDesc>      color_attachments;
+        Container::StaticVector<ColorAttachmentDesc, 8> color_attachments;
         std::optional<DepthStencilAttachmentDesc>       depth_stencil_attachment;
         u32                                             num_samples;
     };
@@ -435,11 +437,18 @@ namespace Tempeh::GPU
 
     struct FramebufferDesc
     {
+        using FramebufferAttachments = Container::StaticVector<FramebufferAttachment, 8>;
+
         const char*                                     label;
-        std::initializer_list<FramebufferAttachment>    color_attachments;
+        FramebufferAttachments                          color_attachments;
         Util::Ref<Texture>                              depth_stencil_attachment;
         u32                                             width;
         u32                                             height;
+    };
+
+    struct GraphicsPipelineDesc
+    {
+        const char*                                     label;
     };
 
     union ClearValue

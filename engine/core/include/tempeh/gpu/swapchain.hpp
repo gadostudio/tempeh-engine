@@ -17,6 +17,7 @@ namespace Tempeh::GPU
 
         virtual void swap_buffer() = 0;
         virtual void resize(u32 width, u32 height) = 0;
+        virtual u32 current_image_index() const = 0;
         virtual Util::Ref<Texture> get_swapchain_backbuffer(u32 index) const = 0;
 
         u32 num_images() const { return m_desc.num_images; }

@@ -11,75 +11,11 @@
 #include "backend_vk.hpp"
 #include "vk.hpp"
 #include "template_descriptors_vk.hpp"
+#include "command_queue_vk.hpp"
 #include "command_state_vk.hpp"
 
 namespace Tempeh::GPU
 {
-    struct JobItemVK
-    {
-        std::deque<std::tuple<VkImage, VkImageView, VmaAllocation>> texture_free_queue;
-        std::deque<std::tuple<VkBuffer, VmaAllocation>> buffer_free_queue;
-
-        VkDevice device = VK_NULL_HANDLE;
-        VkCommandPool cmd_pool = VK_NULL_HANDLE;
-        VkCommandBuffer cmd_buffer = VK_NULL_HANDLE;
-        VkSemaphore semaphore = VK_NULL_HANDLE;
-        VkFence fence = VK_NULL_HANDLE;
-
-        JobItemVK(VkDevice vk_device, u32 queue_family_index);
-        ~JobItemVK();
-
-        void wait();
-        VkCommandBuffer begin();
-        void destroy_cmd_buffer();
-        void destroy_pending_resources();
-    };
-
-    // Class for managing GPU jobs
-    struct JobQueueVK
-    {
-        static constexpr u32 max_job = 4;
-
-        VkDevice device;
-        VkQueue cmd_queue;
-        u32 queue_family_index;
-        std::vector<JobItemVK> job_list;
-        size_t read_pointer = 0;
-        size_t write_pointer = 0;
-
-        JobQueueVK(VkDevice vk_device, VkQueue cmd_queue, u32 queue_family_index) :
-            device(vk_device),
-            cmd_queue(cmd_queue),
-            queue_family_index(queue_family_index)
-        {
-            job_list.reserve(max_job);
-        }
-
-        ~JobQueueVK()
-        {
-            for (auto& job : job_list) {
-                job.destroy_cmd_buffer();
-                job.destroy_pending_resources();
-            }
-        }
-
-        JobItemVK& enqueue_job()
-        {
-            size_t current_job = write_pointer;
-            size_t job_incr = write_pointer + 1;
-
-            if (job_incr > job_list.size() && job_list.size() < max_job) {
-                job_list.emplace_back(device, queue_family_index);
-            }
-
-            write_pointer = job_incr % max_job;
-
-            return job_list[current_job];
-        }
-
-        void dequeue_job();
-    };
-
     struct DeviceVK : public Device
     {
         static constexpr u32 max_resources = 2048;
@@ -103,14 +39,16 @@ namespace Tempeh::GPU
         std::vector<VkPresentModeKHR> m_present_modes;
         std::unordered_map<VkFormat, VkFormatProperties> m_format_properties;
 
-        // Template descriptors for copying descriptors
+        // Template descriptors for copying descriptors.
+        // Note, these optionals are required for creating the objects lazily.
         std::optional<StorageImageTemplateDescriptors> m_storage_image_template_descriptors;
         std::optional<SampledImageTemplateDescriptors> m_sampled_image_template_descriptors;
         std::optional<SamplerTemplateDescriptors> m_sampler_template_descriptors;
         std::optional<UniformBufferTemplateDescriptors> m_uniform_buffer_template_descriptors;
         std::optional<StorageBufferTemplateDescriptors> m_storage_buffer_template_descriptors;
 
-        std::unique_ptr<JobQueueVK> m_job_queue;
+        std::unique_ptr<CommandQueueVK> m_cmd_queue;
+        std::size_t m_submission_id = 0;
         VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
         CommandStateVK m_cmd_states;
         bool m_is_recording_command = false;
@@ -136,26 +74,55 @@ namespace Tempeh::GPU
         RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
         RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc) override final;
         RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;
+        RefDeviceResult<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineDesc& desc) override final;
 
         void begin_cmd() override final;
+
         void bind_texture(u32 slot, const Util::Ref<Texture>& texture) override final;
         
         void begin_render_pass(
-            const Util::Ref<Framebuffer>& framebuffer,
-            std::initializer_list<ClearValue> clear_values,
-            ClearValue clear_depth_stencil_value = {}) override final;
+            const Util::Ref<Framebuffer>&       framebuffer,
+            std::initializer_list<ClearValue>   clear_values,
+            ClearValue                          clear_depth_stencil_value = {}) override final;
 
-        void set_viewport(float x, float y, float width, float height, float min_depth, float max_depth) override final;
+        void set_viewport(
+            float x,
+            float y,
+            float width,
+            float height,
+            float min_depth,
+            float max_depth) override final;
+
         void set_scissor_rect(u32 x, u32 y, u32 width, u32 height) override final;
+
         void set_blend_constants(float r, float g, float b, float a) override final;
+
         void set_blend_constants(float color[4]) override final;
+
         void set_stencil_ref(u32 reference) override final;
+        
         void draw(u32 num_vertices, u32 first_vertex) override final;
-        void draw_indexed(u32 num_indices, u32 first_index, i32 vertex_offset) override final;
-        void draw_instanced(u32 num_vertices, u32 num_instances, u32 first_vertex, u32 first_instance) override final;
+        
+        void draw_indexed(
+            u32 num_indices,
+            u32 first_index,
+            i32 vertex_offset) override final;
+        
+        void draw_instanced(
+            u32 num_vertices,
+            u32 num_instances,
+            u32 first_vertex,
+            u32 first_instance) override final;
+
+        void draw_indexed_instanced(
+            u32 num_indices,
+            u32 num_instances,
+            u32 first_index,
+            i32 vertex_offset,
+            u32 first_instance) override final;
 
         void end_render_pass() override final;
-        
+
         void end_cmd() override final;
 
         std::pair<bool, bool> is_texture_format_supported(VkFormat format, VkFormatFeatureFlags features) const;

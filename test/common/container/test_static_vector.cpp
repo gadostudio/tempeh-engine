@@ -345,3 +345,91 @@ TEST(Container_StaticArray, AssignWithInitializerList)
 		}
 	}
 }
+
+TEST(Container_StaticArray, PushBack)
+{
+	{
+		int i = 2;
+		Tempeh::Container::StaticVector<int, 6> v;
+
+		v.push_back(1);
+		v.push_back(2);
+		v.push_back(3);
+		v.push_back(i);
+		v.push_back(i);
+		v.push_back(i);
+
+		EXPECT_EQ(v.size(), 6);
+		EXPECT_EQ(v[0], 1);
+		EXPECT_EQ(v[1], 2);
+		EXPECT_EQ(v[2], 3);
+		EXPECT_EQ(v[3], i);
+		EXPECT_EQ(v[4], i);
+		EXPECT_EQ(v[5], i);
+	}
+
+	{
+		TestClassPOD test_class = {
+			1, 2, 'a'
+		};
+
+		Tempeh::Container::StaticVector<TestClassPOD, 4> v;
+
+		v.push_back(TestClassPOD{ 1, 2, 'a' });
+		v.push_back(TestClassPOD{ 1, 2, 'a' });
+		v.push_back(TestClassPOD{ 1, 2, 'a' });
+		v.push_back(test_class);
+
+		EXPECT_EQ(v.size(), 4);
+
+		for (const auto& elem : v) {
+			EXPECT_EQ(elem.x, 1);
+			EXPECT_EQ(elem.y, 2);
+			EXPECT_EQ(elem.z, 'a');
+		}
+	}
+
+	{
+		TestClass test_class = {
+			1, 2, "hello world"
+		};
+
+		Tempeh::Container::StaticVector<TestClass, 4> v;
+
+		v.push_back(TestClass{ 1, 2, "hello world" });
+		v.push_back(TestClass{ 1, 2, "hello world" });
+		v.push_back(TestClass{ 1, 2, "hello world" });
+		v.push_back(test_class);
+
+		EXPECT_EQ(v.size(), 4);
+
+		for (const auto& elem : v) {
+			EXPECT_EQ(elem.x, 1);
+			EXPECT_EQ(elem.y, 2);
+			EXPECT_EQ(elem.str, "hello world");
+		}
+	}
+}
+
+TEST(Container_StaticVector, PopBack)
+{
+	{
+		int i = 2;
+		Tempeh::Container::StaticVector<int, 6> v;
+
+		v.push_back(1);
+		v.push_back(2);
+		v.push_back(3);
+		v.push_back(i);
+		v.push_back(i);
+		v.push_back(i);
+		v.pop_back();
+		v.pop_back();
+		v.pop_back();
+
+		EXPECT_EQ(v.size(), 3);
+		EXPECT_EQ(v[0], 1);
+		EXPECT_EQ(v[1], 2);
+		EXPECT_EQ(v[2], 3);
+	}
+}

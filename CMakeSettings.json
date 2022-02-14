@@ -10,11 +10,11 @@
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "addressSanitizerEnabled": true,
+      "addressSanitizerEnabled": false,
       "variables": [
         {
           "name": "TEMPEH_TEST",
-          "value": "True",
+          "value": "False",
           "type": "BOOL"
         },
         {

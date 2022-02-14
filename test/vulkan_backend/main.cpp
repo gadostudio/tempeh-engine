@@ -7,16 +7,10 @@
 
 using namespace Tempeh;
 
-struct Test
-{
-    const GPU::ColorAttachmentDesc* att;
-    u32                             num;
-};
-
 int main()
 {
     Log::Logger::init("test");
-    GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
+    GPU::Instance::initialize(GPU::BackendType::Vulkan, false);
     Util::Ref<GPU::Device> device = GPU::Instance::get_device();
     
     std::shared_ptr<Event::InputManager> input_manager =
@@ -26,14 +20,14 @@ int main()
         Window::Window::create(Window::WindowSize{640, 480}, input_manager);
 
     auto size = window->get_window_size();
-    GPU::SwapChainDesc surface_desc;
-    surface_desc.format = GPU::TextureFormat::BGRA_8_8_8_8_Unorm;
-    surface_desc.width = size.width;
-    surface_desc.height = size.height;
-    surface_desc.num_images = 3;
-    surface_desc.vsync = true;
+    GPU::SwapChainDesc swapchain_desc;
+    swapchain_desc.format = GPU::TextureFormat::BGRA_8_8_8_8_Unorm;
+    swapchain_desc.width = size.width;
+    swapchain_desc.height = size.height;
+    swapchain_desc.num_images = 3;
+    swapchain_desc.vsync = true;
 
-    auto surface = device->create_swapchain(window, surface_desc).value();
+    auto swapchain = device->create_swapchain(window, swapchain_desc).value();
     
     GPU::TextureDesc texture_desc;
     texture_desc.label = "Test texture";
@@ -60,7 +54,7 @@ int main()
     GPU::RenderPassDesc render_pass_desc{};
     render_pass_desc.color_attachments = {
         GPU::ColorAttachmentDesc {
-            GPU::TextureFormat::RGBA_8_8_8_8_Unorm,
+            swapchain_desc.format,
             GPU::TextureComponentType::Float,
             GPU::LoadOp::Clear,
             GPU::StoreOp::Store,
@@ -73,30 +67,34 @@ int main()
     auto render_pass = device->create_render_pass(render_pass_desc);
 
     GPU::FramebufferDesc framebuffer_desc{};
-    framebuffer_desc.color_attachments = {
-        GPU::FramebufferAttachment {
-            texture.value(),
-            nullptr
-        }
-    };
+    Util::Ref<GPU::Framebuffer> framebuffers[3];
 
-    framebuffer_desc.width = 256;
-    framebuffer_desc.height = 256;
+    for (u32 i = 0; i < swapchain->num_images(); i++) {
+        framebuffer_desc.color_attachments = {
+            GPU::FramebufferAttachment {
+                swapchain->get_swapchain_backbuffer(i),
+                nullptr
+            }
+        };
 
-    auto framebuffer = device->create_framebuffer(render_pass.value(), framebuffer_desc);
+        framebuffer_desc.width = swapchain_desc.width;
+        framebuffer_desc.height = swapchain_desc.height;
 
-    device->begin_cmd();
-    device->begin_render_pass(framebuffer.value(), { GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f) });
-    device->end_render_pass();
-    device->begin_render_pass(framebuffer.value(), { GPU::ClearValue::color_float(0.0f, 1.0f, 0.0f, 1.0f) });
-    device->end_render_pass();
-    device->end_cmd();
+        framebuffers[i] = device->create_framebuffer(render_pass.value(), framebuffer_desc).value();
+    }
 
     while (!window->is_need_to_close()) {
         input_manager->clear();
         window->process_input(*input_manager);
 
-        surface->swap_buffer();
+        device->begin_cmd();
+        device->begin_render_pass(
+            framebuffers[swapchain->current_image_index()],
+            { GPU::ClearValue::color_float(1.0f, 0.0f, 0.0f, 1.0f) });
+        device->end_render_pass();
+        device->end_cmd();
+
+        swapchain->swap_buffer();
     }
     
     return 0;
