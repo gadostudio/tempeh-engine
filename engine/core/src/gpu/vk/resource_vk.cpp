@@ -27,8 +27,6 @@ namespace Tempeh::GPU
 
     TextureVK::~TextureVK()
     {
-        m_parent_device->wait_idle();
-        
         if (m_storage_template_descriptor != VK_NULL_HANDLE) {
             m_parent_device->m_storage_image_template_descriptors
                 .value()
@@ -41,8 +39,9 @@ namespace Tempeh::GPU
                 .free_set(m_sampled_template_descriptor);
         }
 
-        vkDestroyImageView(m_parent_device->m_device, m_image_view, nullptr);
-        vmaDestroyImage(m_parent_device->m_allocator, m_image, m_allocation);
+        m_parent_device
+            ->m_cmd_queue
+            ->destroy_texture(m_last_submission, m_image, m_image_view, m_allocation);
     }
 
     // Buffer resource
@@ -61,8 +60,9 @@ namespace Tempeh::GPU
 
     BufferVK::~BufferVK()
     {
-        m_parent_device->wait_idle();
-        vmaDestroyBuffer(m_parent_device->m_allocator, m_buffer, m_allocation);
+        m_parent_device
+            ->m_cmd_queue
+            ->destroy_buffer(m_last_submission, m_buffer, m_allocation);
     }
 
     // Buffer view resource
@@ -79,8 +79,6 @@ namespace Tempeh::GPU
     
     BufferViewVK::~BufferViewVK()
     {
-        m_parent_device->wait_idle();
-
         if (m_uniform_template_descriptor != VK_NULL_HANDLE) {
             m_parent_device->m_uniform_buffer_template_descriptors
                 .value()
@@ -108,8 +106,9 @@ namespace Tempeh::GPU
 
     RenderPassVK::~RenderPassVK()
     {
-        m_parent_device->wait_idle();
-        vkDestroyRenderPass(m_parent_device->m_device, m_render_pass, nullptr);
+        m_parent_device
+            ->m_cmd_queue
+            ->destroy_render_pass(m_last_submission, m_render_pass);
     }
 
     // Framebuffer resource
@@ -127,8 +126,9 @@ namespace Tempeh::GPU
 
     FramebufferVK::~FramebufferVK()
     {
-        m_parent_device->wait_idle();
-        vkDestroyFramebuffer(m_parent_device->m_device, m_framebuffer, nullptr);
+        m_parent_device
+            ->m_cmd_queue
+            ->destroy_framebuffer(m_last_submission, m_framebuffer);
     }
 
     SamplerVK::SamplerVK(
@@ -145,7 +145,12 @@ namespace Tempeh::GPU
 
     SamplerVK::~SamplerVK()
     {
-        m_parent_device->wait_idle();
-        vkDestroySampler(m_parent_device->m_device, m_sampler, nullptr);
+        m_parent_device->m_sampler_template_descriptors
+            .value()
+            .free_set(m_template_descriptor);
+
+        m_parent_device
+            ->m_cmd_queue
+            ->destroy_sampler(m_last_submission, m_sampler);
     }
 }

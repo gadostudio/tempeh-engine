@@ -18,7 +18,7 @@ namespace Tempeh::GPU
         VkDescriptorSet         m_sampled_template_descriptor;
         VkImageLayout           m_last_layout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkImageSubresourceRange m_subresource_range{};
-        std::size_t             m_last_submission_usage = 0;
+        std::size_t             m_last_submission = 0;
 
         TextureVK(
             DeviceVK* parent_device,
@@ -38,7 +38,7 @@ namespace Tempeh::GPU
         DeviceVK*               m_parent_device;
         VkBuffer                m_buffer;
         VmaAllocation           m_allocation;
-        std::size_t             m_last_submission_usage = 0;
+        std::size_t             m_last_submission = 0;
         BufferUsageFlags        m_last_usage = 0;
 
         BufferVK(
@@ -68,7 +68,7 @@ namespace Tempeh::GPU
     {
         DeviceVK*               m_parent_device;
         VkRenderPass            m_render_pass;
-        std::size_t             m_last_submission_usage = 0;
+        std::size_t             m_last_submission = 0;
 
         RenderPassVK(
             DeviceVK* parent_device,
@@ -82,7 +82,7 @@ namespace Tempeh::GPU
     {
         DeviceVK*               m_parent_device;
         VkFramebuffer           m_framebuffer;
-        std::size_t             m_last_submission_usage = 0;
+        std::size_t             m_last_submission = 0;
 
         FramebufferVK(
             DeviceVK* parent_device,
@@ -98,7 +98,7 @@ namespace Tempeh::GPU
         DeviceVK*               m_parent_device;
         VkSampler               m_sampler;
         VkDescriptorSet         m_template_descriptor;
-        std::size_t             m_last_submission_usage = 0;
+        std::size_t             m_last_submission = 0;
 
         SamplerVK(
             DeviceVK* parent_device,

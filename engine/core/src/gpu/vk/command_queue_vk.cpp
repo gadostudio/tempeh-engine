@@ -73,15 +73,49 @@ namespace Tempeh::GPU
         vkDestroyFence(device, fence, nullptr);
     }
 
-    void CommandSubmissionVK::destroy_pending_resources()
+    void CommandSubmissionVK::destroy_pending_resources(VmaAllocator allocator)
     {
+        while (!texture_free_queue.empty()) {
+            auto& [image, image_view, allocation] = texture_free_queue.front();
+            vkDestroyImageView(device, image_view, nullptr);
+            vmaDestroyImage(allocator, image, allocation);
+            texture_free_queue.pop();
+        }
 
+        while (!buffer_free_queue.empty()) {
+            auto& [buffer, allocation] = buffer_free_queue.front();
+            vmaDestroyBuffer(allocator, buffer, allocation);
+            buffer_free_queue.pop();
+        }
+
+        while (!render_pass_free_queue.empty()) {
+            VkRenderPass render_pass = render_pass_free_queue.front();
+            vkDestroyRenderPass(device, render_pass, nullptr);
+            render_pass_free_queue.pop();
+        }
+
+        while (!framebuffer_free_queue.empty()) {
+            VkFramebuffer framebuffer = framebuffer_free_queue.front();
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+            framebuffer_free_queue.pop();
+        }
+
+        while (!sampler_free_queue.empty()) {
+            VkSampler sampler = sampler_free_queue.front();
+            vkDestroySampler(device, sampler, nullptr);
+            sampler_free_queue.pop();
+        }
     }
 
-    CommandQueueVK::CommandQueueVK(VkDevice vk_device, VkQueue cmd_queue, u32 queue_family_index) :
-        device(vk_device),
-        cmd_queue(cmd_queue),
-        queue_family_index(queue_family_index)
+    CommandQueueVK::CommandQueueVK(
+        VkDevice vk_device,
+        VkQueue cmd_queue,
+        VmaAllocator allocator,
+        u32 queue_family_index)
+        : device(vk_device),
+          cmd_queue(cmd_queue),
+          allocator(allocator),
+          queue_family_index(queue_family_index)
     {
         submission_list.reserve(max_submissions);
     }
@@ -90,7 +124,7 @@ namespace Tempeh::GPU
     {
         for (auto& job : submission_list) {
             job.destroy_cmd_buffers();
-            job.destroy_pending_resources();
+            job.destroy_pending_resources(allocator);
         }
     }
 
@@ -121,5 +155,30 @@ namespace Tempeh::GPU
             vkQueueSubmit(cmd_queue, 1, &submit_info, job_item.fence)));
 
         read_pointer = (read_pointer + 1) % max_submissions;
+    }
+
+    void CommandQueueVK::destroy_texture(std::size_t submission_id, VkImage image, VkImageView image_view, VmaAllocation allocation)
+    {
+        submission_list[submission_id].texture_free_queue.emplace(image, image_view, allocation);
+    }
+
+    void CommandQueueVK::destroy_buffer(std::size_t submission_id, VkBuffer buffer, VmaAllocation allocation)
+    {
+        submission_list[submission_id].buffer_free_queue.emplace(buffer, allocation);
+    }
+
+    void CommandQueueVK::destroy_render_pass(std::size_t submission_id, VkRenderPass render_pass)
+    {
+        submission_list[submission_id].render_pass_free_queue.emplace(render_pass);
+    }
+
+    void CommandQueueVK::destroy_framebuffer(std::size_t submission_id, VkFramebuffer framebuffer)
+    {
+        submission_list[submission_id].framebuffer_free_queue.emplace(framebuffer);
+    }
+
+    void CommandQueueVK::destroy_sampler(std::size_t submission_id, VkSampler sampler)
+    {
+        submission_list[submission_id].sampler_free_queue.emplace(sampler);
     }
 }

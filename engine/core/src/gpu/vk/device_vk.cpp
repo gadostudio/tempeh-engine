@@ -62,7 +62,7 @@ namespace Tempeh::GPU
         m_storage_buffer_template_descriptors.emplace(m_device);
 
         m_cmd_queue = std::make_unique<CommandQueueVK>(
-            m_device, m_main_queue, m_main_queue_index);
+            m_device, m_main_queue, m_allocator, m_main_queue_index);
     }
 
     DeviceVK::~DeviceVK()
@@ -693,9 +693,9 @@ namespace Tempeh::GPU
         auto [submission, id] = m_cmd_queue->enqueue_submission(); // Create new GPU submission
 
         submission->wait(); // Wait for previous work on this submission item
-        submission->destroy_pending_resources();
+        submission->destroy_pending_resources(m_allocator);
 
-        m_submission_id = id;
+        m_current_submission = id;
         m_current_cmd_buffer = submission->begin_cmd_buffer();
         m_is_recording_command = true;
     }
@@ -761,7 +761,7 @@ namespace Tempeh::GPU
             const ClearValue& clear_value = clear_value_data[i];
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
 
-            attachment->m_last_submission_usage = m_submission_id;
+            attachment->m_last_submission = m_current_submission;
 
             texture_layout_transition_vk(
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -804,7 +804,7 @@ namespace Tempeh::GPU
             TextureVK* attachment = static_cast<TextureVK*>(framebuffer->depth_stencil_attachment().get());
             VkClearValue& vk_value = vk_clear_values[begin_info.clearValueCount];
 
-            attachment->m_last_submission_usage = m_submission_id;
+            attachment->m_last_submission = m_current_submission;
 
             vk_value.depthStencil.depth = clear_depth_stencil_value.depth_stencil.depth;
             vk_value.depthStencil.stencil = clear_depth_stencil_value.depth_stencil.stencil;
@@ -838,8 +838,8 @@ namespace Tempeh::GPU
         // Reset states
         m_cmd_states.set_default(0, 0);
 
-        vk_framebuffer->m_last_submission_usage = m_submission_id;
-        vk_render_pass->m_last_submission_usage = m_submission_id;
+        vk_framebuffer->m_last_submission = m_current_submission;
+        vk_render_pass->m_last_submission = m_current_submission;
         m_is_inside_render_pass = true;
     }
 

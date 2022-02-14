@@ -48,7 +48,7 @@ namespace Tempeh::GPU
         std::optional<StorageBufferTemplateDescriptors> m_storage_buffer_template_descriptors;
 
         std::unique_ptr<CommandQueueVK> m_cmd_queue;
-        std::size_t m_submission_id = 0;
+        std::size_t m_current_submission = 0;
         VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
         CommandStateVK m_cmd_states;
         bool m_is_recording_command = false;
