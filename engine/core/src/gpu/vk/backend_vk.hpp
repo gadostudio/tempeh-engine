@@ -8,6 +8,10 @@ namespace Tempeh::GPU
     struct SwapChainVK;
     struct TextureVK;
     struct BufferVK;
+    struct BufferViewVK;
+    struct RenderPassVK;
+    struct FramebufferVK;
+    struct SamplerVK;
     struct GraphicsPipelineVK;
 }
 

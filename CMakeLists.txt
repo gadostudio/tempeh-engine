@@ -5,15 +5,14 @@ project("tempeh_engine"
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TEMPEH_ENABLE_TEST "Enable unit test" OFF)
 option(TEMPEH_ENABLE_GPU_TEST "Enable unit test for GPU backends (requires TEMPEH_ENABLE_TEST to be enabled)" OFF)
 
 add_subdirectory("external")
 
-set(CMAKE_CXX_EXTENSIONS OFF)
 # https://github.com/izenecloud/cmake/blob/master/SetCompilerWarningAll.cmake
-
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Use the highest warning level for Visual Studio.
     set(CMAKE_CXX_WARNING_LEVEL 4)

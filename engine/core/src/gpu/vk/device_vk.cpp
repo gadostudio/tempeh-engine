@@ -365,11 +365,14 @@ namespace Tempeh::GPU
         }
 
         return {
-            std::make_shared<TextureVK>(
-                this, image, image_view, allocation,
-                view_info.subresourceRange,
-                storage_template_descriptor,
-                sampled_template_descriptor, desc)
+            std::make_shared<TextureVK>(this,
+                                        image,
+                                        image_view,
+                                        allocation,
+                                        view_info.subresourceRange,
+                                        storage_template_descriptor,
+                                        sampled_template_descriptor,
+                                        desc)
         };
     }
 
@@ -389,9 +392,8 @@ namespace Tempeh::GPU
 
         VmaAllocation allocation;
         VkBuffer buffer;
-        VkResult result =
-            vmaCreateBuffer(m_allocator, &buffer_info,
-                &alloc_info, &buffer, &allocation, nullptr);
+        VkResult result = vmaCreateBuffer(m_allocator, &buffer_info, &alloc_info,
+                                          &buffer, &allocation, nullptr);
 
         if (result == VK_ERROR_FEATURE_NOT_PRESENT) {
             return { ResultCode::MemoryUsageNotSupported };
@@ -498,10 +500,9 @@ namespace Tempeh::GPU
             auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
 
             if (!supported) {
-                LOG_ERROR(
-                    "Failed to create render pass: the format in attachment #{} is not supported. "
-                    "The given format must support the color attachment feature (TextureFormatFeature::ColorAttachment).",
-                    color_attachment_index);
+                LOG_ERROR("Failed to create render pass: the format in attachment #{} is not supported. "
+                          "The given format must support the color attachment feature (TextureFormatFeature::ColorAttachment).",
+                          color_attachment_index);
                 return { ResultCode::FormatNotSupported };
             }
 
@@ -527,9 +528,8 @@ namespace Tempeh::GPU
             auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
             if (!supported) {
-                LOG_ERROR(
-                    "Failed to create render pass: the depth-stencil attachment format is not supported. "
-                    "The given format must support the depth-stencil attachment feature (TextureFormatFeature::DepthStencilAttachment).");
+                LOG_ERROR("Failed to create render pass: the depth-stencil attachment format is not supported. "
+                          "The given format must support the depth-stencil attachment feature (TextureFormatFeature::DepthStencilAttachment).");
                 return { ResultCode::FormatNotSupported };
             }
 
@@ -569,7 +569,8 @@ namespace Tempeh::GPU
         return { std::make_shared<RenderPassVK>(this, render_pass, desc) };
     }
 
-    RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc)
+    RefDeviceResult<Framebuffer> DeviceVK::create_framebuffer(const Util::Ref<RenderPass>& render_pass,
+                                                              const FramebufferDesc& desc)
     {
         std::lock_guard lock(m_sync_mutex);
 
@@ -679,6 +680,75 @@ namespace Tempeh::GPU
 
     RefDeviceResult<GraphicsPipeline> DeviceVK::create_graphics_pipeline(const GraphicsPipelineDesc& desc)
     {
+        VkGraphicsPipelineCreateInfo gp_info{};
+
+        VkShaderModule vs_module;
+
+        VkShaderModuleCreateInfo vs_module_info;
+        vs_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        vs_module_info.pNext = nullptr;
+        vs_module_info.flags = 0;
+        vs_module_info.codeSize;
+        vs_module_info.pCode;
+
+        VkResult result = vkCreateShaderModule(m_device, &vs_module_info, nullptr, &vs_module);
+
+        if (VULKAN_FAILED(result)) {
+            return parse_error_vk(result);
+        }
+
+        VkShaderModule ps_module;
+
+        VkShaderModuleCreateInfo ps_module_info;
+        ps_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        ps_module_info.pNext = nullptr;
+        ps_module_info.flags = 0;
+        ps_module_info.codeSize;
+        ps_module_info.pCode;
+
+        result = vkCreateShaderModule(m_device, &ps_module_info, nullptr, &ps_module);
+
+        if (VULKAN_FAILED(result)) {
+            return parse_error_vk(result);
+        }
+
+        VkPipelineShaderStageCreateInfo shader_stages[2];
+        shader_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shader_stages[0].pNext = nullptr;
+        shader_stages[0].flags = 0;
+        shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shader_stages[0].module = vs_module;
+        shader_stages[0].pName = "main";
+        shader_stages[0].pSpecializationInfo;
+
+        shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shader_stages[1].pNext = nullptr;
+        shader_stages[1].flags = 0;
+        shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shader_stages[1].module = ps_module;
+        shader_stages[1].pName = "main";
+        shader_stages[1].pSpecializationInfo;
+
+        gp_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        gp_info.pNext = nullptr;
+        gp_info.flags = 0;
+        gp_info.stageCount = 2;
+        gp_info.pStages = shader_stages;
+        gp_info.pVertexInputState;
+        gp_info.pInputAssemblyState;
+        gp_info.pTessellationState;
+        gp_info.pViewportState;
+        gp_info.pRasterizationState;
+        gp_info.pMultisampleState;
+        gp_info.pDepthStencilState;
+        gp_info.pColorBlendState;
+        gp_info.pDynamicState;
+        gp_info.layout;
+        gp_info.renderPass;
+        gp_info.subpass;
+        gp_info.basePipelineHandle;
+        gp_info.basePipelineIndex;
+
         TEMPEH_UNREFERENCED(desc);
         return { ResultCode::Unimplemented };
     }
@@ -711,10 +781,9 @@ namespace Tempeh::GPU
         TEMPEH_UNREFERENCED(texture);
     }
 
-    void DeviceVK::begin_render_pass(
-        const Util::Ref<Framebuffer>& framebuffer,
-        std::initializer_list<ClearValue> clear_color_values,
-        ClearValue clear_depth_stencil_value)
+    void DeviceVK::begin_render_pass(const Util::Ref<Framebuffer>& framebuffer,
+                                     std::initializer_list<ClearValue> clear_color_values,
+                                     ClearValue clear_depth_stencil_value)
     {
         static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1;
 
@@ -729,9 +798,8 @@ namespace Tempeh::GPU
         }
 
         if (clear_color_values.size() != framebuffer->num_color_attachments()) {
-            LOG_ERROR(
-                "Cannot begin render pass: the number of clear color attachment values "
-                "does not match with the number of color attachment in framebuffer.");
+            LOG_ERROR("Cannot begin render pass: the number of clear color attachment values "
+                      "does not match with the number of color attachment in framebuffer.");
             return;
         }
 
@@ -763,14 +831,13 @@ namespace Tempeh::GPU
 
             attachment->m_last_submission = m_current_submission;
 
-            texture_layout_transition_vk(
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                attachment->m_subresource_range,
-                attachment->m_image,
-                attachment->m_last_layout,
-                stage_src,
-                stage_dst,
-                image_barriers[i]);
+            texture_layout_transition_vk(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                         attachment->m_subresource_range,
+                                         attachment->m_image,
+                                         attachment->m_last_layout,
+                                         stage_src,
+                                         stage_dst,
+                                         image_barriers[i]);
 
             if (att_desc.load_op != LoadOp::Clear) {
                 continue;
@@ -809,14 +876,13 @@ namespace Tempeh::GPU
             vk_value.depthStencil.depth = clear_depth_stencil_value.depth_stencil.depth;
             vk_value.depthStencil.stencil = clear_depth_stencil_value.depth_stencil.stencil;
 
-            texture_layout_transition_vk(
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                attachment->m_subresource_range,
-                attachment->m_image,
-                attachment->m_last_layout,
-                stage_src,
-                stage_dst,
-                image_barriers[begin_info.clearValueCount]);
+            texture_layout_transition_vk(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                         attachment->m_subresource_range,
+                                         attachment->m_image,
+                                         attachment->m_last_layout,
+                                         stage_src,
+                                         stage_dst,
+                                         image_barriers[begin_info.clearValueCount]);
 
             begin_info.clearValueCount++;
         }
@@ -824,13 +890,12 @@ namespace Tempeh::GPU
         begin_info.pClearValues = vk_clear_values.data();
 
         // Add the barrier
-        vkCmdPipelineBarrier(
-            m_current_cmd_buffer,
-            stage_src, stage_dst, 0,
-            0, nullptr,
-            0, nullptr,
-            begin_info.clearValueCount,
-            image_barriers.data());
+        vkCmdPipelineBarrier(m_current_cmd_buffer,
+                             stage_src, stage_dst, 0,
+                             0, nullptr,
+                             0, nullptr,
+                             begin_info.clearValueCount,
+                             image_barriers.data());
         
         // BEGIN!
         vkCmdBeginRenderPass(m_current_cmd_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -918,12 +983,14 @@ namespace Tempeh::GPU
 
         m_cmd_states.flush(m_current_cmd_buffer);
 
-        vkCmdDrawIndexed(
-            m_current_cmd_buffer, num_indices, 1,
-            first_index, vertex_offset, 0);
+        vkCmdDrawIndexed(m_current_cmd_buffer, num_indices, 1,
+                         first_index, vertex_offset, 0);
     }
 
-    void DeviceVK::draw_instanced(u32 num_vertices, u32 num_instances, u32 first_vertex, u32 first_instance)
+    void DeviceVK::draw_instanced(u32 num_vertices,
+                                  u32 num_instances,
+                                  u32 first_vertex,
+                                  u32 first_instance)
     {
         if (!m_is_inside_render_pass) {
             LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
@@ -932,15 +999,18 @@ namespace Tempeh::GPU
 
         m_cmd_states.flush(m_current_cmd_buffer);
         
-        vkCmdDraw(
-            m_current_cmd_buffer,
-            num_vertices,
-            num_instances,
-            first_vertex,
-            first_instance);
+        vkCmdDraw(m_current_cmd_buffer,
+                  num_vertices,
+                  num_instances,
+                  first_vertex,
+                  first_instance);
     }
 
-    void DeviceVK::draw_indexed_instanced(u32 num_indices, u32 num_instances, u32 first_index, i32 vertex_offset, u32 first_instance)
+    void DeviceVK::draw_indexed_instanced(u32 num_indices,
+                                          u32 num_instances,
+                                          u32 first_index,
+                                          i32 vertex_offset,
+                                          u32 first_instance)
     {
         if (!m_is_inside_render_pass) {
             LOG_ERROR("Attempting to record a graphics command outside render pass scope!");
@@ -949,13 +1019,12 @@ namespace Tempeh::GPU
 
         m_cmd_states.flush(m_current_cmd_buffer);
 
-        vkCmdDrawIndexed(
-            m_current_cmd_buffer,
-            num_indices,
-            num_instances,
-            first_index,
-            vertex_offset,
-            first_instance);
+        vkCmdDrawIndexed(m_current_cmd_buffer,
+                         num_indices,
+                         num_instances,
+                         first_index,
+                         vertex_offset,
+                         first_instance);
     }
 
     void DeviceVK::end_render_pass()
@@ -1001,7 +1070,8 @@ namespace Tempeh::GPU
         vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &properties);
 
         VkFormatFeatureFlags combined_features =
-            properties.optimalTilingFeatures | properties.linearTilingFeatures;
+            properties.optimalTilingFeatures |
+            properties.linearTilingFeatures;
 
         bool supported = bit_match(combined_features, features);
         bool is_optimal = bit_match(properties.optimalTilingFeatures, features);
@@ -1103,14 +1173,13 @@ namespace Tempeh::GPU
         ext_properties.clear();
 
         // Query physical device extensions
-        vkEnumerateDeviceExtensionProperties(
-            physical_device, nullptr, &num_extensions, nullptr);
+        vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &num_extensions, nullptr);
 
         ext_properties.resize(num_extensions);
         enabled_exts.clear();
 
-        vkEnumerateDeviceExtensionProperties(
-            physical_device, nullptr, &num_extensions, ext_properties.data());
+        vkEnumerateDeviceExtensionProperties(physical_device, nullptr,
+                                             &num_extensions, ext_properties.data());
 
         for (const auto ext : device_extensions) {
             if (find_extension(ext_properties, ext)) {
@@ -1121,17 +1190,15 @@ namespace Tempeh::GPU
         u32 num_queue_families;
         std::vector<VkQueueFamilyProperties> queue_families;
 
-        vkGetPhysicalDeviceQueueFamilyProperties(
-            physical_device,
-            &num_queue_families,
-            nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(physical_device,
+                                                 &num_queue_families,
+                                                 nullptr);
 
         queue_families.resize(num_queue_families);
 
-        vkGetPhysicalDeviceQueueFamilyProperties(
-            physical_device,
-            &num_queue_families,
-            queue_families.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(physical_device,
+                                                 &num_queue_families,
+                                                 queue_families.data());
 
         static float queue_priorities = 1.0f;
         VkDeviceQueueCreateInfo queue_info{};
@@ -1207,10 +1274,10 @@ namespace Tempeh::GPU
         }
 
         LOG_INFO("  Vulkan version: {}.{}.{}.{}",
-            VK_API_VERSION_MAJOR(properties.apiVersion),
-            VK_API_VERSION_MINOR(properties.apiVersion),
-            VK_API_VERSION_PATCH(properties.apiVersion),
-            VK_API_VERSION_VARIANT(properties.apiVersion));
+                 VK_API_VERSION_MAJOR(properties.apiVersion),
+                 VK_API_VERSION_MINOR(properties.apiVersion),
+                 VK_API_VERSION_PATCH(properties.apiVersion),
+                 VK_API_VERSION_VARIANT(properties.apiVersion));
 
         VmaVulkanFunctions vma_fn{};
         vma_fn.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
@@ -1242,20 +1309,18 @@ namespace Tempeh::GPU
         vmaCreateAllocator(&allocator_info, &allocator);
 
         return std::static_pointer_cast<Device>(
-            std::make_shared<DeviceVK>(
-                instance, physical_device, properties,
-                device, allocator, queue_info.queueFamilyIndex));
+            std::make_shared<DeviceVK>(instance, physical_device, properties,
+                                       device, allocator, queue_info.queueFamilyIndex));
     }
 
     VkSurfaceKHR DeviceVK::create_surface_glfw(const std::shared_ptr<Window::Window>& window)
     {
         VkSurfaceKHR ret = VK_NULL_HANDLE;
 
-        glfwCreateWindowSurface(
-            m_instance,
-            static_cast<GLFWwindow*>(window->get_raw_handle()),
-            nullptr,
-            &ret);
+        glfwCreateWindowSurface(m_instance,
+                                static_cast<GLFWwindow*>(window->get_raw_handle()),
+                                nullptr,
+                                &ret);
 
         return ret;
     }

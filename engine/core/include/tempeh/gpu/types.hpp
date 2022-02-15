@@ -237,8 +237,7 @@ namespace Tempeh::GPU
         Ok,
         InitializationFailed,
         InvalidArgs,
-        OutOfHostMemory,
-        OutOfDeviceMemory,
+        OutOfMemory,
         OutOfRange,
         BackendNotSupported,
         SurfacePresentationNotSupported,
@@ -423,32 +422,64 @@ namespace Tempeh::GPU
 
     struct RenderPassDesc
     {
-        const char*                                     label;
-        Container::StaticVector<ColorAttachmentDesc, 8> color_attachments;
-        std::optional<DepthStencilAttachmentDesc>       depth_stencil_attachment;
-        u32                                             num_samples;
+        using ColorAttachments = Container::StaticVector<ColorAttachmentDesc, 8>;
+
+        const char*                                 label;
+        ColorAttachments                            color_attachments;
+        std::optional<DepthStencilAttachmentDesc>   depth_stencil_attachment;
+        u32                                         num_samples;
     };
     
     struct FramebufferAttachment
     {
-        Util::Ref<Texture>                              color_attachment;
-        Util::Ref<Texture>                              resolve_attachment;
+        Util::Ref<Texture>                          color_attachment;
+        Util::Ref<Texture>                          resolve_attachment;
     };
 
     struct FramebufferDesc
     {
         using FramebufferAttachments = Container::StaticVector<FramebufferAttachment, 8>;
 
-        const char*                                     label;
-        FramebufferAttachments                          color_attachments;
-        Util::Ref<Texture>                              depth_stencil_attachment;
-        u32                                             width;
-        u32                                             height;
+        const char*                                 label;
+        FramebufferAttachments                      color_attachments;
+        Util::Ref<Texture>                          depth_stencil_attachment;
+        u32                                         width;
+        u32                                         height;
+    };
+
+    struct ShaderModuleDesc
+    {
+        std::size_t                                 code_size;
+        const char*                                 code;
+    };
+
+    struct VertexInputAttribute
+    {
+        u32                                         shader_location;
+        u32                                         offset;
+        VertexFormat                                format;
+    };
+
+    struct VertexInputBinding
+    {
+        using InputAttributes = Container::StaticVector<VertexInputAttribute, 16>;
+
+        u32                                         binding;
+        InputAttributes                             attributes;
+    };
+
+    struct VertexInputLayoutDesc
+    {
+        u32                                         num_bindings;
+        const VertexInputBinding*                   bindings;
     };
 
     struct GraphicsPipelineDesc
     {
-        const char*                                     label;
+        const char*                                 label;
+        std::optional<ShaderModuleDesc>             vs_module;
+        std::optional<ShaderModuleDesc>             ps_module;
+        VertexInputLayoutDesc                       input_layout;
     };
 
     union ClearValue

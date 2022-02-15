@@ -139,7 +139,7 @@ namespace Tempeh::GPU
 
         write_pointer = job_incr % max_submissions;
 
-        return std::tuple(&submission_list[current_job], current_job);
+        return std::make_tuple(&submission_list[current_job], current_job);
     }
 
     void CommandQueueVK::dequeue_submission()
@@ -151,8 +151,7 @@ namespace Tempeh::GPU
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &job_item.cmd_buffer;
 
-        VULKAN_ASSERT(!VULKAN_FAILED(
-            vkQueueSubmit(cmd_queue, 1, &submit_info, job_item.fence)));
+        VULKAN_ASSERT(!VULKAN_FAILED(vkQueueSubmit(cmd_queue, 1, &submit_info, job_item.fence)));
 
         read_pointer = (read_pointer + 1) % max_submissions;
     }

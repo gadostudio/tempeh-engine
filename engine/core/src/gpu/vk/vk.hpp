@@ -38,9 +38,8 @@ namespace Tempeh::GPU
     {
         switch (result) {
             case VK_ERROR_OUT_OF_HOST_MEMORY:
-                return ResultCode::OutOfHostMemory;
             case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-                return ResultCode::OutOfDeviceMemory;
+                return ResultCode::OutOfMemory;
             case VK_ERROR_INITIALIZATION_FAILED:
                 return ResultCode::InitializationFailed;
             default:
@@ -296,6 +295,20 @@ namespace Tempeh::GPU
         VkImageMemoryBarrier& barrier)
     {
         switch (old_layout) {
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                stage_src |=
+                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_GENERAL:
+                stage_src |=
+                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                break;
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
                 stage_src |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -319,6 +332,13 @@ namespace Tempeh::GPU
         }
 
         switch (new_layout) {
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                stage_dst |=
+                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
                 stage_dst |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;

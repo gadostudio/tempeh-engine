@@ -13,6 +13,7 @@
 #include "template_descriptors_vk.hpp"
 #include "command_queue_vk.hpp"
 #include "command_state_vk.hpp"
+#include "transition_barrier_vk.hpp"
 
 namespace Tempeh::GPU
 {

@@ -1,6 +1,9 @@
 #ifndef _TEMPEH_GPU_COMMAND_STATE_VK_HPP
-#define _TEMPEH_GPU_COMMAND_STATE_VK_HPP
+#define _TEMPEH_GPU_COMMAND_STATE_VK_HPP 1
 
+#include <array>
+
+#include "transition_barrier_vk.hpp"
 #include "vk.hpp"
 
 namespace Tempeh::GPU
@@ -55,6 +58,12 @@ namespace Tempeh::GPU
         float m_blend_constants[4] { 0.0f };
         u32 m_stencil_ref = 0;
         u32 m_dirty_state = DirtyState_All;
+
+        std::array<TextureVK*, 4> m_storage_texture_binding;
+        std::array<TextureVK*, 16> m_sampled_texture_binding;
+        std::array<SamplerVK*, 16> m_sampler_binding;
+        std::array<BufferViewVK*, 4> m_storage_buffer_binding;
+        std::array<BufferViewVK*, 12> m_uniform_buffer_binding;
 
         enum
         {
