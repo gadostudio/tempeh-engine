@@ -1,5 +1,5 @@
 #include <tempeh/gpu/instance.hpp>
-#include "vk/device_vk.hpp"
+#include "device_priv.hpp"
 
 #include <cassert>
 
@@ -11,21 +11,14 @@ namespace Tempeh::GPU
             return ResultCode::Ok;
         }
 
-        switch (type) {
-            case BackendType::Vulkan: {
-                auto result = DeviceVK::initialize(prefer_high_performance);
-                
-                if (!result.is_ok()) {
-                    return result.err();
-                }
+        auto result = create_device(type, prefer_high_performance);
 
-                device_ = std::move(result.value());
-                break;
-            }
-            default:
-                return ResultCode::BackendNotSupported;
+        if (!result.is_ok()) {
+            return result.err();
         }
 
+        device_ = result.value();
+        
         return ResultCode::Ok;
     }
 

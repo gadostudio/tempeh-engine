@@ -8,6 +8,7 @@
 #include <tempeh/util/ref_count.hpp>
 #include <initializer_list>
 #include <optional>
+#include <gsl/span>
 
 namespace Tempeh::GPU
 {
@@ -208,17 +209,6 @@ namespace Tempeh::GPU
         };
     };
 
-    enum class VertexFormat
-    {
-        Uint3,
-        Sint3,
-        Float3,
-
-        Uint4,
-        Sint4,
-        Float4
-    };
-
     enum class LoadOp
     {
         Load,
@@ -230,6 +220,86 @@ namespace Tempeh::GPU
     {
         Store,
         DontCare
+    };
+
+    enum class IndexFormat
+    {
+        Uint16,
+        Uint32
+    };
+
+    enum class VertexFormat
+    {
+        Uint8,
+        Uint8x2,
+        Uint8x4,
+
+        Unorm8,
+        Unorm8x2,
+        Unorm8x4,
+
+        Sint8,
+        Sint8x2,
+        Sint8x4,
+
+        Snorm8,
+        Snorm8x2,
+        Snorm8x4,
+
+        Uint32,
+        Uint32x2,
+        Uint32x3,
+        Uint32x4,
+
+        Sint32,
+        Sint32x2,
+        Sint32x3,
+        Sint32x4,
+
+        Float32,
+        Float32x2,
+        Float32x3,
+        Float32x4
+    };
+
+    enum class VertexInputRate
+    {
+        PerVertex,
+        PerInstance
+    };
+
+    enum class PrimitiveTopology
+    {
+        PointList,
+        LineList,
+        LineStrip,
+        TriangleList,
+        TriangleStrip
+    };
+
+    enum class FillMode
+    {
+        Wireframe,
+        Solid
+    };
+
+    enum class CullMode
+    {
+        None,
+        Front,
+        Back
+    };
+
+    enum class StencilOp
+    {
+        Keep,
+        Zero,
+        Replace,
+        Invert,
+        IncrementClamp,
+        DecrementClamp,
+        Increment,
+        Decrement
     };
 
     enum class ResultCode : u8
@@ -464,14 +534,62 @@ namespace Tempeh::GPU
     {
         using InputAttributes = Container::StaticVector<VertexInputAttribute, 16>;
 
-        u32                                         binding;
+        u32                                         stride_size;
+        VertexInputRate                             input_rate;
         InputAttributes                             attributes;
     };
 
     struct VertexInputLayoutDesc
     {
-        u32                                         num_bindings;
         const VertexInputBinding*                   bindings;
+        u32                                         num_bindings;
+    };
+
+    struct InputAssemblyStateDesc
+    {
+        PrimitiveTopology                           topology;
+        std::optional<IndexFormat>                  strip_index_format;
+    };
+
+    struct RasterizationStateDesc
+    {
+        FillMode                                    fill_mode;
+        CullMode                                    cull_mode;
+        bool                                        front_counter_clockwise;
+        int                                         depth_bias;
+        float                                       depth_bias_slope_scale;
+    };
+
+    struct MultisampleStateDesc
+    {
+        u32                                         num_samples;
+        u32                                         sample_mask;
+        bool                                        alpha_to_coverage;
+    };
+
+    struct StencilFaceStateDesc
+    {
+        StencilOp                                   fail_op;
+        StencilOp                                   depth_fail_op;
+        StencilOp                                   pass_op;
+        CompareOp                                   compare_op;
+    };
+
+    struct DepthStencilStateDesc
+    {
+        bool                                        depth_test_enable;
+        bool                                        depth_write_enable;
+        CompareOp                                   depth_compare_op;
+        bool                                        stencil_test_enable;
+        StencilFaceStateDesc                        stencil_front;
+        StencilFaceStateDesc                        stencil_back;
+        u32                                         stencil_read_mask;
+        u32                                         stencil_write_mask;
+    };
+
+    struct BlendStateDesc
+    {
+
     };
 
     struct GraphicsPipelineDesc
@@ -479,7 +597,12 @@ namespace Tempeh::GPU
         const char*                                 label;
         std::optional<ShaderModuleDesc>             vs_module;
         std::optional<ShaderModuleDesc>             ps_module;
-        VertexInputLayoutDesc                       input_layout;
+        std::optional<VertexInputLayoutDesc>        vertex_input_layout;
+        InputAssemblyStateDesc                      input_assembly_state;
+        RasterizationStateDesc                      rasterization_state;
+        std::optional<MultisampleStateDesc>         multisample_state;
+        std::optional<DepthStencilStateDesc>        depth_stencil_state;
+        std::optional<BlendStateDesc>               blend_state;
     };
 
     union ClearValue

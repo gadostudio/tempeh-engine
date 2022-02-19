@@ -1,5 +1,5 @@
-#ifndef _TEMPEH_GPU_DEVICE_VK_H
-#define _TEMPEH_GPU_DEVICE_VK_H
+#ifndef _TEMPEH_GPU_DEVICE_VK_HPP
+#define _TEMPEH_GPU_DEVICE_VK_HPP
 
 #include <tempeh/gpu/device.hpp>
 #include <memory>
@@ -75,7 +75,7 @@ namespace Tempeh::GPU
         RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
         RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc) override final;
         RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;
-        RefDeviceResult<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineDesc& desc) override final;
+        RefDeviceResult<GraphicsPipeline> create_graphics_pipeline(const Util::Ref<RenderPass>& render_pass, const GraphicsPipelineDesc& desc) override final;
 
         void begin_cmd() override final;
 

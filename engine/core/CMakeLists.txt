@@ -10,6 +10,7 @@ set(TEMPEH_USE_VULKAN_BACKEND ON)
 
 if (TEMPEH_USE_VULKAN_BACKEND)
     set(TEMPEH_GPU_VULKAN_BACKEND_SOURCES
+        "src/gpu/unit_test/helpers.cpp"
         "src/gpu/vk/backend_vk.hpp"
         "src/gpu/vk/command_queue_vk.cpp"
         "src/gpu/vk/command_queue_vk.hpp"
@@ -30,6 +31,7 @@ if (TEMPEH_USE_VULKAN_BACKEND)
 endif()
 
 set(TEMPEH_GPU_SOURCES
+    "include/tempeh/gpu/unit_test/helpers.hpp"
     "include/tempeh/gpu/command_list.hpp"
     "include/tempeh/gpu/device.hpp"
     "include/tempeh/gpu/instance.hpp"
@@ -37,6 +39,8 @@ set(TEMPEH_GPU_SOURCES
     "include/tempeh/gpu/swapchain.hpp"
     "include/tempeh/gpu/types.hpp"
 
+    "src/gpu/device.cpp"
+    "src/gpu/device_priv.hpp"
     "src/gpu/instance.cpp"
     "src/gpu/validator.cpp"
     "src/gpu/validator.hpp")

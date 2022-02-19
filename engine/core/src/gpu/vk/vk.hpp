@@ -157,6 +157,41 @@ namespace Tempeh::GPU
         return VK_FORMAT_UNDEFINED;
     }
 
+    static inline constexpr VkFormat convert_vertex_format_vk(VertexFormat format)
+    {
+        switch (format) {
+            case VertexFormat::Uint32:
+                return VK_FORMAT_R32_UINT;
+            case VertexFormat::Sint32:
+                return VK_FORMAT_R32_SINT;
+            case VertexFormat::Float32:
+                return VK_FORMAT_R32_SFLOAT;
+
+            case VertexFormat::Uint32x2:
+                return VK_FORMAT_R32G32_UINT;
+            case VertexFormat::Sint32x2:
+                return VK_FORMAT_R32G32_SINT;
+            case VertexFormat::Float32x2:
+                return VK_FORMAT_R32G32_SFLOAT;
+            
+            case VertexFormat::Uint32x3:
+                return VK_FORMAT_R32G32B32_UINT;
+            case VertexFormat::Sint32x3:
+                return VK_FORMAT_R32G32B32_SINT;
+            case VertexFormat::Float32x3:
+                return VK_FORMAT_R32G32B32_SFLOAT;
+            
+            case VertexFormat::Uint32x4:
+                return VK_FORMAT_R32G32B32A32_UINT;
+            case VertexFormat::Sint32x4:
+                return VK_FORMAT_R32G32B32A32_SINT;
+            case VertexFormat::Float32x4:
+                return VK_FORMAT_R32G32B32A32_SFLOAT;
+        }
+
+        return VK_FORMAT_UNDEFINED;
+    }
+
     static inline constexpr std::pair<VkMemoryPropertyFlags, VkMemoryPropertyFlags> convert_memory_usage_vk(MemoryUsage usage)
     {
         switch (usage) {
@@ -283,6 +318,32 @@ namespace Tempeh::GPU
             default:
                 return VK_COMPARE_OP_NEVER;
         }
+    }
+
+    static inline VkStencilOp convert_stencil_op_vk(StencilOp stencil_op)
+    {
+        switch (stencil_op) {
+            case StencilOp::Keep:
+                return VK_STENCIL_OP_KEEP;
+            case StencilOp::Zero:
+                return VK_STENCIL_OP_ZERO;
+            case StencilOp::Replace:
+                return VK_STENCIL_OP_REPLACE;
+            case StencilOp::Invert:
+                return VK_STENCIL_OP_INVERT;
+            case StencilOp::IncrementClamp:
+                return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+            case StencilOp::DecrementClamp:
+                return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+            case StencilOp::Increment:
+                return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+            case StencilOp::Decrement:
+                return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+            default:
+                assert(false && "This section should be unreachable");
+        }
+
+        return VK_STENCIL_OP_KEEP;
     }
 
     static inline void texture_layout_transition_vk(

@@ -52,6 +52,7 @@ int main()
     ds_attachment.stencil_store_op = GPU::StoreOp::Store;
 
     GPU::RenderPassDesc render_pass_desc{};
+
     render_pass_desc.color_attachments = {
         GPU::ColorAttachmentDesc {
             swapchain_desc.format,

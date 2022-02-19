@@ -136,9 +136,6 @@ namespace Tempeh::GPU
             return { std::move(err) };
         }
 
-        VkImageCreateInfo image_info{};
-        VkImageType image_type = VK_IMAGE_TYPE_1D;
-        VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_1D;
         VkImageCreateFlags create_flags = 0;
         VkFormat format = convert_format_vk(desc.format);
 
@@ -149,6 +146,9 @@ namespace Tempeh::GPU
             LOG_ERROR("Failed to create texture: unsupported texture format.");
             return { ResultCode::FormatNotSupported };
         }
+
+        VkImageType image_type = VK_IMAGE_TYPE_1D;
+        VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_1D;
 
         switch (desc.type) {
             case TextureType::Texture1D:
@@ -185,8 +185,8 @@ namespace Tempeh::GPU
                 break;
         }
 
-        image_info.tiling =
-            is_optimal ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
+        VkImageCreateInfo image_info{};
+        image_info.tiling = is_optimal ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
 
         /*
         VkImageFormatProperties image_format_properties;
@@ -261,9 +261,8 @@ namespace Tempeh::GPU
         alloc_info.requiredFlags = required_flags;
         alloc_info.preferredFlags = preferred_flags;
 
-        VkResult result = vmaCreateImage(
-            m_allocator, &image_info, &alloc_info,
-            &image, &allocation, nullptr);
+        VkResult result = vmaCreateImage(m_allocator, &image_info, &alloc_info,
+                                         &image, &allocation, nullptr);
 
         if (result == VK_ERROR_FEATURE_NOT_PRESENT) {
             return { ResultCode::MemoryUsageNotSupported };
@@ -309,7 +308,9 @@ namespace Tempeh::GPU
 
         if (bit_match(desc.usage, TextureUsage::Storage))
         {
-            storage_template_descriptor = m_storage_image_template_descriptors.value().allocate_set();
+            storage_template_descriptor = m_storage_image_template_descriptors
+                .value()
+                .allocate_set();
 
             if (storage_template_descriptor == VK_NULL_HANDLE) {
                 return { ResultCode::InternalError };
@@ -335,7 +336,9 @@ namespace Tempeh::GPU
         VkDescriptorSet sampled_template_descriptor = VK_NULL_HANDLE;
 
         if (bit_match(desc.usage, TextureUsage::Sampled)) {
-            sampled_template_descriptor = m_sampled_image_template_descriptors.value().allocate_set();
+            sampled_template_descriptor = m_sampled_image_template_descriptors
+                .value()
+                .allocate_set();
 
             if (sampled_template_descriptor == VK_NULL_HANDLE) {
                 return { ResultCode::InternalError };
@@ -429,19 +432,21 @@ namespace Tempeh::GPU
         write_descriptor.descriptorCount = 1;
 
         if (has_uniform_usage_bit) {
-            uniform_template_descriptor = m_uniform_buffer_template_descriptors.value().allocate_set();
+            uniform_template_descriptor = m_uniform_buffer_template_descriptors
+                .value()
+                .allocate_set();
 
             if (uniform_template_descriptor == VK_NULL_HANDLE) {
                 return { ResultCode::InternalError };
             }
 
-            descriptor_buffer_info.offset = desc.offset;
-            descriptor_buffer_info.range = desc.range;
+            descriptor_buffer_info.offset   = desc.offset;
+            descriptor_buffer_info.range    = desc.range;
 
-            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_descriptor.dstSet = uniform_template_descriptor;
+            write_descriptor.sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor.dstSet         = uniform_template_descriptor;
             write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write_descriptor.pBufferInfo = &descriptor_buffer_info;
+            write_descriptor.pBufferInfo    = &descriptor_buffer_info;
 
             vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
         }
@@ -449,19 +454,21 @@ namespace Tempeh::GPU
         VkDescriptorSet storage_template_descriptor = VK_NULL_HANDLE;
 
         if (has_storage_usage_bit) {
-            storage_template_descriptor = m_storage_buffer_template_descriptors.value().allocate_set();
+            storage_template_descriptor = m_storage_buffer_template_descriptors
+                .value()
+                .allocate_set();
 
             if (storage_template_descriptor == VK_NULL_HANDLE) {
                 return { ResultCode::InternalError };
             }
 
-            descriptor_buffer_info.offset = desc.offset;
-            descriptor_buffer_info.range = desc.range;
+            descriptor_buffer_info.offset   = desc.offset;
+            descriptor_buffer_info.range    = desc.range;
 
-            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_descriptor.dstSet = storage_template_descriptor;
+            write_descriptor.sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor.dstSet         = storage_template_descriptor;
             write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            write_descriptor.pBufferInfo = &descriptor_buffer_info;
+            write_descriptor.pBufferInfo    = &descriptor_buffer_info;
 
             vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
         }
@@ -525,7 +532,8 @@ namespace Tempeh::GPU
 
             att.format = convert_format_vk(desc.depth_stencil_attachment->format);
 
-            auto [supported, _] = is_texture_format_supported(att.format, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            auto [supported, _] = is_texture_format_supported(
+                att.format, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
             if (!supported) {
                 LOG_ERROR("Failed to create render pass: the depth-stencil attachment format is not supported. "
@@ -613,6 +621,8 @@ namespace Tempeh::GPU
 
     RefDeviceResult<Sampler> DeviceVK::create_sampler(const SamplerDesc& desc)
     {
+        std::lock_guard lock(m_sync_mutex);
+
         VkSamplerCreateInfo sampler_info{};
         sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         sampler_info.magFilter = convert_texture_filtering_vk(desc.mag_filter);
@@ -665,22 +675,28 @@ namespace Tempeh::GPU
         descriptor_image_info.sampler = sampler;
 
         VkWriteDescriptorSet write_descriptor{};
-        write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write_descriptor.dstSet = sampler_template_descriptor;
-        write_descriptor.dstBinding = 0;
-        write_descriptor.dstArrayElement = 0;
-        write_descriptor.descriptorCount = 1;
-        write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        write_descriptor.pImageInfo = &descriptor_image_info;
+        write_descriptor.sType              = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write_descriptor.dstSet             = sampler_template_descriptor;
+        write_descriptor.dstBinding         = 0;
+        write_descriptor.dstArrayElement    = 0;
+        write_descriptor.descriptorCount    = 1;
+        write_descriptor.descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLER;
+        write_descriptor.pImageInfo         = &descriptor_image_info;
 
         vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
 
         return { std::make_shared<SamplerVK>(this, sampler, sampler_template_descriptor, desc) };
     }
 
-    RefDeviceResult<GraphicsPipeline> DeviceVK::create_graphics_pipeline(const GraphicsPipelineDesc& desc)
+    RefDeviceResult<GraphicsPipeline> DeviceVK::create_graphics_pipeline(const Util::Ref<RenderPass>& render_pass,
+                                                                         const GraphicsPipelineDesc& desc)
     {
-        VkGraphicsPipelineCreateInfo gp_info{};
+        std::lock_guard lock(m_sync_mutex);
+        
+        if (!desc.vs_module) {
+            LOG_ERROR("Failed to create graphics pipeline: vertex shader module must be present.");
+            return { ResultCode::InvalidArgs };
+        }
 
         VkShaderModule vs_module;
 
@@ -688,8 +704,8 @@ namespace Tempeh::GPU
         vs_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         vs_module_info.pNext = nullptr;
         vs_module_info.flags = 0;
-        vs_module_info.codeSize;
-        vs_module_info.pCode;
+        vs_module_info.codeSize = desc.vs_module->code_size;
+        vs_module_info.pCode = reinterpret_cast<const uint32_t*>(desc.vs_module->code);
 
         VkResult result = vkCreateShaderModule(m_device, &vs_module_info, nullptr, &vs_module);
 
@@ -697,21 +713,24 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        VkShaderModule ps_module;
+        VkShaderModule ps_module = VK_NULL_HANDLE;
 
-        VkShaderModuleCreateInfo ps_module_info;
-        ps_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        ps_module_info.pNext = nullptr;
-        ps_module_info.flags = 0;
-        ps_module_info.codeSize;
-        ps_module_info.pCode;
+        if (desc.ps_module) {
+            VkShaderModuleCreateInfo ps_module_info;
+            ps_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            ps_module_info.pNext = nullptr;
+            ps_module_info.flags = 0;
+            ps_module_info.codeSize;
+            ps_module_info.pCode;
 
-        result = vkCreateShaderModule(m_device, &ps_module_info, nullptr, &ps_module);
+            result = vkCreateShaderModule(m_device, &ps_module_info, nullptr, &ps_module);
 
-        if (VULKAN_FAILED(result)) {
-            return parse_error_vk(result);
+            if (VULKAN_FAILED(result)) {
+                return parse_error_vk(result);
+            }
         }
 
+        u32 num_shader_stage = 1;
         VkPipelineShaderStageCreateInfo shader_stages[2];
         shader_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shader_stages[0].pNext = nullptr;
@@ -719,37 +738,237 @@ namespace Tempeh::GPU
         shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shader_stages[0].module = vs_module;
         shader_stages[0].pName = "main";
-        shader_stages[0].pSpecializationInfo;
+        shader_stages[0].pSpecializationInfo = nullptr;
 
-        shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shader_stages[1].pNext = nullptr;
-        shader_stages[1].flags = 0;
-        shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shader_stages[1].module = ps_module;
-        shader_stages[1].pName = "main";
-        shader_stages[1].pSpecializationInfo;
+        // Pixel/fragment shader is optional
+        if (desc.ps_module) {
+            shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shader_stages[1].pNext = nullptr;
+            shader_stages[1].flags = 0;
+            shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            shader_stages[1].module = ps_module;
+            shader_stages[1].pName = "main";
+            shader_stages[1].pSpecializationInfo = nullptr;
+            num_shader_stage++;
+        }
 
-        gp_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        gp_info.pNext = nullptr;
-        gp_info.flags = 0;
-        gp_info.stageCount = 2;
-        gp_info.pStages = shader_stages;
-        gp_info.pVertexInputState;
-        gp_info.pInputAssemblyState;
-        gp_info.pTessellationState;
-        gp_info.pViewportState;
-        gp_info.pRasterizationState;
-        gp_info.pMultisampleState;
-        gp_info.pDepthStencilState;
-        gp_info.pColorBlendState;
-        gp_info.pDynamicState;
+        std::array<VkVertexInputBindingDescription, 16> bindings;
+        std::array<VkVertexInputAttributeDescription, 16> attributes;
+
+        VkPipelineVertexInputStateCreateInfo vtx_input;
+        vtx_input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vtx_input.pNext = nullptr;
+        vtx_input.flags = 0;
+        vtx_input.vertexBindingDescriptionCount = 0;
+        vtx_input.pVertexBindingDescriptions = bindings.data();
+        vtx_input.vertexAttributeDescriptionCount = 0;
+        vtx_input.pVertexAttributeDescriptions = attributes.data();
+
+        // Vertex input layout is optional
+        if (desc.vertex_input_layout) {
+            // Construct input layout
+            for (u32 i = 0; i < desc.vertex_input_layout->num_bindings; i++) {
+                assert(vtx_input.vertexBindingDescriptionCount <= 16 && "Too many vertex bindings");
+
+                auto& vertex_binding = desc.vertex_input_layout->bindings[i];
+                auto& input_binding = bindings[i];
+
+                input_binding.binding = vtx_input.vertexBindingDescriptionCount;
+                input_binding.stride = vertex_binding.stride_size;
+                input_binding.inputRate = (vertex_binding.input_rate == VertexInputRate::PerInstance)
+                                          ? VK_VERTEX_INPUT_RATE_INSTANCE
+                                          : VK_VERTEX_INPUT_RATE_VERTEX;
+
+                for (const auto& vertex_attribute : vertex_binding.attributes) {
+                    assert(vtx_input.vertexAttributeDescriptionCount <= 16 && "Too many vertex attributes");
+
+                    auto& input_attribute = attributes[vtx_input.vertexAttributeDescriptionCount];
+
+                    input_attribute.location = vertex_attribute.shader_location;
+                    input_attribute.binding = vtx_input.vertexBindingDescriptionCount;
+                    input_attribute.offset = vertex_attribute.offset;
+                    input_attribute.format = convert_vertex_format_vk(vertex_attribute.format);
+
+                    vtx_input.vertexAttributeDescriptionCount++;
+                }
+
+                vtx_input.vertexBindingDescriptionCount++;
+            }
+        }
+
+        VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+        
+        switch (desc.input_assembly_state.topology) {
+            case PrimitiveTopology::PointList:
+                input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+                break;
+            case PrimitiveTopology::LineList:
+                input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+                break;
+            case PrimitiveTopology::LineStrip:
+                input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+                break;
+            case PrimitiveTopology::TriangleList:
+                input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                break;
+            case PrimitiveTopology::TriangleStrip:
+                input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+                break;
+            default:
+                assert(false && "This section should be unreachable");
+        }
+
+        if (desc.input_assembly_state.strip_index_format) {
+            input_assembly.primitiveRestartEnable = VK_TRUE;
+        }
+
+        VkPipelineViewportStateCreateInfo viewport_state;
+        viewport_state.sType            = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewport_state.pNext            = nullptr;
+        viewport_state.flags            = 0;
+        viewport_state.viewportCount    = 1;
+        viewport_state.pViewports       = nullptr;
+        viewport_state.scissorCount     = 1;
+        viewport_state.pScissors        = nullptr;
+
+        VkPipelineRasterizationStateCreateInfo rasterization_state;
+        rasterization_state.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterization_state.pNext                   = nullptr;
+        rasterization_state.flags                   = 0;
+        rasterization_state.depthClampEnable        = VK_TRUE;
+        rasterization_state.rasterizerDiscardEnable = VK_FALSE;
+        rasterization_state.frontFace               = desc.rasterization_state.front_counter_clockwise ? VK_FRONT_FACE_CLOCKWISE
+                                                                                                       : VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterization_state.depthBiasEnable         = VK_TRUE;
+        rasterization_state.depthBiasConstantFactor = static_cast<float>(desc.rasterization_state.depth_bias);
+        rasterization_state.depthBiasClamp          = 0.0f;
+        rasterization_state.depthBiasSlopeFactor    = desc.rasterization_state.depth_bias_slope_scale;
+        rasterization_state.lineWidth               = 1.0f;
+
+        switch (desc.rasterization_state.fill_mode) {
+            case FillMode::Wireframe:
+                rasterization_state.polygonMode = VK_POLYGON_MODE_LINE;
+                break;
+            case FillMode::Solid:
+                rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
+                break;
+            default:
+                assert(false && "This section should be unreachable");
+        }
+
+        switch (desc.rasterization_state.cull_mode) {
+            case CullMode::None:
+                rasterization_state.cullMode = VK_CULL_MODE_NONE;
+                break;
+            case CullMode::Front:
+                rasterization_state.cullMode = VK_CULL_MODE_FRONT_BIT;
+                break;
+            case CullMode::Back:
+                rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
+                break;
+            default:
+                assert(false && "This section should be unreachable");
+        }
+
+        VkPipelineMultisampleStateCreateInfo multisample_state;
+        multisample_state.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisample_state.pNext                 = nullptr;
+        multisample_state.flags                 = 0;
+
+        if (desc.multisample_state) {
+            multisample_state.rasterizationSamples  = static_cast<VkSampleCountFlagBits>(desc.multisample_state->num_samples);
+            multisample_state.sampleShadingEnable   = VK_FALSE;
+            multisample_state.minSampleShading      = 0.0f;
+            multisample_state.pSampleMask           = &desc.multisample_state->sample_mask;
+            multisample_state.alphaToCoverageEnable = desc.multisample_state->alpha_to_coverage ? VK_TRUE : VK_FALSE;
+            multisample_state.alphaToOneEnable      = VK_FALSE;
+        }
+        else {
+            multisample_state.rasterizationSamples  = static_cast<VkSampleCountFlagBits>(desc.multisample_state->num_samples);
+            multisample_state.sampleShadingEnable   = VK_FALSE;
+            multisample_state.minSampleShading      = 0.0f;
+            multisample_state.pSampleMask           = &desc.multisample_state->sample_mask;
+            multisample_state.alphaToCoverageEnable = desc.multisample_state->alpha_to_coverage ? VK_TRUE : VK_FALSE;
+            multisample_state.alphaToOneEnable      = VK_FALSE;
+        }
+
+        VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+        depth_stencil_state.sType                   = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depth_stencil_state.pNext                   = nullptr;
+        depth_stencil_state.flags                   = 0;
+        depth_stencil_state.depthTestEnable         = desc.depth_stencil_state->depth_test_enable ? VK_TRUE : VK_FALSE;
+        depth_stencil_state.depthWriteEnable        = desc.depth_stencil_state->depth_write_enable ? VK_TRUE : VK_FALSE;
+        depth_stencil_state.depthCompareOp          = convert_compare_op_vk(desc.depth_stencil_state->depth_compare_op);
+        depth_stencil_state.depthBoundsTestEnable   = VK_FALSE;
+        depth_stencil_state.stencilTestEnable       = desc.depth_stencil_state->stencil_test_enable ? VK_TRUE : VK_FALSE;
+        depth_stencil_state.front.failOp            = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.fail_op);
+        depth_stencil_state.front.depthFailOp       = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.depth_fail_op);
+        depth_stencil_state.front.passOp            = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.pass_op);
+        depth_stencil_state.front.compareOp         = convert_compare_op_vk(desc.depth_stencil_state->stencil_front.compare_op);
+        depth_stencil_state.front.reference         = 0;
+        depth_stencil_state.front.compareMask       = desc.depth_stencil_state->stencil_read_mask;
+        depth_stencil_state.front.writeMask         = desc.depth_stencil_state->stencil_write_mask;
+        depth_stencil_state.back.failOp             = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.fail_op);
+        depth_stencil_state.back.depthFailOp        = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.depth_fail_op);
+        depth_stencil_state.back.passOp             = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.pass_op);
+        depth_stencil_state.back.compareOp          = convert_compare_op_vk(desc.depth_stencil_state->stencil_front.compare_op);
+        depth_stencil_state.back.reference          = 0;
+        depth_stencil_state.back.compareMask        = desc.depth_stencil_state->stencil_read_mask;
+        depth_stencil_state.back.writeMask          = desc.depth_stencil_state->stencil_write_mask;
+        depth_stencil_state.minDepthBounds          = 0.0f;
+        depth_stencil_state.maxDepthBounds          = 1.0f;
+
+        std::array<VkPipelineColorBlendAttachmentState, RenderPass::max_color_attachments>
+            color_attachments;
+
+        VkPipelineColorBlendStateCreateInfo color_blend_state;
+        color_blend_state.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        color_blend_state.pNext             = nullptr;
+        color_blend_state.flags             = 0;
+        color_blend_state.logicOpEnable     = VK_FALSE;
+        color_blend_state.logicOp           = VK_LOGIC_OP_COPY;
+        color_blend_state.attachmentCount   = 0;
+        color_blend_state.pAttachments      = color_attachments.data();
+        color_blend_state.blendConstants[0] = 0.0f;
+        color_blend_state.blendConstants[1] = 0.0f;
+        color_blend_state.blendConstants[2] = 0.0f;
+        color_blend_state.blendConstants[3] = 0.0f;
+
+        static const VkDynamicState dynamic_states[] = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR,
+            VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+            VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+        };
+
+        VkPipelineDynamicStateCreateInfo dynamic_state;
+        dynamic_state.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamic_state.pNext             = nullptr;
+        dynamic_state.flags             = 0;
+        dynamic_state.dynamicStateCount = 4;
+        dynamic_state.pDynamicStates    = dynamic_states;
+
+        VkGraphicsPipelineCreateInfo gp_info;
+        gp_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        gp_info.pNext               = nullptr;
+        gp_info.flags               = 0;
+        gp_info.stageCount          = num_shader_stage;
+        gp_info.pStages             = shader_stages;
+        gp_info.pVertexInputState   = desc.vertex_input_layout ? &vtx_input : nullptr;
+        gp_info.pInputAssemblyState = &input_assembly;
+        gp_info.pTessellationState  = nullptr;
+        gp_info.pViewportState      = &viewport_state;
+        gp_info.pRasterizationState = &rasterization_state;
+        gp_info.pMultisampleState   = &multisample_state;
+        gp_info.pDepthStencilState  = desc.depth_stencil_state ? &depth_stencil_state : nullptr;
+        gp_info.pColorBlendState    = desc.blend_state ? &color_blend_state : nullptr;
+        gp_info.pDynamicState       = &dynamic_state;
         gp_info.layout;
-        gp_info.renderPass;
-        gp_info.subpass;
+        gp_info.renderPass          = std::static_pointer_cast<RenderPassVK>(render_pass)->m_render_pass;
+        gp_info.subpass             = 0;
         gp_info.basePipelineHandle;
         gp_info.basePipelineIndex;
 
-        TEMPEH_UNREFERENCED(desc);
         return { ResultCode::Unimplemented };
     }
 
@@ -803,20 +1022,22 @@ namespace Tempeh::GPU
             return;
         }
 
+        // We don't use std::shared_pointer_cast here because it causes the reference counter to increments.
         FramebufferVK* vk_framebuffer = static_cast<FramebufferVK*>(framebuffer.get());
         RenderPassVK* vk_render_pass = static_cast<RenderPassVK*>(vk_framebuffer->parent_render_pass().get());
         std::array<VkClearValue, max_att_descriptions> vk_clear_values{};
         std::array<VkImageMemoryBarrier, max_att_descriptions> image_barriers;
-        VkRenderPassBeginInfo begin_info{};
 
-        // We don't use std::shared_pointer_cast here because it causes the reference counter to increments.
-        begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        begin_info.renderPass = vk_render_pass->m_render_pass;
-        begin_info.framebuffer = vk_framebuffer->m_framebuffer;
-        begin_info.renderArea.offset.x = 0;
-        begin_info.renderArea.offset.y = 0;
-        begin_info.renderArea.extent.width = framebuffer->width();
+        VkRenderPassBeginInfo begin_info;
+        begin_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        begin_info.pNext                    = nullptr;
+        begin_info.renderPass               = vk_render_pass->m_render_pass;
+        begin_info.framebuffer              = vk_framebuffer->m_framebuffer;
+        begin_info.renderArea.offset.x      = 0;
+        begin_info.renderArea.offset.y      = 0;
+        begin_info.renderArea.extent.width  = framebuffer->width();
         begin_info.renderArea.extent.height = framebuffer->height();
+        begin_info.clearValueCount          = 0;
 
         const ClearValue* clear_value_data = clear_color_values.begin();
         size_t num_color_attachments = framebuffer->num_color_attachments();
@@ -1088,12 +1309,12 @@ namespace Tempeh::GPU
         // ---- Vulkan instance initialization ----
 
         VkApplicationInfo app_info{};
-        app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        app_info.pApplicationName = "Tempeh Engine";
+        app_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        app_info.pApplicationName   = "Tempeh Engine";
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.pEngineName = "Tempeh Engine";
-        app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.apiVersion = VK_API_VERSION_1_0;
+        app_info.pEngineName        = "Tempeh Engine";
+        app_info.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
+        app_info.apiVersion         = VK_API_VERSION_1_0;
 
         u32 num_layers;
         std::vector<VkLayerProperties> layer_properties;
@@ -1124,12 +1345,12 @@ namespace Tempeh::GPU
         }
 
         VkInstanceCreateInfo instance_info{};
-        instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instance_info.pApplicationInfo = &app_info;
-        instance_info.enabledLayerCount = static_cast<uint32_t>(enabled_layers.size());
-        instance_info.ppEnabledLayerNames = enabled_layers.data();
-        instance_info.enabledExtensionCount = static_cast<uint32_t>(enabled_exts.size());
-        instance_info.ppEnabledExtensionNames = enabled_exts.data();
+        instance_info.sType                     = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instance_info.pApplicationInfo          = &app_info;
+        instance_info.enabledLayerCount         = static_cast<uint32_t>(enabled_layers.size());
+        instance_info.ppEnabledLayerNames       = enabled_layers.data();
+        instance_info.enabledExtensionCount     = static_cast<uint32_t>(enabled_exts.size());
+        instance_info.ppEnabledExtensionNames   = enabled_exts.data();
 
         VkInstance instance = VK_NULL_HANDLE;
         VkResult result = vkCreateInstance(&instance_info, nullptr, &instance);
@@ -1172,7 +1393,6 @@ namespace Tempeh::GPU
 
         ext_properties.clear();
 
-        // Query physical device extensions
         vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &num_extensions, nullptr);
 
         ext_properties.resize(num_extensions);
@@ -1208,11 +1428,13 @@ namespace Tempeh::GPU
         // For now, we expect the hardware supports Graphics, Compute and Present on the same queue
         for (const auto& queue_family : queue_families) {
             if (bit_match(queue_family.queueFlags, VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT)) {
-                queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+                queue_info.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
                 queue_info.queueFamilyIndex = queue_family_idx;
-                queue_info.queueCount = 1;
+                queue_info.queueCount       = 1;
                 queue_info.pQueuePriorities = &queue_priorities;
+
                 has_suitable_queue = true;
+                
                 break;
             }
             queue_family_idx++;
@@ -1223,12 +1445,12 @@ namespace Tempeh::GPU
         }
 
         VkDeviceCreateInfo device_info{};
-        device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        device_info.queueCreateInfoCount = 1;
-        device_info.pQueueCreateInfos = &queue_info;
-        device_info.enabledExtensionCount = static_cast<uint32_t>(enabled_exts.size());
+        device_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        device_info.queueCreateInfoCount    = 1;
+        device_info.pQueueCreateInfos       = &queue_info;
+        device_info.enabledExtensionCount   = static_cast<uint32_t>(enabled_exts.size());
         device_info.ppEnabledExtensionNames = enabled_exts.data();
-        device_info.pEnabledFeatures = &features;
+        device_info.pEnabledFeatures        = &features;
 
         VkDevice device = VK_NULL_HANDLE;
         result = vkCreateDevice(physical_device, &device_info, nullptr, &device);
@@ -1280,29 +1502,29 @@ namespace Tempeh::GPU
                  VK_API_VERSION_VARIANT(properties.apiVersion));
 
         VmaVulkanFunctions vma_fn{};
-        vma_fn.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
-        vma_fn.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
-        vma_fn.vkAllocateMemory = vkAllocateMemory;
-        vma_fn.vkFreeMemory = vkFreeMemory;
-        vma_fn.vkMapMemory = vkMapMemory;
-        vma_fn.vkUnmapMemory = vkUnmapMemory;
-        vma_fn.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
-        vma_fn.vkInvalidateMappedMemoryRanges = vkInvalidateMappedMemoryRanges;
-        vma_fn.vkBindBufferMemory = vkBindBufferMemory;
-        vma_fn.vkBindImageMemory = vkBindImageMemory;
-        vma_fn.vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements;
-        vma_fn.vkGetImageMemoryRequirements = vkGetImageMemoryRequirements;
-        vma_fn.vkCreateBuffer = vkCreateBuffer;
-        vma_fn.vkDestroyBuffer = vkDestroyBuffer;
-        vma_fn.vkCreateImage = vkCreateImage;
-        vma_fn.vkDestroyImage = vkDestroyImage;
-        vma_fn.vkCmdCopyBuffer = vkCmdCopyBuffer;
+        vma_fn.vkGetPhysicalDeviceProperties        = vkGetPhysicalDeviceProperties;
+        vma_fn.vkGetPhysicalDeviceMemoryProperties  = vkGetPhysicalDeviceMemoryProperties;
+        vma_fn.vkAllocateMemory                     = vkAllocateMemory;
+        vma_fn.vkFreeMemory                         = vkFreeMemory;
+        vma_fn.vkMapMemory                          = vkMapMemory;
+        vma_fn.vkUnmapMemory                        = vkUnmapMemory;
+        vma_fn.vkFlushMappedMemoryRanges            = vkFlushMappedMemoryRanges;
+        vma_fn.vkInvalidateMappedMemoryRanges       = vkInvalidateMappedMemoryRanges;
+        vma_fn.vkBindBufferMemory                   = vkBindBufferMemory;
+        vma_fn.vkBindImageMemory                    = vkBindImageMemory;
+        vma_fn.vkGetBufferMemoryRequirements        = vkGetBufferMemoryRequirements;
+        vma_fn.vkGetImageMemoryRequirements         = vkGetImageMemoryRequirements;
+        vma_fn.vkCreateBuffer                       = vkCreateBuffer;
+        vma_fn.vkDestroyBuffer                      = vkDestroyBuffer;
+        vma_fn.vkCreateImage                        = vkCreateImage;
+        vma_fn.vkDestroyImage                       = vkDestroyImage;
+        vma_fn.vkCmdCopyBuffer                      = vkCmdCopyBuffer;
 
         VmaAllocatorCreateInfo allocator_info{};
         allocator_info.vulkanApiVersion = app_info.apiVersion;
-        allocator_info.physicalDevice = physical_device;
-        allocator_info.device = device;
-        allocator_info.instance = instance;
+        allocator_info.physicalDevice   = physical_device;
+        allocator_info.device           = device;
+        allocator_info.instance         = instance;
         allocator_info.pVulkanFunctions = &vma_fn;
 
         VmaAllocator allocator;
