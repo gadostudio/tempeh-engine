@@ -10,7 +10,6 @@
 
 #include "backend_vk.hpp"
 #include "vk.hpp"
-#include "template_descriptors_vk.hpp"
 #include "command_queue_vk.hpp"
 #include "command_state_vk.hpp"
 #include "transition_barrier_vk.hpp"
@@ -19,13 +18,6 @@ namespace Tempeh::GPU
 {
     struct DeviceVK : public Device
     {
-        static constexpr u32 max_resources = 2048;
-        using StorageImageTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, max_resources>;
-        using SampledImageTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, max_resources>;
-        using SamplerTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_SAMPLER, max_resources>;
-        using UniformBufferTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, max_resources>;
-        using StorageBufferTemplateDescriptors = TemplateDescriptorsVK<VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, max_resources>;
-
         VkInstance m_instance;
         VkPhysicalDevice m_physical_device;
         VkPhysicalDeviceProperties m_properties;
@@ -39,14 +31,6 @@ namespace Tempeh::GPU
         std::vector<VkSurfaceFormatKHR> m_surface_formats;
         std::vector<VkPresentModeKHR> m_present_modes;
         std::unordered_map<VkFormat, VkFormatProperties> m_format_properties;
-
-        // Template descriptors for copying descriptors.
-        // Note, these optionals are required for creating the objects lazily.
-        std::optional<StorageImageTemplateDescriptors> m_storage_image_template_descriptors;
-        std::optional<SampledImageTemplateDescriptors> m_sampled_image_template_descriptors;
-        std::optional<SamplerTemplateDescriptors> m_sampler_template_descriptors;
-        std::optional<UniformBufferTemplateDescriptors> m_uniform_buffer_template_descriptors;
-        std::optional<StorageBufferTemplateDescriptors> m_storage_buffer_template_descriptors;
 
         std::unique_ptr<CommandQueueVK> m_cmd_queue;
         std::size_t m_current_submission = 0;

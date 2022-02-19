@@ -11,34 +11,18 @@ namespace Tempeh::GPU
         VkImageView view,
         VmaAllocation allocation,
         const VkImageSubresourceRange& subresource_range,
-        VkDescriptorSet storage_template_descriptor,
-        VkDescriptorSet sampled_template_descriptor,
         const TextureDesc& desc)
         : Texture(desc),
           m_parent_device(parent_device),
           m_image(image),
           m_image_view(view),
           m_allocation(allocation),
-          m_subresource_range(subresource_range),
-          m_storage_template_descriptor(storage_template_descriptor),
-          m_sampled_template_descriptor(sampled_template_descriptor)
+          m_subresource_range(subresource_range)
     {
     }
 
     TextureVK::~TextureVK()
     {
-        if (m_storage_template_descriptor != VK_NULL_HANDLE) {
-            m_parent_device->m_storage_image_template_descriptors
-                .value()
-                .free_set(m_storage_template_descriptor);
-        }
-
-        if (m_sampled_template_descriptor != VK_NULL_HANDLE) {
-            m_parent_device->m_sampled_image_template_descriptors
-                .value()
-                .free_set(m_sampled_template_descriptor);
-        }
-
         m_parent_device
             ->m_cmd_queue
             ->destroy_texture(m_last_submission, m_image, m_image_view, m_allocation);
@@ -69,27 +53,16 @@ namespace Tempeh::GPU
 
     BufferViewVK::BufferViewVK(
         DeviceVK* parent_device,
-        VkDescriptorSet uniform_template_descriptor,
-        VkDescriptorSet storage_template_descriptor)
-        : m_parent_device(parent_device),
-          m_uniform_template_descriptor(uniform_template_descriptor),
-          m_storage_template_descriptor(storage_template_descriptor)
+        const Util::Ref<BufferVK>& buffer,
+        const BufferViewDesc& desc)
+        : BufferView(desc),
+          m_parent_device(parent_device),
+          m_buffer(buffer)
     {
     }
     
     BufferViewVK::~BufferViewVK()
     {
-        if (m_uniform_template_descriptor != VK_NULL_HANDLE) {
-            m_parent_device->m_uniform_buffer_template_descriptors
-                .value()
-                .free_set(m_uniform_template_descriptor);
-        }
-
-        if (m_storage_template_descriptor != VK_NULL_HANDLE) {
-            m_parent_device->m_storage_buffer_template_descriptors
-                .value()
-                .free_set(m_storage_template_descriptor);
-        }
     }
 
     // Render pass resource
@@ -134,21 +107,15 @@ namespace Tempeh::GPU
     SamplerVK::SamplerVK(
         DeviceVK* parent_device,
         VkSampler sampler,
-        VkDescriptorSet template_descriptor,
         const Sampler& desc)
         : Sampler(desc),
           m_parent_device(parent_device),
-          m_sampler(sampler),
-          m_template_descriptor(template_descriptor)
+          m_sampler(sampler)
     {
     }
 
     SamplerVK::~SamplerVK()
     {
-        m_parent_device->m_sampler_template_descriptors
-            .value()
-            .free_set(m_template_descriptor);
-
         m_parent_device
             ->m_cmd_queue
             ->destroy_sampler(m_last_submission, m_sampler);

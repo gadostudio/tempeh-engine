@@ -54,12 +54,6 @@ namespace Tempeh::GPU
             vkGetPhysicalDeviceFormatProperties(m_physical_device, (VkFormat)fmt, &format_properties);
             m_format_properties.insert_or_assign((VkFormat)fmt, format_properties);
         }
-        
-        m_storage_image_template_descriptors.emplace(m_device);
-        m_sampled_image_template_descriptors.emplace(m_device);
-        m_sampler_template_descriptors.emplace(m_device);
-        m_uniform_buffer_template_descriptors.emplace(m_device);
-        m_storage_buffer_template_descriptors.emplace(m_device);
 
         m_cmd_queue = std::make_unique<CommandQueueVK>(
             m_device, m_main_queue, m_allocator, m_main_queue_index);
@@ -69,11 +63,6 @@ namespace Tempeh::GPU
     {
         vkDeviceWaitIdle(m_device);
         m_cmd_queue.reset();
-        m_storage_image_template_descriptors.reset();
-        m_sampled_image_template_descriptors.reset();
-        m_sampler_template_descriptors.reset();
-        m_uniform_buffer_template_descriptors.reset();
-        m_storage_buffer_template_descriptors.reset();
         vmaDestroyAllocator(m_allocator);
         vkDestroyDevice(m_device, nullptr);
         vkDestroyInstance(m_instance, nullptr);
@@ -302,79 +291,10 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        // Prepare template descriptor
-
-        VkDescriptorSet storage_template_descriptor = VK_NULL_HANDLE;
-
-        if (bit_match(desc.usage, TextureUsage::Storage))
-        {
-            storage_template_descriptor = m_storage_image_template_descriptors
-                .value()
-                .allocate_set();
-
-            if (storage_template_descriptor == VK_NULL_HANDLE) {
-                return { ResultCode::InternalError };
-            }
-            
-            VkDescriptorImageInfo descriptor_image_info{};
-            descriptor_image_info.sampler = VK_NULL_HANDLE;
-            descriptor_image_info.imageView = image_view;
-            descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-            VkWriteDescriptorSet write_descriptor{};
-            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_descriptor.dstSet = storage_template_descriptor;
-            write_descriptor.dstBinding = 0;
-            write_descriptor.dstArrayElement = 0;
-            write_descriptor.descriptorCount = 1;
-            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            write_descriptor.pImageInfo = &descriptor_image_info;
-
-            vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
-        }
-
-        VkDescriptorSet sampled_template_descriptor = VK_NULL_HANDLE;
-
-        if (bit_match(desc.usage, TextureUsage::Sampled)) {
-            sampled_template_descriptor = m_sampled_image_template_descriptors
-                .value()
-                .allocate_set();
-
-            if (sampled_template_descriptor == VK_NULL_HANDLE) {
-                return { ResultCode::InternalError };
-            }
-            
-            VkDescriptorImageInfo descriptor_image_info{};
-            descriptor_image_info.sampler = VK_NULL_HANDLE;
-            descriptor_image_info.imageView = image_view;
-
-            VkWriteDescriptorSet write_descriptor{};
-            write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_descriptor.dstSet = sampled_template_descriptor;
-            write_descriptor.dstBinding = 0;
-            write_descriptor.dstArrayElement = 0;
-            write_descriptor.descriptorCount = 1;
-            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            write_descriptor.pImageInfo = &descriptor_image_info;
-
-            if (bit_match(desc.usage, TextureUsage::DepthStencilAttachment)) {
-                descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-                vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
-            }
-            else {
-                descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
-            }
-        }
-
         return {
-            std::make_shared<TextureVK>(this,
-                                        image,
-                                        image_view,
-                                        allocation,
+            std::make_shared<TextureVK>(this, image,
+                                        image_view, allocation,
                                         view_info.subresourceRange,
-                                        storage_template_descriptor,
-                                        sampled_template_descriptor,
                                         desc)
         };
     }
@@ -413,8 +333,6 @@ namespace Tempeh::GPU
         const BufferViewDesc& desc)
     {
         const auto& buffer_desc = buffer->desc();
-        VkBuffer vk_buffer = static_cast<BufferVK*>(buffer.get())->m_buffer;
-        VkDescriptorSet uniform_template_descriptor = VK_NULL_HANDLE;
         bool has_uniform_usage_bit = bit_match(buffer_desc.usage, BufferUsage::Uniform);
         bool has_storage_usage_bit = bit_match(buffer_desc.usage, BufferUsage::Storage);
 
@@ -423,59 +341,7 @@ namespace Tempeh::GPU
             return { ResultCode::IncompatibleResourceUsage };
         }
 
-        VkDescriptorBufferInfo descriptor_buffer_info{};
-        descriptor_buffer_info.buffer = vk_buffer;
-        
-        VkWriteDescriptorSet write_descriptor{};
-        write_descriptor.dstBinding = 0;
-        write_descriptor.dstArrayElement = 0;
-        write_descriptor.descriptorCount = 1;
-
-        if (has_uniform_usage_bit) {
-            uniform_template_descriptor = m_uniform_buffer_template_descriptors
-                .value()
-                .allocate_set();
-
-            if (uniform_template_descriptor == VK_NULL_HANDLE) {
-                return { ResultCode::InternalError };
-            }
-
-            descriptor_buffer_info.offset   = desc.offset;
-            descriptor_buffer_info.range    = desc.range;
-
-            write_descriptor.sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_descriptor.dstSet         = uniform_template_descriptor;
-            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write_descriptor.pBufferInfo    = &descriptor_buffer_info;
-
-            vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
-        }
-        
-        VkDescriptorSet storage_template_descriptor = VK_NULL_HANDLE;
-
-        if (has_storage_usage_bit) {
-            storage_template_descriptor = m_storage_buffer_template_descriptors
-                .value()
-                .allocate_set();
-
-            if (storage_template_descriptor == VK_NULL_HANDLE) {
-                return { ResultCode::InternalError };
-            }
-
-            descriptor_buffer_info.offset   = desc.offset;
-            descriptor_buffer_info.range    = desc.range;
-
-            write_descriptor.sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_descriptor.dstSet         = storage_template_descriptor;
-            write_descriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            write_descriptor.pBufferInfo    = &descriptor_buffer_info;
-
-            vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
-        }
-
-        return {
-            std::make_shared<BufferViewVK>(this, uniform_template_descriptor, storage_template_descriptor)
-        };
+        return { std::make_shared<BufferViewVK>(this, std::static_pointer_cast<BufferVK>(buffer), desc) };
     }
 
     RefDeviceResult<RenderPass> DeviceVK::create_render_pass(const RenderPassDesc& desc)
@@ -663,29 +529,7 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        // Write template descriptor for the sampler
-        VkDescriptorSet sampler_template_descriptor =
-            m_sampler_template_descriptors.value().allocate_set();
-
-        if (sampler_template_descriptor == VK_NULL_HANDLE) {
-            return { ResultCode::InternalError };
-        }
-
-        VkDescriptorImageInfo descriptor_image_info{};
-        descriptor_image_info.sampler = sampler;
-
-        VkWriteDescriptorSet write_descriptor{};
-        write_descriptor.sType              = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write_descriptor.dstSet             = sampler_template_descriptor;
-        write_descriptor.dstBinding         = 0;
-        write_descriptor.dstArrayElement    = 0;
-        write_descriptor.descriptorCount    = 1;
-        write_descriptor.descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLER;
-        write_descriptor.pImageInfo         = &descriptor_image_info;
-
-        vkUpdateDescriptorSets(m_device, 1, &write_descriptor, 0, nullptr);
-
-        return { std::make_shared<SamplerVK>(this, sampler, sampler_template_descriptor, desc) };
+        return { std::make_shared<SamplerVK>(this, sampler, desc) };
     }
 
     RefDeviceResult<GraphicsPipeline> DeviceVK::create_graphics_pipeline(const Util::Ref<RenderPass>& render_pass,
@@ -1390,6 +1234,7 @@ namespace Tempeh::GPU
             vkGetPhysicalDeviceProperties(physical_device, &properties);
             vkGetPhysicalDeviceFeatures(physical_device, &features);
         }
+
 
         ext_properties.clear();
 

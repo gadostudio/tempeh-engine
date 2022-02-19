@@ -6,9 +6,6 @@
 #include <tempeh/gpu/instance.hpp>
 #include <tempeh/gpu/unit_test/helpers.hpp>
 
-#define TEMPEH_EXPECT_OK(x) \
-	EXPECT_EQ(x, GPU::ResultCode::Ok)
-
 using namespace Tempeh;
 
 class GPUTestBase : public testing::TestWithParam<GPU::BackendType>
@@ -16,12 +13,46 @@ class GPUTestBase : public testing::TestWithParam<GPU::BackendType>
 protected:
     GPUTestBase()
     {
+        
     }
 };
 
-TEST_P(GPUTestBase, Initialization)
+TEST_P(GPUTestBase, DeviceInit)
 {
-    TEMPEH_EXPECT_OK(GPU::Instance::initialize(GPU::BackendType::Vulkan, false));
+    auto result = GPU::UnitTest::test_create_device(GetParam(), false);
+    EXPECT_TRUE(result.is_ok());
+}
+
+TEST_P(GPUTestBase, CreateTexture1D)
+{
+    auto result = GPU::UnitTest::test_create_device(GetParam(), false);
+    EXPECT_TRUE(result.is_ok());
+
+    Util::Ref<GPU::Device> device = result.value();
+    
+    auto texture = device->create_texture(
+        GPU::TextureDesc::texture_1d(
+            256, GPU::TextureFormat::RGBA_8_8_8_8_Unorm,
+            GPU::TextureUsage::Sampled | GPU::TextureUsage::TransferDst));
+
+    EXPECT_TRUE(texture.is_ok());
+}
+
+TEST_P(GPUTestBase, CreateTexture2D)
+{
+    auto result = GPU::UnitTest::test_create_device(GetParam(), false);
+    EXPECT_TRUE(result.is_ok());
+
+    Util::Ref<GPU::Device> device = result.value();
+
+    auto texture = device->create_texture(
+        GPU::TextureDesc::texture_2d(
+            256, 256,
+            GPU::TextureFormat::RGBA_8_8_8_8_Unorm,
+            GPU::TextureUsage::Sampled |
+            GPU::TextureUsage::TransferDst));
+
+    EXPECT_TRUE(texture.is_ok());
 }
 
 #endif

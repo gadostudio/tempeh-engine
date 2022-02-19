@@ -43,8 +43,15 @@ namespace Tempeh::GPU
     class BufferView
     {
     public:
-        BufferView() {}
+        BufferView(const BufferViewDesc& desc) :
+            m_desc(desc)
+        {
+        }
+        
         virtual ~BufferView() {}
+
+    protected:
+        BufferViewDesc m_desc;
     };
 
     class RenderPass

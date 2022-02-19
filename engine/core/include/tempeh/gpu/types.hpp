@@ -353,6 +353,50 @@ namespace Tempeh::GPU
         u32                     mip_levels;
         u32                     array_layers;
         u32                     num_samples;
+
+        static TextureDesc texture_1d(u32 width,
+                                      TextureFormat format,
+                                      TextureUsageFlags usage,
+                                      MemoryUsage memory_usage = MemoryUsage::Default,
+                                      const char* label = "Tempeh 1D Texture")
+        {
+            GPU::TextureDesc desc{};
+
+            desc.label = label;
+            desc.type = GPU::TextureType::Texture1D;
+            desc.usage = usage;
+            desc.memory_usage = memory_usage;
+            desc.format = format;
+            desc.width = width;
+            desc.mip_levels = 1;
+            desc.array_layers = 1;
+            desc.num_samples = 1;
+
+            return desc;
+        }
+
+        static TextureDesc texture_2d(u32 width,
+                                      u32 height,
+                                      TextureFormat format,
+                                      TextureUsageFlags usage,
+                                      MemoryUsage memory_usage = MemoryUsage::Default,
+                                      const char* label = "Tempeh 1D Texture")
+        {
+            GPU::TextureDesc desc{};
+
+            desc.label = label;
+            desc.type = GPU::TextureType::Texture2D;
+            desc.usage = usage;
+            desc.memory_usage = memory_usage;
+            desc.format = format;
+            desc.width = width;
+            desc.height = height;
+            desc.mip_levels = 1;
+            desc.array_layers = 1;
+            desc.num_samples = 1;
+
+            return desc;
+        }
     };
 
     struct BufferDesc

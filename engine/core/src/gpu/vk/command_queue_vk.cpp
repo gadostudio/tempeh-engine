@@ -158,26 +158,53 @@ namespace Tempeh::GPU
 
     void CommandQueueVK::destroy_texture(std::size_t submission_id, VkImage image, VkImageView image_view, VmaAllocation allocation)
     {
+        // Destroy the resource directly if the submission list is undefined.
+        if (submission_list.empty()) {
+            vkDestroyImageView(device, image_view, nullptr);
+            vmaDestroyImage(allocator, image, allocation);
+            return;
+        }
+
         submission_list[submission_id].texture_free_queue.emplace(image, image_view, allocation);
     }
 
     void CommandQueueVK::destroy_buffer(std::size_t submission_id, VkBuffer buffer, VmaAllocation allocation)
     {
+        if (submission_list.empty()) {
+            vmaDestroyBuffer(allocator, buffer, allocation);
+            return;
+        }
+
         submission_list[submission_id].buffer_free_queue.emplace(buffer, allocation);
     }
 
     void CommandQueueVK::destroy_render_pass(std::size_t submission_id, VkRenderPass render_pass)
     {
+        if (submission_list.empty()) {
+            vkDestroyRenderPass(device, render_pass, nullptr);
+            return;
+        }
+
         submission_list[submission_id].render_pass_free_queue.emplace(render_pass);
     }
 
     void CommandQueueVK::destroy_framebuffer(std::size_t submission_id, VkFramebuffer framebuffer)
     {
+        if (submission_list.empty()) {
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+            return;
+        }
+
         submission_list[submission_id].framebuffer_free_queue.emplace(framebuffer);
     }
 
     void CommandQueueVK::destroy_sampler(std::size_t submission_id, VkSampler sampler)
     {
+        if (submission_list.empty()) {
+            vkDestroySampler(device, sampler, nullptr);
+            return;
+        }
+
         submission_list[submission_id].sampler_free_queue.emplace(sampler);
     }
 }

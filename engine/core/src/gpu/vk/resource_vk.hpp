@@ -14,8 +14,6 @@ namespace Tempeh::GPU
         VkImage                 m_image;
         VkImageView             m_image_view;
         VmaAllocation           m_allocation;
-        VkDescriptorSet         m_storage_template_descriptor;
-        VkDescriptorSet         m_sampled_template_descriptor;
         VkImageLayout           m_last_layout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkImageSubresourceRange m_subresource_range{};
         std::size_t             m_last_submission = 0;
@@ -26,8 +24,6 @@ namespace Tempeh::GPU
             VkImageView view,
             VmaAllocation allocation,
             const VkImageSubresourceRange& subresource_range,
-            VkDescriptorSet storage_template_descriptor,
-            VkDescriptorSet sampled_template_descriptor,
             const TextureDesc& desc);
 
         ~TextureVK();
@@ -53,13 +49,11 @@ namespace Tempeh::GPU
     struct BufferViewVK : public BufferView
     {
         DeviceVK*               m_parent_device;
-        VkDescriptorSet         m_uniform_template_descriptor;
-        VkDescriptorSet         m_storage_template_descriptor;
+        Util::Ref<BufferVK>     m_buffer;
 
-        BufferViewVK(
-            DeviceVK* parent_device,
-            VkDescriptorSet uniform_template_descriptor,
-            VkDescriptorSet storage_template_descriptor);
+        BufferViewVK(DeviceVK* parent_device,
+                     const Util::Ref<BufferVK>& buffer,
+                     const BufferViewDesc& desc);
 
         ~BufferViewVK();
     };
@@ -97,13 +91,11 @@ namespace Tempeh::GPU
     {
         DeviceVK*               m_parent_device;
         VkSampler               m_sampler;
-        VkDescriptorSet         m_template_descriptor;
         std::size_t             m_last_submission = 0;
 
         SamplerVK(
             DeviceVK* parent_device,
             VkSampler sampler,
-            VkDescriptorSet template_descriptor,
             const Sampler& desc);
 
         ~SamplerVK();

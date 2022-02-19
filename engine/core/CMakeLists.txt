@@ -22,7 +22,6 @@ if (TEMPEH_USE_VULKAN_BACKEND)
         "src/gpu/vk/resource_vk.hpp"
         "src/gpu/vk/swapchain_vk.cpp"
         "src/gpu/vk/swapchain_vk.hpp"
-        "src/gpu/vk/template_descriptors_vk.hpp"
         "src/gpu/vk/transition_barrier_vk.cpp"
         "src/gpu/vk/transition_barrier_vk.hpp"
         "src/gpu/vk/vk.hpp"
