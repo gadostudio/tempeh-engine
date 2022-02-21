@@ -245,6 +245,7 @@ namespace Tempeh::GPU
     ResultCode prevalidate_graphics_pipeline_desc(const GraphicsPipelineDesc& desc)
     {
         // TODO: Validate GraphicsPipelineDesc
+        TEMPEH_UNREFERENCED(desc);
         return ResultCode::Unimplemented;
     }
 }

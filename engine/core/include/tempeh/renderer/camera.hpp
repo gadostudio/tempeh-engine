@@ -7,7 +7,7 @@
 namespace Tempeh::Renderer
 {
 
-	INTERFACE class Camera
+	class Camera
 	{
 	private:
 		virtual void recalculate_matrix() = 0;
