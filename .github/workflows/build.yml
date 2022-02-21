@@ -78,7 +78,7 @@ jobs:
         with:
           path: |
             build/
-          key: ${{ runner.os }}-master
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ github.ref }}
       - name: Create build dir
         if: steps.cmake-cache.outputs.cache-hit != 'true'
         run: |
