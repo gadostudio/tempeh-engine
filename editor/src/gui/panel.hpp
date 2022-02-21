@@ -3,7 +3,7 @@
 
 #include <tempeh/common/typedefs.hpp>
 
-INTERFACE class Panel
+class Panel
 {
 public:
 	virtual void draw() = 0;
