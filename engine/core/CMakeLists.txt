@@ -53,14 +53,9 @@ add_library(tempeh_core STATIC
 	"src/scripting/mono.cpp"
 
 	"include/tempeh/renderer/camera.hpp"
-	"include/tempeh/renderer/backend/framebuffer.hpp"
-	"include/tempeh/renderer/backend/texture.hpp"
-	"include/tempeh/renderer/backend/uniform_buffer.hpp"
-	"include/tempeh/renderer/camera.hpp"
-	"include/tempeh/renderer/backend/vulkan/texture.hpp"
-	"include/tempeh/renderer/backend/vulkan/instance.hpp"
-	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
-	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
+	"include/tempeh/renderer/frustum_culling.hpp"
+	"include/tempeh/renderer/orthogonal_camera.hpp"
+	"include/tempeh/renderer/perspective_camera.hpp"
 
 	"src/renderer/orthogonal_camera.cpp"
 	"src/renderer/perspective_camera.cpp"
