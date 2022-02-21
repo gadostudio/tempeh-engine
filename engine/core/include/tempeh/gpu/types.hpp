@@ -23,6 +23,7 @@ namespace Tempeh::GPU
     using TextureUsageFlags = u32;
     using BufferUsageFlags = u32;
     using CommandUsageFlags = u32;
+    using ColorWriteFlags = u32;
 
     enum class BackendType : u8
     {
@@ -199,13 +200,13 @@ namespace Tempeh::GPU
     {
         enum
         {
-            TransferSrc             = bit(0),
-            TransferDst             = bit(1),
-            Uniform                 = bit(2),
-            Index                   = bit(3),
-            Vertex                  = bit(4),
-            Storage                 = bit(5),
-            Indirect                = bit(6),
+            TransferSrc = bit(0),
+            TransferDst = bit(1),
+            Uniform     = bit(2),
+            Index       = bit(3),
+            Vertex      = bit(4),
+            Storage     = bit(5),
+            Indirect    = bit(6),
         };
     };
 
@@ -302,6 +303,43 @@ namespace Tempeh::GPU
         Decrement
     };
 
+    enum class BlendOp
+    {
+        Add,
+        Subtract,
+        InvSubtract,
+        Min,
+        Max
+    };
+
+    enum class BlendFactor
+    {
+        Zero,
+        One,
+        SrcColor,
+        OneMinusSrcColor,
+        DstColor,
+        OneMinusDstColor,
+        SrcAlpha,
+        OneMinusSrcAlpha,
+        DstAlpha,
+        OneMinusDstAlpha,
+        Constant,
+        OneMinusConstant
+    };
+
+    struct ColorWrite
+    {
+        enum
+        {
+            Red     = bit(1),
+            Green   = bit(2),
+            Blue    = bit(3),
+            Alpha   = bit(4),
+            All     = Red | Blue | Green | Alpha
+        };
+    };
+
     enum class ResultCode : u8
     {
         Ok,
@@ -310,6 +348,7 @@ namespace Tempeh::GPU
         OutOfMemory,
         OutOfRange,
         BackendNotSupported,
+        FeatureNotSupported,
         SurfacePresentationNotSupported,
         FormatNotSupported,
         IncompatibleFormat,
@@ -511,27 +550,27 @@ namespace Tempeh::GPU
 
     struct BufferViewDesc
     {
-        const char*             label;
-        size_t                  offset;
-        size_t                  range;
+        const char*                                 label;
+        size_t                                      offset;
+        size_t                                      range;
     };
 
     struct ColorAttachmentDesc
     {
-        TextureFormat           format;
-        TextureComponentType    component_type;
-        LoadOp                  load_op;
-        StoreOp                 store_op;
-        bool                    resolve;
+        TextureFormat                               format;
+        TextureComponentType                        component_type;
+        LoadOp                                      load_op;
+        StoreOp                                     store_op;
+        bool                                        resolve;
     };
 
     struct DepthStencilAttachmentDesc
     {
-        TextureFormat           format;
-        LoadOp                  depth_load_op;
-        StoreOp                 depth_store_op;
-        LoadOp                  stencil_load_op;
-        StoreOp                 stencil_store_op;
+        TextureFormat                               format;
+        LoadOp                                      depth_load_op;
+        StoreOp                                     depth_store_op;
+        LoadOp                                      stencil_load_op;
+        StoreOp                                     stencil_store_op;
     };
 
     struct RenderPassDesc
@@ -597,7 +636,6 @@ namespace Tempeh::GPU
 
     struct RasterizationStateDesc
     {
-        FillMode                                    fill_mode;
         CullMode                                    cull_mode;
         bool                                        front_counter_clockwise;
         int                                         depth_bias;
@@ -631,9 +669,22 @@ namespace Tempeh::GPU
         u32                                         stencil_write_mask;
     };
 
+    struct ColorAttachmentBlendState
+    {
+        bool                                        enable_blending;
+        BlendFactor                                 src_color_blend_factor;
+        BlendFactor                                 dst_color_blend_factor;
+        BlendOp                                     color_blend_op;
+        BlendFactor                                 src_alpha_blend_factor;
+        BlendFactor                                 dst_alpha_blend_factor;
+        BlendOp                                     alpha_blend_op;
+        ColorWriteFlags                             color_write_component;
+    };
+
     struct BlendStateDesc
     {
-
+        const ColorAttachmentBlendState*            color_attachment_blend_states;
+        u32                                         num_color_attachments;
     };
 
     struct GraphicsPipelineDesc
@@ -644,7 +695,7 @@ namespace Tempeh::GPU
         std::optional<VertexInputLayoutDesc>        vertex_input_layout;
         InputAssemblyStateDesc                      input_assembly_state;
         RasterizationStateDesc                      rasterization_state;
-        std::optional<MultisampleStateDesc>         multisample_state;
+        MultisampleStateDesc                        multisample_state;
         std::optional<DepthStencilStateDesc>        depth_stencil_state;
         std::optional<BlendStateDesc>               blend_state;
     };
@@ -725,18 +776,18 @@ namespace Tempeh::GPU
 
     struct SamplerDesc
     {
-        const char*         label;
-        TextureFiltering    mag_filter;
-        TextureFiltering    min_filter;
-        TextureFiltering    mip_filter;
-        TextureAddressing   address_mode_u;
-        TextureAddressing   address_mode_v;
-        TextureAddressing   address_mode_w;
-        float               mip_lod_bias;
-        u32                 max_anisotropy;
-        CompareOp           compare_op;
-        float               min_lod;
-        float               max_lod;
+        const char*                                 label;
+        TextureFiltering                            mag_filter;
+        TextureFiltering                            min_filter;
+        TextureFiltering                            mip_filter;
+        TextureAddressing                           address_mode_u;
+        TextureAddressing                           address_mode_v;
+        TextureAddressing                           address_mode_w;
+        float                                       mip_lod_bias;
+        u32                                         max_anisotropy;
+        CompareOp                                   compare_op;
+        float                                       min_lod;
+        float                                       max_lod;
     };
 
     struct DrawInstancedIndirectCommand

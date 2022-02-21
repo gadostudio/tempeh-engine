@@ -4,7 +4,7 @@
 #include <tempeh/gpu/types.hpp>
 #include <tempeh/logger.hpp>
 
-#define TEMPEH_GPU_VALIDATE(x) \
+#define TEMPEH_GPU_VALIDATE_RESULT(x) \
     { \
         ::Tempeh::GPU::ResultCode err = (x); \
         if (err != ::Tempeh::GPU::ResultCode::Ok) { \
@@ -24,6 +24,8 @@ namespace Tempeh::GPU
         u32 att_index,
         const Util::Ref<RenderPass>& render_pass,
         const FramebufferAttachment& fb_att);
+
+    ResultCode prevalidate_graphics_pipeline_desc(const GraphicsPipelineDesc& desc);
 }
 
 #endif

@@ -119,11 +119,7 @@ namespace Tempeh::GPU
 
     RefDeviceResult<Texture> DeviceVK::create_texture(const TextureDesc& desc)
     {
-        ResultCode err = prevalidate_texture_desc(desc, m_device_limits);
-
-        if (err != ResultCode::Ok) {
-            return { std::move(err) };
-        }
+        TEMPEH_GPU_VALIDATE_RESULT(prevalidate_texture_desc(desc, m_device_limits));
 
         VkImageCreateFlags create_flags = 0;
         VkFormat format = convert_format_vk(desc.format);
@@ -448,14 +444,14 @@ namespace Tempeh::GPU
     {
         std::lock_guard lock(m_sync_mutex);
 
-        TEMPEH_GPU_VALIDATE(prevalidate_framebuffer_desc(render_pass, desc));
+        TEMPEH_GPU_VALIDATE_RESULT(prevalidate_framebuffer_desc(render_pass, desc));
 
-        static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1;
+        static constexpr size_t max_att_descriptions = RenderPass::max_color_attachments * 2 + 1; // color
         std::array<VkImageView, max_att_descriptions> image_views{};
         u32 num_attachments_used = 0;
         
         for (const auto& fb_att : desc.color_attachments) {
-            TEMPEH_GPU_VALIDATE(validate_framebuffer_attachment(num_attachments_used, render_pass, fb_att));
+            TEMPEH_GPU_VALIDATE_RESULT(validate_framebuffer_attachment(num_attachments_used, render_pass, fb_att));
             auto&& vk_texture = std::static_pointer_cast<TextureVK>(fb_att.color_attachment);
             image_views[num_attachments_used] = vk_texture->m_image_view;
             num_attachments_used++;
@@ -536,12 +532,15 @@ namespace Tempeh::GPU
                                                                          const GraphicsPipelineDesc& desc)
     {
         std::lock_guard lock(m_sync_mutex);
+
+        TEMPEH_GPU_VALIDATE_RESULT(prevalidate_graphics_pipeline_desc(desc));
         
         if (!desc.vs_module) {
             LOG_ERROR("Failed to create graphics pipeline: vertex shader module must be present.");
             return { ResultCode::InvalidArgs };
         }
 
+        // Should we cache shader module(s)?
         VkShaderModule vs_module;
 
         VkShaderModuleCreateInfo vs_module_info;
@@ -659,46 +658,50 @@ namespace Tempeh::GPU
                 input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
                 break;
             default:
-                assert(false && "This section should be unreachable");
+                assert(false);
         }
 
         if (desc.input_assembly_state.strip_index_format) {
             input_assembly.primitiveRestartEnable = VK_TRUE;
         }
 
+        VkViewport viewport;
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = 1.0f;
+        viewport.height = 1.0f;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        scissor.extent.width = 1;
+        scissor.extent.height = 1;
+
         VkPipelineViewportStateCreateInfo viewport_state;
-        viewport_state.sType            = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewport_state.pNext            = nullptr;
-        viewport_state.flags            = 0;
-        viewport_state.viewportCount    = 1;
-        viewport_state.pViewports       = nullptr;
-        viewport_state.scissorCount     = 1;
-        viewport_state.pScissors        = nullptr;
+        viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewport_state.pNext = nullptr;
+        viewport_state.flags = 0;
+        viewport_state.viewportCount = 1;
+        viewport_state.pViewports = &viewport;
+        viewport_state.scissorCount = 1;
+        viewport_state.pScissors= &scissor;
 
         VkPipelineRasterizationStateCreateInfo rasterization_state;
         rasterization_state.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterization_state.pNext                   = nullptr;
         rasterization_state.flags                   = 0;
-        rasterization_state.depthClampEnable        = VK_TRUE;
+        rasterization_state.depthClampEnable        = VK_FALSE; // Note that depth clamp is not depth clip, the behavior is different across APIs
         rasterization_state.rasterizerDiscardEnable = VK_FALSE;
-        rasterization_state.frontFace               = desc.rasterization_state.front_counter_clockwise ? VK_FRONT_FACE_CLOCKWISE
-                                                                                                       : VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterization_state.frontFace               = desc.rasterization_state.front_counter_clockwise ? VK_FRONT_FACE_COUNTER_CLOCKWISE
+                                                                                                       : VK_FRONT_FACE_CLOCKWISE;
         rasterization_state.depthBiasEnable         = VK_TRUE;
         rasterization_state.depthBiasConstantFactor = static_cast<float>(desc.rasterization_state.depth_bias);
         rasterization_state.depthBiasClamp          = 0.0f;
         rasterization_state.depthBiasSlopeFactor    = desc.rasterization_state.depth_bias_slope_scale;
         rasterization_state.lineWidth               = 1.0f;
-
-        switch (desc.rasterization_state.fill_mode) {
-            case FillMode::Wireframe:
-                rasterization_state.polygonMode = VK_POLYGON_MODE_LINE;
-                break;
-            case FillMode::Solid:
-                rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
-                break;
-            default:
-                assert(false && "This section should be unreachable");
-        }
+        rasterization_state.polygonMode             = VK_POLYGON_MODE_FILL; // WebGPU can't change the fill/polygon mode
 
         switch (desc.rasterization_state.cull_mode) {
             case CullMode::None:
@@ -711,72 +714,80 @@ namespace Tempeh::GPU
                 rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
                 break;
             default:
-                assert(false && "This section should be unreachable");
+                assert(false);
         }
 
         VkPipelineMultisampleStateCreateInfo multisample_state;
         multisample_state.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisample_state.pNext                 = nullptr;
         multisample_state.flags                 = 0;
-
-        if (desc.multisample_state) {
-            multisample_state.rasterizationSamples  = static_cast<VkSampleCountFlagBits>(desc.multisample_state->num_samples);
-            multisample_state.sampleShadingEnable   = VK_FALSE;
-            multisample_state.minSampleShading      = 0.0f;
-            multisample_state.pSampleMask           = &desc.multisample_state->sample_mask;
-            multisample_state.alphaToCoverageEnable = desc.multisample_state->alpha_to_coverage ? VK_TRUE : VK_FALSE;
-            multisample_state.alphaToOneEnable      = VK_FALSE;
-        }
-        else {
-            multisample_state.rasterizationSamples  = static_cast<VkSampleCountFlagBits>(desc.multisample_state->num_samples);
-            multisample_state.sampleShadingEnable   = VK_FALSE;
-            multisample_state.minSampleShading      = 0.0f;
-            multisample_state.pSampleMask           = &desc.multisample_state->sample_mask;
-            multisample_state.alphaToCoverageEnable = desc.multisample_state->alpha_to_coverage ? VK_TRUE : VK_FALSE;
-            multisample_state.alphaToOneEnable      = VK_FALSE;
-        }
+        multisample_state.rasterizationSamples  = static_cast<VkSampleCountFlagBits>(desc.multisample_state.num_samples);
+        multisample_state.sampleShadingEnable   = VK_FALSE;
+        multisample_state.minSampleShading      = 0.0f;
+        multisample_state.pSampleMask           = &desc.multisample_state.sample_mask;
+        multisample_state.alphaToCoverageEnable = desc.multisample_state.alpha_to_coverage;
+        multisample_state.alphaToOneEnable      = VK_FALSE;
 
         VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
-        depth_stencil_state.sType                   = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depth_stencil_state.pNext                   = nullptr;
-        depth_stencil_state.flags                   = 0;
-        depth_stencil_state.depthTestEnable         = desc.depth_stencil_state->depth_test_enable ? VK_TRUE : VK_FALSE;
-        depth_stencil_state.depthWriteEnable        = desc.depth_stencil_state->depth_write_enable ? VK_TRUE : VK_FALSE;
-        depth_stencil_state.depthCompareOp          = convert_compare_op_vk(desc.depth_stencil_state->depth_compare_op);
-        depth_stencil_state.depthBoundsTestEnable   = VK_FALSE;
-        depth_stencil_state.stencilTestEnable       = desc.depth_stencil_state->stencil_test_enable ? VK_TRUE : VK_FALSE;
-        depth_stencil_state.front.failOp            = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.fail_op);
-        depth_stencil_state.front.depthFailOp       = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.depth_fail_op);
-        depth_stencil_state.front.passOp            = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.pass_op);
-        depth_stencil_state.front.compareOp         = convert_compare_op_vk(desc.depth_stencil_state->stencil_front.compare_op);
-        depth_stencil_state.front.reference         = 0;
-        depth_stencil_state.front.compareMask       = desc.depth_stencil_state->stencil_read_mask;
-        depth_stencil_state.front.writeMask         = desc.depth_stencil_state->stencil_write_mask;
-        depth_stencil_state.back.failOp             = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.fail_op);
-        depth_stencil_state.back.depthFailOp        = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.depth_fail_op);
-        depth_stencil_state.back.passOp             = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.pass_op);
-        depth_stencil_state.back.compareOp          = convert_compare_op_vk(desc.depth_stencil_state->stencil_front.compare_op);
-        depth_stencil_state.back.reference          = 0;
-        depth_stencil_state.back.compareMask        = desc.depth_stencil_state->stencil_read_mask;
-        depth_stencil_state.back.writeMask          = desc.depth_stencil_state->stencil_write_mask;
-        depth_stencil_state.minDepthBounds          = 0.0f;
-        depth_stencil_state.maxDepthBounds          = 1.0f;
+
+        if (desc.depth_stencil_state) {
+            depth_stencil_state.sType                   = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+            depth_stencil_state.pNext                   = nullptr;
+            depth_stencil_state.flags                   = 0;
+            depth_stencil_state.depthTestEnable         = desc.depth_stencil_state->depth_test_enable;
+            depth_stencil_state.depthWriteEnable        = desc.depth_stencil_state->depth_write_enable;
+            depth_stencil_state.depthCompareOp          = convert_compare_op_vk(desc.depth_stencil_state->depth_compare_op);
+            depth_stencil_state.depthBoundsTestEnable   = VK_FALSE;
+            depth_stencil_state.stencilTestEnable       = desc.depth_stencil_state->stencil_test_enable;
+            depth_stencil_state.front.failOp            = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.fail_op);
+            depth_stencil_state.front.depthFailOp       = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.depth_fail_op);
+            depth_stencil_state.front.passOp            = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.pass_op);
+            depth_stencil_state.front.compareOp         = convert_compare_op_vk(desc.depth_stencil_state->stencil_front.compare_op);
+            depth_stencil_state.front.reference         = 0;
+            depth_stencil_state.front.compareMask       = desc.depth_stencil_state->stencil_read_mask;
+            depth_stencil_state.front.writeMask         = desc.depth_stencil_state->stencil_write_mask;
+            depth_stencil_state.back.failOp             = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.fail_op);
+            depth_stencil_state.back.depthFailOp        = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.depth_fail_op);
+            depth_stencil_state.back.passOp             = convert_stencil_op_vk(desc.depth_stencil_state->stencil_front.pass_op);
+            depth_stencil_state.back.compareOp          = convert_compare_op_vk(desc.depth_stencil_state->stencil_front.compare_op);
+            depth_stencil_state.back.reference          = 0;
+            depth_stencil_state.back.compareMask        = desc.depth_stencil_state->stencil_read_mask;
+            depth_stencil_state.back.writeMask          = desc.depth_stencil_state->stencil_write_mask;
+            depth_stencil_state.minDepthBounds          = 0.0f;
+            depth_stencil_state.maxDepthBounds          = 1.0f;
+        }
 
         std::array<VkPipelineColorBlendAttachmentState, RenderPass::max_color_attachments>
-            color_attachments;
+            color_blend_attachments;
 
         VkPipelineColorBlendStateCreateInfo color_blend_state;
-        color_blend_state.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        color_blend_state.pNext             = nullptr;
-        color_blend_state.flags             = 0;
-        color_blend_state.logicOpEnable     = VK_FALSE;
-        color_blend_state.logicOp           = VK_LOGIC_OP_COPY;
-        color_blend_state.attachmentCount   = 0;
-        color_blend_state.pAttachments      = color_attachments.data();
-        color_blend_state.blendConstants[0] = 0.0f;
-        color_blend_state.blendConstants[1] = 0.0f;
-        color_blend_state.blendConstants[2] = 0.0f;
-        color_blend_state.blendConstants[3] = 0.0f;
+        
+        if (desc.blend_state) {
+            color_blend_state.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+            color_blend_state.logicOpEnable = VK_FALSE;
+            color_blend_state.logicOp = VK_LOGIC_OP_COPY;
+            color_blend_state.attachmentCount = 0;
+            color_blend_state.pAttachments = color_blend_attachments.data();
+            color_blend_state.blendConstants[0] = 0.0f;
+            color_blend_state.blendConstants[1] = 0.0f;
+            color_blend_state.blendConstants[2] = 0.0f;
+            color_blend_state.blendConstants[3] = 0.0f;
+
+            for (u32 i = 0; i < desc.blend_state->num_color_attachments; i++) {
+                auto& attachment = desc.blend_state->color_attachment_blend_states[i];
+
+                color_blend_attachments[i].blendEnable          = attachment.enable_blending;
+                color_blend_attachments[i].srcColorBlendFactor  = convert_blend_factor_vk<true>(attachment.src_color_blend_factor);
+                color_blend_attachments[i].dstColorBlendFactor  = convert_blend_factor_vk<true>(attachment.dst_color_blend_factor);
+                color_blend_attachments[i].colorBlendOp         = convert_blend_op_vk(attachment.color_blend_op);
+                color_blend_attachments[i].srcAlphaBlendFactor  = convert_blend_factor_vk<false>(attachment.src_alpha_blend_factor);
+                color_blend_attachments[i].dstAlphaBlendFactor  = convert_blend_factor_vk<false>(attachment.src_alpha_blend_factor);
+                color_blend_attachments[i].alphaBlendOp         = convert_blend_op_vk(attachment.alpha_blend_op);
+                color_blend_attachments[i].colorWriteMask       = attachment.color_write_component;
+
+                color_blend_state.attachmentCount++;
+            }
+        }
 
         static const VkDynamicState dynamic_states[] = {
             VK_DYNAMIC_STATE_VIEWPORT,
@@ -1215,7 +1226,7 @@ namespace Tempeh::GPU
         vkEnumeratePhysicalDevices(instance, &num_physical_devices, physical_devices.data());
 
         VkPhysicalDevice physical_device = physical_devices[0];
-        VkPhysicalDeviceFeatures features{};
+        VkPhysicalDeviceFeatures supported_features{};
         VkPhysicalDeviceProperties properties{};
 
         if (prefer_high_performance) {
@@ -1225,17 +1236,38 @@ namespace Tempeh::GPU
 
                 if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                     physical_device = current;
-                    vkGetPhysicalDeviceFeatures(physical_device, &features);
+                    vkGetPhysicalDeviceFeatures(physical_device, &supported_features);
                     break;
                 }
             }
         }
         else {
             vkGetPhysicalDeviceProperties(physical_device, &properties);
-            vkGetPhysicalDeviceFeatures(physical_device, &features);
+            vkGetPhysicalDeviceFeatures(physical_device, &supported_features);
         }
 
+        if (supported_features.fillModeNonSolid == VK_FALSE) {
+            return { ResultCode::FeatureNotSupported };
+        }
 
+        if (supported_features.fullDrawIndexUint32 == VK_FALSE) {
+            return { ResultCode::FeatureNotSupported };
+        }
+
+        if (supported_features.imageCubeArray == VK_FALSE) {
+            return { ResultCode::FeatureNotSupported };
+        }
+
+        if (supported_features.independentBlend == VK_FALSE) {
+            return { ResultCode::FeatureNotSupported };
+        }
+
+        VkPhysicalDeviceFeatures enabled_features{};
+        enabled_features.fillModeNonSolid = VK_TRUE;
+        enabled_features.fullDrawIndexUint32 = VK_TRUE;
+        enabled_features.imageCubeArray = VK_TRUE;
+        enabled_features.independentBlend = VK_TRUE;
+        
         ext_properties.clear();
 
         vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &num_extensions, nullptr);
@@ -1295,7 +1327,7 @@ namespace Tempeh::GPU
         device_info.pQueueCreateInfos       = &queue_info;
         device_info.enabledExtensionCount   = static_cast<uint32_t>(enabled_exts.size());
         device_info.ppEnabledExtensionNames = enabled_exts.data();
-        device_info.pEnabledFeatures        = &features;
+        device_info.pEnabledFeatures        = &enabled_features;
 
         VkDevice device = VK_NULL_HANDLE;
         result = vkCreateDevice(physical_device, &device_info, nullptr, &device);

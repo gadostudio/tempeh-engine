@@ -32,6 +32,8 @@ namespace Tempeh::GPU
 
     void TransitionBarrierVK::transition_buffer(VkAccessFlags new_access_flags, BufferVK* buffer)
     {
+        TEMPEH_UNREFERENCED(new_access_flags);
+        TEMPEH_UNREFERENCED(buffer);
     }
 
     void TransitionBarrierVK::flush_barrier(VkCommandBuffer cmd_buffer)
