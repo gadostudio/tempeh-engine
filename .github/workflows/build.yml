@@ -35,10 +35,11 @@ jobs:
         with:
           path: |
             build/
-          key: ${{ runner.os }}-master
+          key: ${{ runner.os }}-${{ github.ref_name }}
       - name: Create build dir
         if: steps.cmake-cache.outputs.cache-hit != 'true'
         run: |
+          rm -rf build
           mkdir build
       - name: Build
         run: |
@@ -78,11 +79,12 @@ jobs:
         with:
           path: |
             build/
-          key: ${{ runner.os }}-${{ env.GITHUB_REF_NAME }}
+          key: ${{ runner.os }}-${{ github.ref_name }}
       - name: Create build dir
         if: steps.cmake-cache.outputs.cache-hit != 'true'
         run: |
-          mkdir build
+          Remove-Item -path build -recurse
+          New-Item -ItemType Directory -Force -Path build
       - name: Build
         run: |
           $env:MONO_INCLUDE_DIR = "C:\Program Files\Mono\include\mono-2.0\"
