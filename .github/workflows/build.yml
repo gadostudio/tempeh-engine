@@ -47,10 +47,11 @@ jobs:
 
           cd build
           cmake .. -DTEMPEH_ENABLE_TEST=ON
-          cmake --build .
+          cmake --build . -j 4
       - name: Run test
         run: |
-          ./build/test/tempeh_core_test
+          echo "No test at the moment"
+          #./build/test/tempeh_core_test
   build_windows:
     name: Build Windows
     runs-on: windows-latest
@@ -83,7 +84,6 @@ jobs:
       - name: Create build dir
         if: steps.cmake-cache.outputs.cache-hit != 'true'
         run: |
-          Remove-Item -path build -recurse
           New-Item -ItemType Directory -Force -Path build
       - name: Build
         run: |
@@ -91,7 +91,8 @@ jobs:
 
           cd build
           cmake .. -DTEMPEH_ENABLE_TEST=ON -G "Ninja"
-          cmake --build .
+          cmake --build . -j 4
       - name: Run test
         run: |
-          .\build\test\tempeh_core_test.exe
+          echo "No test at the moment"
+          #.\build\test\tempeh_core_test.exe

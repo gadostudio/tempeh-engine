@@ -61,8 +61,7 @@ namespace Tempeh::Container
 
         template<std::size_t OtherN, Requires<OtherN <= max_elements> = true>
         StaticVector(const StaticVector<T, OtherN>& other) :
-            m_size(other.m_size),
-            m_capacity(other.m_capacity)
+            m_size(other.m_size)
         {
             assert(m_size > max_elements && "Too many elements");
             std::uninitialized_copy(other.begin(), other.end(), begin());
