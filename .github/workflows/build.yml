@@ -30,18 +30,16 @@ jobs:
           cd external/dawn
           cp scripts/standalone.gclient .gclient
           gclient sync
-      - name: Cache
+      - name: Create build dir
+        run: |
+          mkdir build
+      - name: Fetch cache
         id: cmake-cache
         uses: actions/cache@v2
         with:
           path: |
             build/
-          key: ${{ runner.os }}-${{ github.ref_name }}
-      - name: Create build dir
-        if: steps.cmake-cache.outputs.cache-hit != 'true'
-        run: |
-          rm -rf build
-          mkdir build
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}
       - name: Build
         run: |
           export MONO_PROJECT=/usr/include/mono-2.0/
@@ -76,17 +74,16 @@ jobs:
           cd external\dawn
           copy scripts\standalone.gclient .gclient
           gclient sync
-      - name: Cache
+      - name: Create build dir
+        run: |
+          New-Item -ItemType Directory -Force -Path build
+      - name: Fetch cache
         id: cmake-cache
         uses: actions/cache@v2
         with:
           path: |
             build/
-          key: ${{ runner.os }}-${{ github.ref_name }}
-      - name: Create build dir
-        if: steps.cmake-cache.outputs.cache-hit != 'true'
-        run: |
-          New-Item -ItemType Directory -Force -Path build
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}
       - name: Build
         run: |
           $env:MONO_INCLUDE_DIR = "C:\Program Files\Mono\include\mono-2.0\"
