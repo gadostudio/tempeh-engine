@@ -2,6 +2,7 @@
 #define _TEMPEH_UTIL_HPP
 
 #include <string_view>
+#include <tempeh/common/typedefs.hpp>
 
 // Used when a variable is unused. Prevents compiler warning.
 #define TEMPEH_UNREFERENCED(x) \
