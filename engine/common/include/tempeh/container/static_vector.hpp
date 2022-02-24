@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <utility>
 #include <cstring>
+#include <iterator>
 
 namespace Tempeh::Container
 {
@@ -37,13 +38,18 @@ namespace Tempeh::Container
         StaticVector(std::size_t num_elements) :
             m_size(num_elements)
         {
-            std::uninitialized_default_construct_n(begin(), num_elements);
+            assert(num_elements <= max_elements && "Too many elements");
+
+            if constexpr (!std::is_trivially_default_constructible_v<T>) {
+                std::uninitialized_default_construct_n(begin(), num_elements);
+            }
         }
 
-        StaticVector(std::size_t count, const T& value) :
-            m_size(count)
+        StaticVector(std::size_t num_elements, const T& value) :
+            m_size(num_elements)
         {
-            std::uninitialized_fill_n(begin(), count, value);
+            assert(num_elements <= max_elements && "Too many elements");
+            std::uninitialized_fill_n(begin(), num_elements, value);
         }
 
         StaticVector(std::initializer_list<T> list) :
@@ -63,7 +69,6 @@ namespace Tempeh::Container
         StaticVector(const StaticVector<T, OtherN>& other) :
             m_size(other.m_size)
         {
-            assert(m_size > max_elements && "Too many elements");
             std::uninitialized_copy(other.begin(), other.end(), begin());
         }
 
@@ -75,10 +80,47 @@ namespace Tempeh::Container
         template<typename InputIt>
         void assign(InputIt first, InputIt last)
         {
-            std::size_t new_size = last - first;
-            assert(new_size <= max_elements && "Too many elements");
-            resize(new_size);
-            std::copy(first, last, begin());
+            if (m_size == 0) {
+                for (; first != last; ++first) {
+                    assert(m_size < max_elements && "Too many elements");
+                    ::new(data() + m_size) T(*first);
+                    ++m_size;
+                }
+                return;
+            }
+
+            std::size_t new_size = 0;
+            auto dst_first = begin();
+
+            // Assign to existing elements
+            for (; first != last; ++first, ++new_size) {
+                if (new_size >= m_size) {
+                    break;
+                }
+
+                *dst_first++ = *first;
+            }
+
+            if (new_size < m_size) {
+                // Shrink
+                if constexpr (!std::is_trivially_destructible_v<T>) {
+                    std::destroy(begin() + new_size, begin() + m_size);
+                }
+                
+                clear_region(begin() + new_size, begin() + m_size);
+            }
+            else {
+                // Expand
+                auto storage = data();
+                for (; first != last; ++first) {
+                    assert(new_size < max_elements && "Too many elements");
+                    ::new(storage + new_size) T(*first); // construct new data
+                    ++new_size;
+                }
+            }
+
+            m_size = new_size;
+            return;
         }
 
         void assign(std::initializer_list<T> list)
@@ -144,6 +186,21 @@ namespace Tempeh::Container
             m_size++;
         }
 
+        template<typename... Args>
+        T& emplace_back(Args&&... args)
+        {
+            assert(m_size < max_elements && "Storage is full");
+
+            if constexpr (std::is_trivially_constructible_v<T>) {
+                ::new(end()) T{std::forward<Args>(args)...};
+            }
+            else {
+                ::new(end()) T(std::forward<Args>(args)...);
+            }
+
+            return (*this)[m_size++];
+        }
+
         void pop_back()
         {
             if (m_size == 0) {
@@ -155,12 +212,8 @@ namespace Tempeh::Container
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 std::destroy_at(end());
             }
-
-            if constexpr (std::is_trivial_v<T>) {
-                *end() = {};
-            }
             else {
-                std::memset(end(), 0, sizeof(StorageType));
+                *end() = {};
             }
         }
 
@@ -189,6 +242,7 @@ namespace Tempeh::Container
                 auto trim_first = data() + n;
                 auto trim_last = data() + m_size;
 
+                // We don't have to call the destructor if T can be "trivially" destructed
                 if constexpr (!std::is_trivially_destructible_v<T>) {
                     // Destroy trimmed region
                     std::destroy(trim_first, trim_last);
@@ -221,7 +275,22 @@ namespace Tempeh::Container
     private:
         using StorageType = std::aligned_storage_t<sizeof(T), alignof(T)>;
 
-        std::array<StorageType, N> m_storage = {};
+        union ValueStorage
+        {
+            T value;
+            StorageType storage;
+
+            ValueStorage() :
+                storage()
+            {
+            }
+
+            ~ValueStorage()
+            {
+            }
+        };
+
+        std::array<ValueStorage, N> m_storage{};
         std::size_t m_size;
 
         void destroy_all()

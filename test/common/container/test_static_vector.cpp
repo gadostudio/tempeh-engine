@@ -16,10 +16,9 @@ struct TestClass
 	std::string str = "Hello";
 };
 
-TEST(Container_StaticArray, ConstructEmpty)
+TEST(Container_StaticVector, ConstructEmpty)
 {
 	{
-		std::vector<int> vi;
 		Tempeh::Container::StaticVector<int, 4> v;
 		EXPECT_TRUE(v.empty());
 	}
@@ -35,7 +34,7 @@ TEST(Container_StaticArray, ConstructEmpty)
 	}
 }
 
-TEST(Container_StaticArray, ConstructDefaultWithCount)
+TEST(Container_StaticVector, ConstructElements)
 {
 	{
 		Tempeh::Container::StaticVector<int, 4> v(3);
@@ -60,19 +59,18 @@ TEST(Container_StaticArray, ConstructDefaultWithCount)
 	}
 
 	{
+		std::vector<TestClass> vt(3);
 		Tempeh::Container::StaticVector<TestClass, 4> v(3);
 
 		EXPECT_TRUE(!v.empty());
 
 		for (const auto& elem : v) {
-			EXPECT_EQ(elem.x, 0);
-			EXPECT_EQ(elem.y, 0);
 			EXPECT_EQ(elem.str, "Hello");
 		}
 	}
 }
 
-TEST(Container_StaticArray, ConstructSplatWithCount)
+TEST(Container_StaticVector, ConstructElementsWithValue)
 {
 	{
 		Tempeh::Container::StaticVector<int, 4> v(3, -1);
@@ -109,7 +107,7 @@ TEST(Container_StaticArray, ConstructSplatWithCount)
 	}
 }
 
-TEST(Container_StaticArray, CopyConstructor)
+TEST(Container_StaticVector, CopyConstructor)
 {
 	{
 		Tempeh::Container::StaticVector<int, 4> v{ 1, 2, 3 };
@@ -156,7 +154,7 @@ TEST(Container_StaticArray, CopyConstructor)
 	}
 }
 
-TEST(Container_StaticArray, AssignWithIterator)
+TEST(Container_StaticVector, AssignWithIterator)
 {
 	{
 		Tempeh::Container::StaticVector<int, 4> v{ 1, 2, 3 };
@@ -188,6 +186,7 @@ TEST(Container_StaticArray, AssignWithIterator)
 
 		// expand
 		Tempeh::Container::StaticVector<TestClassPOD, 4> tmp{
+			{ 2, 3, 'b'},
 			{ 2, 3, 'b'},
 			{ 2, 3, 'b'},
 			{ 2, 3, 'b'},
@@ -259,7 +258,7 @@ TEST(Container_StaticArray, AssignWithIterator)
 	}
 }
 
-TEST(Container_StaticArray, AssignWithInitializerList)
+TEST(Container_StaticVector, AssignWithInitializerList)
 {
 	{
 		Tempeh::Container::StaticVector<int, 4> v{ 1, 2, 3 };
@@ -346,7 +345,7 @@ TEST(Container_StaticArray, AssignWithInitializerList)
 	}
 }
 
-TEST(Container_StaticArray, PushBack)
+TEST(Container_StaticVector, PushBack)
 {
 	{
 		int i = 2;
@@ -411,6 +410,28 @@ TEST(Container_StaticArray, PushBack)
 	}
 }
 
+TEST(Container_StaticVector, Emplace)
+{
+	{
+		Tempeh::Container::StaticVector<int, 6> v;
+
+		v.emplace_back(1);
+		v.emplace_back(2);
+		v.emplace_back(3);
+		v.emplace_back(4);
+		v.emplace_back(5);
+		v.emplace_back(6);
+
+		EXPECT_EQ(v.size(), 6);
+		EXPECT_EQ(v[0], 1);
+		EXPECT_EQ(v[1], 2);
+		EXPECT_EQ(v[2], 3);
+		EXPECT_EQ(v[3], 4);
+		EXPECT_EQ(v[4], 5);
+		EXPECT_EQ(v[5], 6);
+	}
+}
+
 TEST(Container_StaticVector, PopBack)
 {
 	{
@@ -431,5 +452,51 @@ TEST(Container_StaticVector, PopBack)
 		EXPECT_EQ(v[0], 1);
 		EXPECT_EQ(v[1], 2);
 		EXPECT_EQ(v[2], 3);
+	}
+
+	{
+		TestClassPOD test_class = {
+			1, 2, 'a'
+		};
+
+		Tempeh::Container::StaticVector<TestClassPOD, 4> v;
+
+		v.push_back(TestClassPOD{ 1, 2, 'a' });
+		v.push_back(TestClassPOD{ 1, 2, 'a' });
+		v.push_back(TestClassPOD{ 1, 2, 'a' });
+		v.push_back(test_class);
+		v.pop_back();
+		v.pop_back();
+
+		EXPECT_EQ(v.size(), 2);
+
+		for (const auto& elem : v) {
+			EXPECT_EQ(elem.x, 1);
+			EXPECT_EQ(elem.y, 2);
+			EXPECT_EQ(elem.z, 'a');
+		}
+	}
+
+	{
+		TestClass test_class = {
+			1, 2, "hello world"
+		};
+
+		Tempeh::Container::StaticVector<TestClass, 4> v;
+
+		v.push_back(TestClass{ 1, 2, "hello world" });
+		v.push_back(TestClass{ 1, 2, "hello world" });
+		v.push_back(TestClass{ 1, 2, "hello world" });
+		v.push_back(test_class);
+		v.pop_back();
+		v.pop_back();
+
+		EXPECT_EQ(v.size(), 2);
+
+		for (const auto& elem : v) {
+			EXPECT_EQ(elem.x, 1);
+			EXPECT_EQ(elem.y, 2);
+			EXPECT_EQ(elem.str, "hello world");
+		}
 	}
 }
