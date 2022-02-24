@@ -21,9 +21,14 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     else(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     endif(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+
+    # Ensure compiler conformance compatibility.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
+
     # Disable C++ exceptions.
     string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+
     # Disable RTTI.
     string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")

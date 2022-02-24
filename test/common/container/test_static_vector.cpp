@@ -501,3 +501,24 @@ TEST(Container_StaticVector, PopBack)
 		}
 	}
 }
+
+TEST(Container_StaticVector, Iterator)
+{
+	Tempeh::Container::StaticVector<int, 4> v;
+
+	v.push_back(0);
+	v.push_back(1);
+	v.push_back(2);
+	v.push_back(3);
+
+	Tempeh::Container::StaticVector<int, 4> v2;
+
+	for (auto i = v.begin(); i != v.end(); i++) {
+		v2.push_back(*i);
+	}
+
+	EXPECT_EQ(v2[0], 0);
+	EXPECT_EQ(v2[1], 1);
+	EXPECT_EQ(v2[2], 2);
+	EXPECT_EQ(v2[3], 3);
+}

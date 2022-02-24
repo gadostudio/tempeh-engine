@@ -7,6 +7,7 @@
 #include <deque>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 
 #include "backend_vk.hpp"
 #include "vk.hpp"

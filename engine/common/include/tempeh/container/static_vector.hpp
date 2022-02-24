@@ -5,6 +5,7 @@
 #include <cassert>
 #include <array>
 #include <algorithm>
+#include <memory>
 #include <utility>
 #include <cstring>
 #include <iterator>
@@ -52,7 +53,7 @@ namespace Tempeh::Container
 
         Self operator++(int)
         {
-            StaticVectorIterator tmp = *this;
+            Self tmp = *this;
             ++*this;
             return tmp;
         }
@@ -65,7 +66,7 @@ namespace Tempeh::Container
 
         Self operator--(int)
         {
-            StaticVectorIterator tmp = *this;
+            Self tmp = *this;
             --*this;
             return tmp;
         }
@@ -133,7 +134,7 @@ namespace Tempeh::Container
         using iterator_category = IteratorCategory;
 
         StaticVectorIterator(Pointer ptr) :
-            StaticVectorConstIterator(ptr)
+            Base(ptr)
         {
         }
 
@@ -144,7 +145,7 @@ namespace Tempeh::Container
 
         Pointer operator->()
         {
-            return const_cast<Pointer>(current_ptr);
+            return const_cast<Pointer>(Base::current_ptr);
         }
 
         StaticVectorIterator& operator++()
@@ -175,29 +176,29 @@ namespace Tempeh::Container
 
         StaticVectorIterator& operator+=(std::ptrdiff_t offset)
         {
-            current_ptr += offset;
+            Base::operator+=(offset);
             return *this;
         }
 
         StaticVectorIterator& operator-=(std::ptrdiff_t offset)
         {
-            current_ptr -= offset;
+            Base::operator-=(offset);
             return *this;
         }
 
         StaticVectorIterator operator+(std::ptrdiff_t offset) const
         {
-            return StaticVectorIterator(const_cast<Pointer>(current_ptr) + offset);
+            return StaticVectorIterator(const_cast<Pointer>(Base::current_ptr) + offset);
         }
 
         StaticVectorIterator operator-(std::ptrdiff_t offset) const
         {
-            return StaticVectorIterator(const_cast<Pointer>(current_ptr) - offset);
+            return StaticVectorIterator(const_cast<Pointer>(Base::current_ptr) - offset);
         }
 
         std::ptrdiff_t operator-(const Self& other) const
         {
-            return current_ptr - other.current_ptr;
+            return Base::current_ptr - other.current_ptr;
         }
 
         Pointer operator[](std::ptrdiff_t offset)
