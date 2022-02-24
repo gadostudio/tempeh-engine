@@ -20,6 +20,7 @@ TEST(Container_StaticVector, ConstructEmpty)
 {
 	{
 		Tempeh::Container::StaticVector<int, 4> v;
+		std::vector<int> vi;
 		EXPECT_TRUE(v.empty());
 	}
 

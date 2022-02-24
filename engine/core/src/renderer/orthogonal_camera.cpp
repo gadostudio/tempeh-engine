@@ -1,10 +1,12 @@
-#include <tempeh/renderer/camera.hpp>
-#include <tempeh/math.hpp>
+#include <tempeh/common/util.hpp>
 #include <tempeh/renderer/orthogonal_camera.hpp>
 
 namespace Tempeh::Renderer
 {
-	void OrthogonalCamera::set_camera_position(Math::vec2& pos) {}
+	void OrthogonalCamera::set_camera_position(Math::vec2& pos)
+	{
+		TEMPEH_UNREFERENCED(pos);
+	}
 
 	const Math::mat4& OrthogonalCamera::get_view_matrix() const
 	{
