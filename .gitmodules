@@ -37,3 +37,6 @@
 [submodule "external/GSL"]
 	path = external/GSL
 	url = https://github.com/microsoft/GSL.git
+[submodule "external/SPIRV-Reflect"]
+	path = external/SPIRV-Reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
