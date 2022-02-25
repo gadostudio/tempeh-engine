@@ -30,10 +30,17 @@ namespace Tempeh::Container
         using reference = Reference;
         using iterator_category = IteratorCategory;
         
+        StaticVectorConstIterator() :
+            current_ptr(nullptr)
+        {
+        }
+
         StaticVectorConstIterator(const Pointer ptr) :
             current_ptr(ptr)
         {
         }
+
+        StaticVectorConstIterator(const Self&) = default;
 
         Reference operator*() const
         {
@@ -103,12 +110,12 @@ namespace Tempeh::Container
             return current_ptr[offset];
         }
 
-        bool operator==(const StaticVectorConstIterator& other) const { return current_ptr == other.current_ptr; }
-        bool operator!=(const StaticVectorConstIterator& other) const { return !(*this == other); }
-        bool operator<(const StaticVectorConstIterator& other) const { return current_ptr < other.current_ptr; }
-        bool operator>(const StaticVectorConstIterator& other) const { return current_ptr > other.current_ptr; }
-        bool operator<=(const StaticVectorConstIterator& other) const { return current_ptr <= other.current_ptr; }
-        bool operator>=(const StaticVectorConstIterator& other) const { return current_ptr >= other.current_ptr; }
+        bool operator==(const Self& other) const { return current_ptr == other.current_ptr; }
+        bool operator!=(const Self& other) const { return !(*this == other); }
+        bool operator<(const Self& other) const { return current_ptr < other.current_ptr; }
+        bool operator>(const Self& other) const { return current_ptr > other.current_ptr; }
+        bool operator<=(const Self& other) const { return current_ptr <= other.current_ptr; }
+        bool operator>=(const Self& other) const { return current_ptr >= other.current_ptr; }
 
     protected:
         Pointer current_ptr;
@@ -133,10 +140,17 @@ namespace Tempeh::Container
         using reference = Reference;
         using iterator_category = IteratorCategory;
 
+        StaticVectorIterator() :
+            Base(nullptr)
+        {
+        }
+
         StaticVectorIterator(Pointer ptr) :
             Base(ptr)
         {
         }
+
+        StaticVectorIterator(const Self&) = default;
 
         Reference operator*()
         {
@@ -307,6 +321,7 @@ namespace Tempeh::Container
                     std::destroy(begin() + new_size, begin() + m_size);
                 }
                 
+                // Clean up
                 clear_region(data() + new_size, data() + m_size);
             }
             else {
@@ -387,9 +402,12 @@ namespace Tempeh::Container
         }
 
         template<typename... Args>
-        void emplace()
+        Iterator emplace(ConstIterator pos, Args&&... args)
         {
+            assert(pos < end() && "Position is out of range");
 
+            // TODO
+            return Iterator();
         }
 
         template<typename... Args>
@@ -508,8 +526,7 @@ namespace Tempeh::Container
             }
         }
 
-        template<typename InputIt>
-        void clear_region(InputIt first, InputIt last)
+        void clear_region(Pointer first, Pointer last)
         {
             std::memset(first, 0, sizeof(StorageType) * (last - first));
         }
