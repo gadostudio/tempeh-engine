@@ -1,10 +1,7 @@
 #ifndef _TEMPEH_GPU_TRANSITION_BARRIER_VK_HPP
 #define _TEMPEH_GPU_TRANSITION_BARRIER_VK_HPP 1
 
-#include "backend_vk.hpp"
-#include "vk.hpp"
-
-#include <vector>
+#include "conv_table_vk.hpp"
 
 namespace Tempeh::GPU
 {

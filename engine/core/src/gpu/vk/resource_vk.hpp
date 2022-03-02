@@ -3,10 +3,7 @@
 
 #include <tempeh/gpu/resource.hpp>
 
-#include "backend_vk.hpp"
 #include "vk.hpp"
-
-#include <unordered_map>
 
 namespace Tempeh::GPU
 {
@@ -101,26 +98,6 @@ namespace Tempeh::GPU
             const Sampler& desc);
 
         ~SamplerVK();
-    };
-
-    struct GraphicsPipelineVK : public GraphicsPipeline
-    {
-        DeviceVK*                                               m_parent_device;
-        VkPipeline                                              m_pipeline = VK_NULL_HANDLE;
-        std::size_t                                             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
-
-        // TODO: convert std::string to std::string_view backed with string table for more compact storage
-        std::unordered_map<u32, VkDescriptorSetLayoutBinding>   m_resource_bindings;
-        std::unordered_map<std::string, u32>                    m_resource_names;
-
-        GraphicsPipelineVK(DeviceVK* parent_device, const Util::Ref<RenderPass>& parent_render_pass);
-        ~GraphicsPipelineVK();
-
-        ResultCode init_shader_reflection(const ShaderModuleDesc& vs_module,
-                                          const std::optional<ShaderModuleDesc>& ps_module);
-
-        std::optional<ShaderResourceInfo> get_shader_resource_info(const std::string_view& name) const override;
-        const u32 get_ps_color_output_id(const std::string_view& name) const override;
     };
 }
 

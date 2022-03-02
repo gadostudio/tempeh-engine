@@ -9,7 +9,6 @@
 #include <optional>
 #include <unordered_map>
 
-#include "backend_vk.hpp"
 #include "vk.hpp"
 #include "command_queue_vk.hpp"
 #include "command_context_vk.hpp"

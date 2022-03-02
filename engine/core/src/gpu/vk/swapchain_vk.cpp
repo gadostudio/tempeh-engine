@@ -1,6 +1,7 @@
 #include "swapchain_vk.hpp"
 #include "device_vk.hpp"
 #include "resource_vk.hpp"
+#include "conv_table_vk.hpp"
 
 namespace Tempeh::GPU
 {

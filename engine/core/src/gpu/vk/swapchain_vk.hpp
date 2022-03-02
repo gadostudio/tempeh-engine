@@ -3,8 +3,7 @@
 
 #include <tempeh/gpu/swapchain.hpp>
 #include <tempeh/window/window.hpp>
-#include "backend_vk.hpp"
-#include "vk.hpp"
+#include "conv_table_vk.hpp"
 
 #include <array>
 

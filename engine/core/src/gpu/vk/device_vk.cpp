@@ -1,7 +1,8 @@
 #include "device_vk.hpp"
 #include "swapchain_vk.hpp"
 #include "resource_vk.hpp"
-#include "vk.hpp"
+#include "pipeline_vk.hpp"
+#include "conv_table_vk.hpp"
 #include "../validator.hpp"
 
 #include <tempeh/logger.hpp>
@@ -544,7 +545,7 @@ namespace Tempeh::GPU
         auto ret = std::make_shared<GraphicsPipelineVK>(this, render_pass);
 
         // Reflect shader parameters
-        
+        TEMPEH_GPU_VALIDATE_RESULT(ret->init_shader_reflection(desc.vs_module.value(), desc.ps_module));
         
         // Should we cache shader module(s)?
         VkShaderModule vs_module;
