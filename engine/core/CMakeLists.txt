@@ -11,7 +11,6 @@ set(TEMPEH_USE_VULKAN_BACKEND ON)
 if (TEMPEH_USE_VULKAN_BACKEND)
     set(TEMPEH_GPU_VULKAN_BACKEND_SOURCES
         "src/gpu/unit_test/helpers.cpp"
-        "src/gpu/vk/backend_vk.hpp"
         "src/gpu/vk/command_queue_vk.cpp"
         "src/gpu/vk/command_queue_vk.hpp"
         "src/gpu/vk/command_context_vk.cpp"
