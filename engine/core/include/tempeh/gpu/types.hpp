@@ -340,6 +340,14 @@ namespace Tempeh::GPU
         };
     };
 
+    enum class ShaderResourceType
+    {
+        CombinedTextureSampler,
+        StorageTexture,
+        UniformBuffer,
+        StorageBuffer
+    };
+
     enum class ResultCode : u8
     {
         Ok,
@@ -354,6 +362,8 @@ namespace Tempeh::GPU
         IncompatibleFormat,
         IncompatibleResourceUsage,
         MemoryUsageNotSupported,
+        IncompatibleShaderModuleStage,
+        InvalidShaderResourceBinding,
         Unimplemented,
         InternalError
     };
@@ -363,6 +373,11 @@ namespace Tempeh::GPU
 
     struct DeviceLimits
     {
+        static constexpr std::size_t max_combined_texture_samplers = 16;
+        static constexpr std::size_t max_storage_textures = 4;
+        static constexpr std::size_t max_uniform_buffers = 12;
+        static constexpr std::size_t max_storage_buffers = 4;
+
         u32                     max_texture_dimension_1d;
         u32                     max_texture_dimension_2d;
         u32                     max_texture_dimension_3d;
@@ -698,6 +713,13 @@ namespace Tempeh::GPU
         MultisampleStateDesc                        multisample_state;
         std::optional<DepthStencilStateDesc>        depth_stencil_state;
         std::optional<BlendStateDesc>               blend_state;
+    };
+
+    struct ShaderResourceInfo
+    {
+        ShaderResourceType                          type;
+        u32                                         binding_id;
+        u32                                         array_size;
     };
 
     union ClearValue

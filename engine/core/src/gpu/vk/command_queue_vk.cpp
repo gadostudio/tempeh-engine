@@ -68,8 +68,7 @@ namespace Tempeh::GPU
 
     void CommandSubmissionVK::destroy_cmd_buffers()
     {
-        // Will also destroy command buffers
-        vkDestroyCommandPool(device, cmd_pool, nullptr);
+        vkDestroyCommandPool(device, cmd_pool, nullptr); // Will also destroy command buffers
         vkDestroyFence(device, fence, nullptr);
     }
 
@@ -104,6 +103,18 @@ namespace Tempeh::GPU
             VkSampler sampler = sampler_free_queue.front();
             vkDestroySampler(device, sampler, nullptr);
             sampler_free_queue.pop();
+        }
+
+        while (!pipeline_layout_free_queue.empty()) {
+            VkPipelineLayout layout = pipeline_layout_free_queue.front();
+            vkDestroyPipelineLayout(device, layout, nullptr);
+            pipeline_layout_free_queue.pop();
+        }
+
+        while (!graphics_pipeline_free_queue.empty()) {
+            VkPipeline pipeline = graphics_pipeline_free_queue.front();
+            vkDestroyPipeline(device, pipeline, nullptr);
+            graphics_pipeline_free_queue.pop();
         }
     }
 
@@ -156,10 +167,13 @@ namespace Tempeh::GPU
         read_pointer = (read_pointer + 1) % max_submissions;
     }
 
-    void CommandQueueVK::destroy_texture(std::size_t submission_id, VkImage image, VkImageView image_view, VmaAllocation allocation)
+    void CommandQueueVK::destroy_texture(std::size_t submission_id,
+                                         VkImage image,
+                                         VkImageView image_view,
+                                         VmaAllocation allocation)
     {
-        // Destroy the resource directly if the submission list is undefined.
-        if (submission_list.empty()) {
+        // VULKAN_INVALID_QUEUE_SUBMISSION means the resource is not currently used by any submission.
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
             vkDestroyImageView(device, image_view, nullptr);
             vmaDestroyImage(allocator, image, allocation);
             return;
@@ -170,7 +184,7 @@ namespace Tempeh::GPU
 
     void CommandQueueVK::destroy_buffer(std::size_t submission_id, VkBuffer buffer, VmaAllocation allocation)
     {
-        if (submission_list.empty()) {
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
             vmaDestroyBuffer(allocator, buffer, allocation);
             return;
         }
@@ -180,7 +194,7 @@ namespace Tempeh::GPU
 
     void CommandQueueVK::destroy_render_pass(std::size_t submission_id, VkRenderPass render_pass)
     {
-        if (submission_list.empty()) {
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
             vkDestroyRenderPass(device, render_pass, nullptr);
             return;
         }
@@ -190,7 +204,7 @@ namespace Tempeh::GPU
 
     void CommandQueueVK::destroy_framebuffer(std::size_t submission_id, VkFramebuffer framebuffer)
     {
-        if (submission_list.empty()) {
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
             return;
         }
@@ -200,11 +214,33 @@ namespace Tempeh::GPU
 
     void CommandQueueVK::destroy_sampler(std::size_t submission_id, VkSampler sampler)
     {
-        if (submission_list.empty()) {
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
             vkDestroySampler(device, sampler, nullptr);
             return;
         }
 
         submission_list[submission_id].sampler_free_queue.emplace(sampler);
+    }
+
+    void CommandQueueVK::destroy_pipeline_layout(std::size_t submission_id, VkPipelineLayout layout)
+    {
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
+            vkDestroyPipelineLayout(device, layout, nullptr);
+            return;
+        }
+
+        submission_list[submission_id].pipeline_layout_free_queue.emplace(layout);
+    }
+    
+    void CommandQueueVK::destroy_graphics_pipeline(std::size_t submission_id, VkPipeline graphics_pipeline)
+    {
+        if (submission_id == VULKAN_INVALID_QUEUE_SUBMISSION) {
+            vkDestroyPipeline(device, graphics_pipeline, nullptr);
+            return;
+        }
+
+        submission_list[submission_id]
+            .graphics_pipeline_free_queue
+            .emplace(graphics_pipeline);
     }
 }

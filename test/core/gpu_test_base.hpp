@@ -1,5 +1,5 @@
 #ifndef _TEMPEH_GPU_TEST_BASE_HPP
-#define _TEMPEH_GPU_TEST_BASE_HPP
+#define _TEMPEH_GPU_TEST_BASE_HPP 1
 
 #include <gtest/gtest.h>
 #include <tempeh/logger.hpp>
@@ -13,7 +13,6 @@ class GPUTestBase : public testing::TestWithParam<GPU::BackendType>
 protected:
     GPUTestBase()
     {
-        
     }
 };
 
@@ -53,6 +52,27 @@ TEST_P(GPUTestBase, CreateTexture2D)
             GPU::TextureUsage::TransferDst));
 
     EXPECT_TRUE(texture.is_ok());
+}
+
+TEST_P(GPUTestBase, CreateTexture3D)
+{
+    auto result = GPU::UnitTest::test_create_device(GetParam(), false);
+    EXPECT_TRUE(result.is_ok());
+
+    Util::Ref<GPU::Device> device = result.value();
+
+    // TODO
+}
+
+TEST_P(GPUTestBase, CreateVertexBuffer)
+{
+    auto result = GPU::UnitTest::test_create_device(GetParam(), false);
+    EXPECT_TRUE(result.is_ok());
+
+    Util::Ref<GPU::Device> device = result.value();
+
+    auto vtx_buffer = device->create_buffer(GPU::BufferDesc::vertex_buffer(512, true));
+    EXPECT_TRUE(vtx_buffer.is_ok());
 }
 
 #endif

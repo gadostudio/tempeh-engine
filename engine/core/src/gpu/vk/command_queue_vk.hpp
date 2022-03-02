@@ -15,6 +15,8 @@ namespace Tempeh::GPU
         std::queue<VkRenderPass> render_pass_free_queue;
         std::queue<VkFramebuffer> framebuffer_free_queue;
         std::queue<VkSampler> sampler_free_queue;
+        std::queue<VkPipelineLayout> pipeline_layout_free_queue;
+        std::queue<VkPipeline> graphics_pipeline_free_queue;
 
         VkDevice device = VK_NULL_HANDLE;
         VkCommandPool cmd_pool = VK_NULL_HANDLE;
@@ -59,10 +61,12 @@ namespace Tempeh::GPU
             std::size_t submission_id,
             VkBuffer buffer,
             VmaAllocation allocation);
-
+        
         void destroy_render_pass(std::size_t submission_id, VkRenderPass render_pass);
         void destroy_framebuffer(std::size_t submission_id, VkFramebuffer framebuffer);
         void destroy_sampler(std::size_t submission_id, VkSampler sampler);
+        void destroy_pipeline_layout(std::size_t submission_id, VkPipelineLayout layout);
+        void destroy_graphics_pipeline(std::size_t submission_id, VkPipeline graphics_pipeline);
     };
 }
 

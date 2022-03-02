@@ -1,5 +1,5 @@
 #ifndef _TEMPEH_GPU_DEVICE_VK_HPP
-#define _TEMPEH_GPU_DEVICE_VK_HPP
+#define _TEMPEH_GPU_DEVICE_VK_HPP 1
 
 #include <tempeh/gpu/device.hpp>
 #include <memory>
@@ -12,7 +12,7 @@
 #include "backend_vk.hpp"
 #include "vk.hpp"
 #include "command_queue_vk.hpp"
-#include "command_state_vk.hpp"
+#include "command_context_vk.hpp"
 #include "transition_barrier_vk.hpp"
 
 namespace Tempeh::GPU
@@ -36,7 +36,7 @@ namespace Tempeh::GPU
         std::unique_ptr<CommandQueueVK> m_cmd_queue;
         std::size_t m_current_submission = 0;
         VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
-        CommandStateVK m_cmd_states;
+        CommandContextVK m_cmd_states;
         bool m_is_recording_command = false;
         bool m_is_inside_render_pass = false;
 
@@ -64,7 +64,7 @@ namespace Tempeh::GPU
 
         void begin_cmd() override final;
 
-        void bind_texture(u32 slot, const Util::Ref<Texture>& texture) override final;
+        void bind_texture(u32 binding_id, const Util::Ref<Texture>& texture) override final;
         
         void begin_render_pass(
             const Util::Ref<Framebuffer>&       framebuffer,

@@ -8,6 +8,8 @@
 #endif
 
 #define VK_NO_PROTOTYPES
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
 
 #include <vulkan/vulkan.h>
 #include "volk.h"
@@ -25,6 +27,8 @@
 #define VULKAN_ASSERT(x) \
     assert(x)
 #endif
+
+#define VULKAN_INVALID_QUEUE_SUBMISSION (~0U)
 
 #include <tempeh/gpu/types.hpp>
 #include <vector>
@@ -196,24 +200,21 @@ namespace Tempeh::GPU
     {
         switch (usage) {
             case MemoryUsage::Default:
-                return std::make_pair(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+                return std::make_pair(VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT }, VkMemoryPropertyFlags{});
             case MemoryUsage::Upload:
-                return std::make_pair(
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                return std::make_pair(VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT },
+                                      VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_HOST_COHERENT_BIT});
             case MemoryUsage::Readback:
-                return std::make_pair(
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+                return std::make_pair(VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT },
+                                      VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                                                             VK_MEMORY_PROPERTY_HOST_CACHED_BIT });
             case MemoryUsage::Shared:
-                return std::make_pair(
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                return std::make_pair(VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT },
+                                      VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_HOST_COHERENT_BIT });
         }
 
-        return std::make_pair(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+        return std::make_pair(VkMemoryPropertyFlags{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT }, VkMemoryPropertyFlags{});
     }
 
     static inline constexpr std::pair<VkImageUsageFlags, VkFormatFeatureFlags> convert_texture_usage_vk(TextureUsageFlags usage)

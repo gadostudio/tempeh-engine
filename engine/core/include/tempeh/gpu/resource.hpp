@@ -5,6 +5,7 @@
 #include <array>
 #include <algorithm>
 #include <cassert>
+#include <string_view>
 
 namespace Tempeh::GPU
 {
@@ -166,12 +167,22 @@ namespace Tempeh::GPU
     protected:
         SamplerDesc m_desc;
     };
-    
+
     class GraphicsPipeline
     {
     public:
-        GraphicsPipeline() { }
+        GraphicsPipeline(const Util::Ref<RenderPass>& parent_render_pass) :
+            m_parent_render_pass(parent_render_pass)
+        {
+        }
+        
         virtual ~GraphicsPipeline() { }
+
+        virtual std::optional<ShaderResourceInfo> get_shader_resource_info(const std::string_view& name) const = 0;
+        virtual const u32 get_ps_color_output_id(const std::string_view& name) const = 0;
+
+    private:
+        Util::Ref<RenderPass> m_parent_render_pass;
     };
 }
 

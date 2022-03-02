@@ -33,7 +33,7 @@ namespace Tempeh::GPU
         vkDestroySwapchainKHR(m_parent_device->m_device, m_swapchain, nullptr);
         vkDestroySurfaceKHR(m_parent_device->m_instance, m_surface, nullptr);
 
-        std::fill(m_cmd_buffers.begin(), m_cmd_buffers.end(), VK_NULL_HANDLE);
+        std::fill(m_cmd_buffers.begin(), m_cmd_buffers.end(), (VkCommandBuffer)VK_NULL_HANDLE);
         m_cmd_pool = VK_NULL_HANDLE;
         m_swapchain = VK_NULL_HANDLE;
         m_surface = VK_NULL_HANDLE;

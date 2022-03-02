@@ -6,6 +6,8 @@
 #include "backend_vk.hpp"
 #include "vk.hpp"
 
+#include <unordered_map>
+
 namespace Tempeh::GPU
 {
     struct TextureVK : public Texture
@@ -16,7 +18,7 @@ namespace Tempeh::GPU
         VmaAllocation           m_allocation;
         VkImageLayout           m_last_layout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkImageSubresourceRange m_subresource_range{};
-        std::size_t             m_last_submission = 0;
+        std::size_t             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
 
         TextureVK(
             DeviceVK* parent_device,
@@ -34,7 +36,7 @@ namespace Tempeh::GPU
         DeviceVK*               m_parent_device;
         VkBuffer                m_buffer;
         VmaAllocation           m_allocation;
-        std::size_t             m_last_submission = 0;
+        std::size_t             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
         BufferUsageFlags        m_last_usage = 0;
 
         BufferVK(
@@ -62,7 +64,7 @@ namespace Tempeh::GPU
     {
         DeviceVK*               m_parent_device;
         VkRenderPass            m_render_pass;
-        std::size_t             m_last_submission = 0;
+        std::size_t             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
 
         RenderPassVK(
             DeviceVK* parent_device,
@@ -76,7 +78,7 @@ namespace Tempeh::GPU
     {
         DeviceVK*               m_parent_device;
         VkFramebuffer           m_framebuffer;
-        std::size_t             m_last_submission = 0;
+        std::size_t             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
 
         FramebufferVK(
             DeviceVK* parent_device,
@@ -91,7 +93,7 @@ namespace Tempeh::GPU
     {
         DeviceVK*               m_parent_device;
         VkSampler               m_sampler;
-        std::size_t             m_last_submission = 0;
+        std::size_t             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
 
         SamplerVK(
             DeviceVK* parent_device,
@@ -99,6 +101,26 @@ namespace Tempeh::GPU
             const Sampler& desc);
 
         ~SamplerVK();
+    };
+
+    struct GraphicsPipelineVK : public GraphicsPipeline
+    {
+        DeviceVK*                                               m_parent_device;
+        VkPipeline                                              m_pipeline = VK_NULL_HANDLE;
+        std::size_t                                             m_last_submission = VULKAN_INVALID_QUEUE_SUBMISSION;
+
+        // TODO: convert std::string to std::string_view backed with string table for more compact storage
+        std::unordered_map<u32, VkDescriptorSetLayoutBinding>   m_resource_bindings;
+        std::unordered_map<std::string, u32>                    m_resource_names;
+
+        GraphicsPipelineVK(DeviceVK* parent_device, const Util::Ref<RenderPass>& parent_render_pass);
+        ~GraphicsPipelineVK();
+
+        ResultCode init_shader_reflection(const ShaderModuleDesc& vs_module,
+                                          const std::optional<ShaderModuleDesc>& ps_module);
+
+        std::optional<ShaderResourceInfo> get_shader_resource_info(const std::string_view& name) const override;
+        const u32 get_ps_color_output_id(const std::string_view& name) const override;
     };
 }
 

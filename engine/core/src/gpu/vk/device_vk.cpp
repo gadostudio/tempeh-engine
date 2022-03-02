@@ -7,6 +7,7 @@
 #include <tempeh/logger.hpp>
 #include <map>
 #include <GLFW/glfw3.h>
+#include <spirv_reflect.h>
 
 namespace Tempeh::GPU
 {
@@ -540,6 +541,11 @@ namespace Tempeh::GPU
             return { ResultCode::InvalidArgs };
         }
 
+        auto ret = std::make_shared<GraphicsPipelineVK>(this, render_pass);
+
+        // Reflect shader parameters
+        
+        
         // Should we cache shader module(s)?
         VkShaderModule vs_module;
 

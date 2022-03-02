@@ -14,10 +14,14 @@ if (TEMPEH_USE_VULKAN_BACKEND)
         "src/gpu/vk/backend_vk.hpp"
         "src/gpu/vk/command_queue_vk.cpp"
         "src/gpu/vk/command_queue_vk.hpp"
-        "src/gpu/vk/command_state_vk.cpp"
-        "src/gpu/vk/command_state_vk.hpp"
+        "src/gpu/vk/command_context_vk.cpp"
+        "src/gpu/vk/command_context_vk.hpp"
+        "src/gpu/vk/descriptor_set_cache_vk.cpp"
+        "src/gpu/vk/descriptor_set_cache_vk.hpp"
         "src/gpu/vk/device_vk.cpp"
         "src/gpu/vk/device_vk.hpp"
+        "src/gpu/vk/pipeline_layout_cache_vk.cpp"
+        "src/gpu/vk/pipeline_layout_cache_vk.hpp"
         "src/gpu/vk/resource_vk.cpp"
         "src/gpu/vk/resource_vk.hpp"
         "src/gpu/vk/swapchain_vk.cpp"
@@ -78,4 +82,5 @@ target_link_libraries(tempeh_core
 	PUBLIC tempeh_log
 	PUBLIC glfw
 	PUBLIC GSL
+    PUBLIC spirv_reflect
     PUBLIC Vulkan-Headers)

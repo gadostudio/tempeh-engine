@@ -246,6 +246,6 @@ namespace Tempeh::GPU
     {
         // TODO: Validate GraphicsPipelineDesc
         TEMPEH_UNREFERENCED(desc);
-        return ResultCode::Unimplemented;
+        return ResultCode::Ok;
     }
 }
