@@ -104,16 +104,14 @@ namespace Tempeh::GPU
             std::vector<VkPresentModeKHR> present_modes;
             u32 num_present_modes;
 
-            vkGetPhysicalDeviceSurfacePresentModesKHR(
-                m_parent_device->m_physical_device,
-                m_surface, &num_present_modes, nullptr);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(m_parent_device->m_physical_device,
+                                                      m_surface, &num_present_modes, nullptr);
 
             present_modes.resize(num_present_modes);
 
-            vkGetPhysicalDeviceSurfacePresentModesKHR(
-                m_parent_device->m_physical_device,
-                m_surface, &num_present_modes,
-                present_modes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(m_parent_device->m_physical_device,
+                                                      m_surface, &num_present_modes,
+                                                      present_modes.data());
 
             bool present_mode_supported = false;
             VkPresentModeKHR mode = desc.vsync ?
@@ -226,20 +224,18 @@ namespace Tempeh::GPU
             VK_TRUE, UINT64_MAX);
 
         // Acquire image
-        VkResult result = vkAcquireNextImageKHR(
-            device, m_swapchain, UINT64_MAX,
-            m_image_available_semaphores[m_current_frame],
-            VK_NULL_HANDLE, &m_image_index);
+        VkResult result = vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX,
+                                                m_image_available_semaphores[m_current_frame],
+                                                VK_NULL_HANDLE, &m_image_index);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ||
             result == VK_SUBOPTIMAL_KHR)
         {
             m_parent_device->wait_idle();
             initialize(m_desc);
-            vkAcquireNextImageKHR(
-                device, m_swapchain, UINT64_MAX,
-                m_image_available_semaphores[m_current_frame],
-                VK_NULL_HANDLE, &m_image_index);
+            vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX,
+                                  m_image_available_semaphores[m_current_frame],
+                                  VK_NULL_HANDLE, &m_image_index);
         }
         else if (VULKAN_FAILED(result)) {
             assert(false && "Cannot acquire next image");
@@ -248,8 +244,9 @@ namespace Tempeh::GPU
         VkCommandBuffer current_cmd_buffer = m_cmd_buffers[m_image_index];
         VkImage current_image = m_images[m_image_index];
 
-        VkCommandBufferBeginInfo begin_info{};
+        VkCommandBufferBeginInfo begin_info;
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin_info.pNext = nullptr;
         begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         begin_info.pInheritanceInfo = nullptr;
 
@@ -258,7 +255,7 @@ namespace Tempeh::GPU
         TextureVK* backbuffer_texture = m_backbuffers[m_current_frame].get();
         VkImage backbuffer_image = backbuffer_texture->m_image;
 
-        VkImageSubresourceRange subresource_range{};
+        VkImageSubresourceRange subresource_range;
         subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         subresource_range.baseMipLevel = 0;
         subresource_range.levelCount = 1;
@@ -327,8 +324,9 @@ namespace Tempeh::GPU
         vkEndCommandBuffer(current_cmd_buffer);
 
         static const VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
-        VkSubmitInfo submit_info{};
+        VkSubmitInfo submit_info;
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pNext = nullptr;
         submit_info.waitSemaphoreCount = 1;
         submit_info.pWaitDstStageMask = wait_stages;
         submit_info.pWaitSemaphores = &m_image_available_semaphores[m_current_frame];
@@ -338,26 +336,27 @@ namespace Tempeh::GPU
         submit_info.pSignalSemaphores = &m_submission_finished_semaphores[m_current_frame];
 
         if (m_images_in_flight[m_image_index] != VK_NULL_HANDLE) {
-            vkWaitForFences(
-                device, 1, &m_images_in_flight[m_image_index],
-                VK_TRUE, UINT64_MAX);
+            vkWaitForFences(device, 1, &m_images_in_flight[m_image_index],
+                            VK_TRUE, UINT64_MAX);
         }
 
         m_images_in_flight[m_image_index] = m_wait_fences[m_current_frame];
 
         vkResetFences(device, 1, &m_wait_fences[m_current_frame]);
 
-        vkQueueSubmit(
-            m_parent_device->m_main_queue, 1,
-            &submit_info, m_wait_fences[m_current_frame]);
+        vkQueueSubmit(m_parent_device->m_main_queue,
+                      1, &submit_info,
+                      m_wait_fences[m_current_frame]);
 
-        VkPresentInfoKHR present_info{};
-        present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        VkPresentInfoKHR present_info;
+        present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present_info.pNext              = nullptr;
         present_info.waitSemaphoreCount = 1;
-        present_info.pWaitSemaphores = &m_submission_finished_semaphores[m_current_frame];
-        present_info.swapchainCount = 1;
-        present_info.pSwapchains = &m_swapchain;
-        present_info.pImageIndices = &m_image_index;
+        present_info.pWaitSemaphores    = &m_submission_finished_semaphores[m_current_frame];
+        present_info.swapchainCount     = 1;
+        present_info.pSwapchains        = &m_swapchain;
+        present_info.pImageIndices      = &m_image_index;
+        present_info.pResults           = nullptr;
 
         result = vkQueuePresentKHR(m_parent_device->m_main_queue, &present_info);
 
@@ -425,35 +424,31 @@ namespace Tempeh::GPU
     {
         for (u32 i = 0; i < num_images; i++) {
             if (m_image_available_semaphores[i] != VK_NULL_HANDLE) {
-                vkDestroySemaphore(
-                    m_parent_device->m_device,
-                    m_image_available_semaphores[i],
-                    nullptr);
+                vkDestroySemaphore(m_parent_device->m_device,
+                                   m_image_available_semaphores[i],
+                                   nullptr);
 
                 m_image_available_semaphores[i] = VK_NULL_HANDLE;
             }
 
             if (m_submission_finished_semaphores[i] != VK_NULL_HANDLE) {
-                vkDestroySemaphore(
-                    m_parent_device->m_device,
-                    m_submission_finished_semaphores[i],
-                    nullptr);
+                vkDestroySemaphore(m_parent_device->m_device,
+                                   m_submission_finished_semaphores[i],
+                                   nullptr);
 
                 m_submission_finished_semaphores[i] = VK_NULL_HANDLE;
             }
 
             if (m_wait_fences[i] != VK_NULL_HANDLE) {
-                vkDestroyFence(
-                    m_parent_device->m_device,
-                    m_wait_fences[i], nullptr);
+                vkDestroyFence(m_parent_device->m_device,
+                               m_wait_fences[i], nullptr);
 
                 m_wait_fences[i] = VK_NULL_HANDLE;
             }
 
-            std::fill(
-                m_images_in_flight.begin(),
-                m_images_in_flight.end(),
-                VK_NULL_HANDLE);
+            std::fill(m_images_in_flight.begin(),
+                      m_images_in_flight.end(),
+                      VK_NULL_HANDLE);
         }
     }
 }

@@ -7,8 +7,7 @@ namespace Tempeh::GPU
     {
     }
 
-    PipelineLayoutItemVK*
-        PipelineLayoutCacheVK::create_or_get_pipeline_layout(const PipelineLayoutDescVK& info)
+    PipelineLayoutItemVK* PipelineLayoutCacheVK::create_or_get_pipeline_layout(const PipelineLayoutDescVK& info)
     {
         auto key = info.get_hash() % max_entries;
         auto& entry = m_cache_entry[key];
@@ -48,5 +47,6 @@ namespace Tempeh::GPU
 
     void PipelineLayoutCacheVK::release_layout(const PipelineLayoutItemVK* handle)
     {
+        handle->ref_count.fetch_sub(1, std::memory_order_acq_rel);
     }
 }

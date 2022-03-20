@@ -56,6 +56,11 @@ add_library(tempeh_core STATIC
 	"src/window/window.cpp"
 	"src/window/window_glfw.cpp"
 
+    "include/tempeh/io/basic.hpp"
+    "include/tempeh/io/file.hpp"
+    "src/io/basic.cpp"
+    "src/io/file.cpp"
+
 	"include/tempeh/scripting/mono.hpp"
 	"src/scripting/mono.cpp"
 

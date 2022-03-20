@@ -45,7 +45,7 @@ jobs:
           export MONO_PROJECT=/usr/include/mono-2.0/
 
           cd build
-          cmake .. -DTEMPEH_ENABLE_TEST=ON
+          cmake .. -DTEMPEH_ENABLE_TEST=ON -DTEMPEH_ENABLE_GPU_TEST=ON
           cmake --build . -j 4
       - name: Run test
         run: |
@@ -89,7 +89,7 @@ jobs:
           $env:MONO_INCLUDE_DIR = "C:\Program Files\Mono\include\mono-2.0\"
 
           cd build
-          cmake .. -DTEMPEH_ENABLE_TEST=ON -G "Ninja"
+          cmake .. -DTEMPEH_ENABLE_TEST=ON -DTEMPEH_ENABLE_GPU_TEST=ON -G "Ninja"
           cmake --build . -j 4
       - name: Run test
         run: |

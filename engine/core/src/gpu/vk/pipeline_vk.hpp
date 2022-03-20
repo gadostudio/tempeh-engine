@@ -22,10 +22,12 @@ namespace Tempeh::GPU
         ~GraphicsPipelineVK();
 
         ResultCode init_shader_reflection(const ShaderModuleDesc& vs_module,
-            const std::optional<ShaderModuleDesc>& ps_module);
+                                          const std::optional<ShaderModuleDesc>& fs_module);
 
         std::optional<ShaderResourceInfo> get_shader_resource_info(const std::string_view& name) const override;
         const u32 get_ps_color_output_id(const std::string_view& name) const override;
+        
+        std::size_t get_layout_hash() const;
     };
 }
 

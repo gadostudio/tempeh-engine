@@ -19,8 +19,11 @@ namespace Tempeh::GPU
     }
 
     ResultCode GraphicsPipelineVK::init_shader_reflection(const ShaderModuleDesc& vs_module,
-                                                          const std::optional<ShaderModuleDesc>& ps_module)
+                                                          const std::optional<ShaderModuleDesc>& fs_module)
     {
+        // Probably we will move shader reflection into separate shader compiler
+        // and load reflection result from the compiled shader to speed up load time
+
         auto reflect = [this](const ShaderModuleDesc& module, SpvReflectShaderStageFlagBits shader_stage) -> ResultCode {
             spv_reflect::ShaderModule reflection_module(module.code_size,
                                                         module.code,
@@ -41,10 +44,10 @@ namespace Tempeh::GPU
             if (num_descriptor_sets > 1) {
                 switch (shader_stage) {
                     case VK_SHADER_STAGE_VERTEX_BIT:
-                        LOG_WARN("Found descriptor set more than 1 in vertex shader");
+                        LOG_WARN("Found descriptor set more than 1 in vertex shader.");
                         break;
                     case VK_SHADER_STAGE_FRAGMENT_BIT:
-                        LOG_WARN("Found descriptor set more than 1 in pixel shader");
+                        LOG_WARN("Found descriptor set more than 1 in fragment/pixel shader.");
                         break;
                 }
             }
@@ -75,16 +78,16 @@ namespace Tempeh::GPU
                             // need to check whether the descriptor type is valid or not since we
                             // don't support texel buffer resources.
                             switch (descriptor->descriptor_type) {
-                                case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                                case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
                                     descriptor_binding->second.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                                     break;
-                                case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+                                case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
                                     descriptor_binding->second.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                                     break;
-                                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                                case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
                                     descriptor_binding->second.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                                     break;
-                                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                                case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
                                     descriptor_binding->second.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                                     break;
                                 default:
@@ -99,6 +102,7 @@ namespace Tempeh::GPU
                             }
                         }
                         else {
+                            // Reject the shader if the current binding descriptor type doesn't match with the existing ones
                             if (descriptor_binding->second.descriptorType != (VkDescriptorType)descriptor->descriptor_type) {
                                 return ResultCode::InvalidShaderResourceBinding;
                             }
@@ -109,6 +113,7 @@ namespace Tempeh::GPU
                                 num_descriptors *= descriptor->array.dims[dim];
                             }
 
+                            // Also reject the shader if the current binding descriptor count doesn't match with the existing binding descriptor count
                             if (descriptor_binding->second.descriptorCount != num_descriptors) {
                                 return ResultCode::InvalidShaderResourceBinding;
                             }
@@ -140,8 +145,8 @@ namespace Tempeh::GPU
             return result;
         }
 
-        if (ps_module) {
-            result = reflect(ps_module.value(), SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT);
+        if (fs_module) {
+            result = reflect(fs_module.value(), SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT);
 
             if (result != ResultCode::Ok) {
                 return result;
@@ -182,6 +187,7 @@ namespace Tempeh::GPU
                 break;
             default:
                 assert(false && "Unknown resource type");
+                return {};
         }
 
         return {
@@ -197,5 +203,20 @@ namespace Tempeh::GPU
     {
         // TODO
         return ~0U;
+    }
+
+    std::size_t GraphicsPipelineVK::get_layout_hash() const
+    {
+        std::size_t result = m_resource_bindings.size();
+
+        // Let's hope this will work correctly :D
+        for (const auto& set_binding : m_resource_bindings) {
+            result ^= set_binding.second.binding * 0x45d9f3b;
+            result ^= (set_binding.second.descriptorCount << 8) * 0x45d9f3b;
+            result ^= (set_binding.second.descriptorType << 16) * 0x45d9f3b;
+            result ^= (set_binding.second.stageFlags << 24) * 0x45d9f3b;
+        }
+
+        return result;
     }
 }

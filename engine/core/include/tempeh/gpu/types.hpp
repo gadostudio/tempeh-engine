@@ -706,7 +706,7 @@ namespace Tempeh::GPU
     {
         const char*                                 label;
         std::optional<ShaderModuleDesc>             vs_module;
-        std::optional<ShaderModuleDesc>             ps_module;
+        std::optional<ShaderModuleDesc>             fs_module;
         std::optional<VertexInputLayoutDesc>        vertex_input_layout;
         InputAssemblyStateDesc                      input_assembly_state;
         RasterizationStateDesc                      rasterization_state;

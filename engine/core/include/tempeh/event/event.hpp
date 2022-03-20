@@ -42,25 +42,32 @@ namespace Tempeh::Event
 	};
 
 	struct WindowClose {};
+	
 	struct WindowLostFocus {};
+	
 	struct WindowFocus {};
+	
 	struct WindowResize
 	{
 		Tempeh::Math::uvec2 new_size;
 	};
+	
 	struct MouseMove
 	{
 		Tempeh::Math::vec2 movement;
 	};
+	
 	struct MouseScroll
 	{
 		Tempeh::Math::vec2 delta;
 	};
+	
 	struct MouseButtonAct
 	{
 		MouseKeyCode key_code;
 		KeyState state;
 	};
+
 	struct KeyboardButtonAct
 	{
 		KeyboardKeyCode key_code;

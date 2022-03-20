@@ -45,7 +45,8 @@ namespace Tempeh::GPU
           m_properties(properties),
           m_device(device),
           m_allocator(allocator),
-          m_main_queue_index(main_queue_index)
+          m_main_queue_index(main_queue_index),
+          m_pipeline_layout_cache(m_device)
     {
         vkGetDeviceQueue(m_device, m_main_queue_index, 0, &m_main_queue);
 
@@ -545,7 +546,8 @@ namespace Tempeh::GPU
         auto ret = std::make_shared<GraphicsPipelineVK>(this, render_pass);
 
         // Reflect shader parameters
-        TEMPEH_GPU_VALIDATE_RESULT(ret->init_shader_reflection(desc.vs_module.value(), desc.ps_module));
+        TEMPEH_GPU_VALIDATE_RESULT(ret->init_shader_reflection(desc.vs_module.value(), desc.fs_module));
+        
         
         // Should we cache shader module(s)?
         VkShaderModule vs_module;
@@ -563,17 +565,17 @@ namespace Tempeh::GPU
             return parse_error_vk(result);
         }
 
-        VkShaderModule ps_module = VK_NULL_HANDLE;
+        VkShaderModule fs_module = VK_NULL_HANDLE;
 
-        if (desc.ps_module) {
-            VkShaderModuleCreateInfo ps_module_info;
-            ps_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            ps_module_info.pNext = nullptr;
-            ps_module_info.flags = 0;
-            ps_module_info.codeSize;
-            ps_module_info.pCode;
+        if (desc.fs_module) {
+            VkShaderModuleCreateInfo fs_module_info;
+            fs_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            fs_module_info.pNext = nullptr;
+            fs_module_info.flags = 0;
+            fs_module_info.codeSize;
+            fs_module_info.pCode;
 
-            result = vkCreateShaderModule(m_device, &ps_module_info, nullptr, &ps_module);
+            result = vkCreateShaderModule(m_device, &fs_module_info, nullptr, &fs_module);
 
             if (VULKAN_FAILED(result)) {
                 return parse_error_vk(result);
@@ -591,12 +593,12 @@ namespace Tempeh::GPU
         shader_stages[0].pSpecializationInfo = nullptr;
 
         // Pixel/fragment shader is optional
-        if (desc.ps_module) {
+        if (desc.fs_module) {
             shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shader_stages[1].pNext = nullptr;
             shader_stages[1].flags = 0;
             shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            shader_stages[1].module = ps_module;
+            shader_stages[1].module = fs_module;
             shader_stages[1].pName = "main";
             shader_stages[1].pSpecializationInfo = nullptr;
             num_shader_stage++;

@@ -63,14 +63,24 @@ namespace Tempeh::Util
             return std::holds_alternative<T>(m_var);
         }
 
-        T& value()
+        T& value() &
         {
             return std::get<T>(m_var);
         }
 
-        const T& value() const
+        const T& value() const &
         {
             return std::get<T>(m_var);
+        }
+
+        T&& value() &&
+        {
+            return std::move(std::get<T>(m_var));
+        }
+
+        const T&& value() const &&
+        {
+            return std::move(std::get<T>(m_var));
         }
 
         const E& err() const

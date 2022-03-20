@@ -3,6 +3,8 @@
 project("tempeh_engine"
 	LANGUAGES C CXX)
 
+include(Macros.cmake)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -11,6 +13,8 @@ option(TEMPEH_ENABLE_TEST "Enable unit test" OFF)
 option(TEMPEH_ENABLE_GPU_TEST "Enable unit test for GPU backends (requires TEMPEH_ENABLE_TEST to be enabled)" OFF)
 
 add_subdirectory("external")
+
+find_package(Vulkan)
 
 # https://github.com/izenecloud/cmake/blob/master/SetCompilerWarningAll.cmake
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

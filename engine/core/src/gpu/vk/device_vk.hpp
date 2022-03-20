@@ -13,6 +13,7 @@
 #include "command_queue_vk.hpp"
 #include "command_context_vk.hpp"
 #include "transition_barrier_vk.hpp"
+#include "pipeline_layout_cache_vk.hpp"
 
 namespace Tempeh::GPU
 {
@@ -31,6 +32,8 @@ namespace Tempeh::GPU
         std::vector<VkSurfaceFormatKHR> m_surface_formats;
         std::vector<VkPresentModeKHR> m_present_modes;
         std::unordered_map<VkFormat, VkFormatProperties> m_format_properties;
+
+        PipelineLayoutCacheVK m_pipeline_layout_cache;
 
         std::unique_ptr<CommandQueueVK> m_cmd_queue;
         std::size_t m_current_submission = 0;

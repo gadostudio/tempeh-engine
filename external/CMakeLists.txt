@@ -14,7 +14,9 @@ tempeh_deps_var(GLFW_INSTALL BOOL OFF)
 
 # Dawn configurations
 tempeh_deps_var(DAWN_BUILD_EXAMPLES BOOL OFF)
+tempeh_deps_var(DAWN_BUILD_SAMPLES BOOL OFF)
 tempeh_deps_var(DAWN_ENABLE_D3D12 BOOL OFF)
+tempeh_deps_var(DAWN_BUILD_SAMPLES BOOL OFF)
 
 # spdlog configuration
 tempeh_deps_var(SPDLOG_NO_EXCEPTIONS BOOL ON)
