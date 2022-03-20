@@ -9,7 +9,7 @@ namespace Tempeh::GPU
     class Instance
     {
     public:
-        static void initialize(BackendType type, bool prefer_high_performance);
+        static ResultCode initialize(BackendType type, bool prefer_high_performance);
         static Util::Ref<Device> get_device();
 
     private:

@@ -1,91 +1,119 @@
-#ifndef _TEMPEH_GPU_DEVICE_VK_H
-#define _TEMPEH_GPU_DEVICE_VK_H
+#ifndef _TEMPEH_GPU_DEVICE_VK_HPP
+#define _TEMPEH_GPU_DEVICE_VK_HPP 1
 
 #include <tempeh/gpu/device.hpp>
-#include <tempeh/gpu/types.hpp>
 #include <memory>
 #include <array>
+#include <deque>
+#include <mutex>
+#include <optional>
+#include <unordered_map>
 
-#include "backend_vk.hpp"
 #include "vk.hpp"
+#include "command_queue_vk.hpp"
+#include "command_context_vk.hpp"
+#include "transition_barrier_vk.hpp"
+#include "pipeline_layout_cache_vk.hpp"
 
 namespace Tempeh::GPU
 {
-    template<size_t MaxBuffer>
-    class CommandManagerVK
-    {
-    public:
-        using PoolBufferPair = std::pair<VkCommandPool, VkCommandBuffer>;
-
-        CommandManagerVK(VkDevice device, u32 queue_family_index) :
-            m_device(device)
-        {
-            VkCommandPoolCreateInfo cmd_pool_info{};
-            cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            cmd_pool_info.queueFamilyIndex = queue_family_index;
-
-            VkCommandBufferAllocateInfo cmd_buffer_info{};
-            cmd_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmd_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmd_buffer_info.commandBufferCount = 1;
-
-            for (auto& cmd : m_cmds) {
-                VkResult result = 
-                    vkCreateCommandPool(device, &cmd_pool_info, nullptr, &cmd.first);
-
-                assert(!VULKAN_FAILED(result) && "Failed to create command pool");
-
-                cmd_buffer_info.commandPool = cmd.first;
-                result = vkAllocateCommandBuffers(device, &cmd_buffer_info, &cmd.second);
-
-                assert(!VULKAN_FAILED(result) && "Failed to allocate command buffer");
-            }
-        }
-
-        ~CommandManagerVK()
-        {
-            for (auto& cmd : m_cmds) {
-                vkDestroyCommandPool(m_device, cmd.first, nullptr);
-            }
-        }
-
-    private:
-        VkDevice m_device;
-        std::array<PoolBufferPair, MaxBuffer> m_cmds{};
-    };
-
     struct DeviceVK : public Device
     {
-        static constexpr size_t max_command_buffers = 3;
-
         VkInstance m_instance;
         VkPhysicalDevice m_physical_device;
+        VkPhysicalDeviceProperties m_properties;
         VkDevice m_device;
-        u32 m_main_queue_index;
+        VmaAllocator m_allocator;
         VkQueue m_main_queue = VK_NULL_HANDLE;
+        u32 m_main_queue_index;
+        DeviceLimits m_device_limits{};
 
+        std::mutex m_sync_mutex;
         std::vector<VkSurfaceFormatKHR> m_surface_formats;
         std::vector<VkPresentModeKHR> m_present_modes;
-        std::unique_ptr<CommandManagerVK<max_command_buffers>> m_cmd_manager;
+        std::unordered_map<VkFormat, VkFormatProperties> m_format_properties;
+
+        PipelineLayoutCacheVK m_pipeline_layout_cache;
+
+        std::unique_ptr<CommandQueueVK> m_cmd_queue;
+        std::size_t m_current_submission = 0;
+        VkCommandBuffer m_current_cmd_buffer = VK_NULL_HANDLE;
+        CommandContextVK m_cmd_states;
+        bool m_is_recording_command = false;
+        bool m_is_inside_render_pass = false;
 
         DeviceVK(
             VkInstance instance,
             VkPhysicalDevice physical_device,
+            const VkPhysicalDeviceProperties& properties,
             VkDevice device,
+            VmaAllocator allocator,
             u32 main_queue_index);
 
         ~DeviceVK();
 
-        RefDeviceResult<Surface> create_surface(
+        RefDeviceResult<SwapChain> create_swapchain(
             const std::shared_ptr<Window::Window>& window,
-            const SurfaceDesc& desc) override final;
+            const SwapChainDesc& desc) override final;
 
         RefDeviceResult<Texture> create_texture(const TextureDesc& desc) override final;
         RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) override final;
+        RefDeviceResult<BufferView> create_buffer_view(const Util::Ref<Buffer>& buffer, const BufferViewDesc& desc) override final;
+        RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) override final;
+        RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass, const FramebufferDesc& desc) override final;
+        RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) override final;
+        RefDeviceResult<GraphicsPipeline> create_graphics_pipeline(const Util::Ref<RenderPass>& render_pass, const GraphicsPipelineDesc& desc) override final;
 
-        void begin_frame() override final;
-        void end_frame() override final;
+        void begin_cmd() override final;
+
+        void bind_texture(u32 binding_id, const Util::Ref<Texture>& texture) override final;
+        
+        void begin_render_pass(
+            const Util::Ref<Framebuffer>&       framebuffer,
+            std::initializer_list<ClearValue>   clear_values,
+            ClearValue                          clear_depth_stencil_value = {}) override final;
+
+        void set_viewport(
+            float x,
+            float y,
+            float width,
+            float height,
+            float min_depth,
+            float max_depth) override final;
+
+        void set_scissor_rect(u32 x, u32 y, u32 width, u32 height) override final;
+
+        void set_blend_constants(float r, float g, float b, float a) override final;
+
+        void set_blend_constants(float color[4]) override final;
+
+        void set_stencil_ref(u32 reference) override final;
+        
+        void draw(u32 num_vertices, u32 first_vertex) override final;
+        
+        void draw_indexed(
+            u32 num_indices,
+            u32 first_index,
+            i32 vertex_offset) override final;
+        
+        void draw_instanced(
+            u32 num_vertices,
+            u32 num_instances,
+            u32 first_vertex,
+            u32 first_instance) override final;
+
+        void draw_indexed_instanced(
+            u32 num_indices,
+            u32 num_instances,
+            u32 first_index,
+            i32 vertex_offset,
+            u32 first_instance) override final;
+
+        void end_render_pass() override final;
+
+        void end_cmd() override final;
+
+        std::pair<bool, bool> is_texture_format_supported(VkFormat format, VkFormatFeatureFlags features) const;
 
         void wait_idle();
 

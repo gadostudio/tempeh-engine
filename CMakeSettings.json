@@ -8,11 +8,40 @@
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
+      "buildCommandArgs": "-j 4",
       "ctestCommandArgs": "",
+      "addressSanitizerEnabled": false,
       "variables": [
         {
           "name": "TEMPEH_TEST",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "TEMPEH_ENABLE_TEST",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "TEMPEH_ENABLE_GPU_TEST",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "-j 4",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "TEMPEH_ENABLE_GPU_TEST",
           "value": "True",
           "type": "BOOL"
         },

@@ -2,9 +2,8 @@
 #define _TEMPEH_GPU_DEVICE_HPP
 
 #include <tempeh/gpu/types.hpp>
-#include <tempeh/gpu/command_list.hpp>
 #include <tempeh/gpu/resource.hpp>
-#include <tempeh/gpu/surface.hpp>
+#include <tempeh/gpu/swapchain.hpp>
 #include <tempeh/window/window.hpp>
 
 #include <tempeh/util/ref_count.hpp>
@@ -25,15 +24,79 @@ namespace Tempeh::GPU
         
         virtual ~Device() { }
 
-        virtual RefDeviceResult<Surface> create_surface(
+        [[nodiscard]]
+        virtual RefDeviceResult<SwapChain> create_swapchain(
             const std::shared_ptr<Window::Window>& window,
-            const SurfaceDesc& desc) = 0;
+            const SwapChainDesc& desc) = 0;
 
+        [[nodiscard]]
         virtual RefDeviceResult<Texture> create_texture(const TextureDesc& desc) = 0;
+
+        [[nodiscard]]
         virtual RefDeviceResult<Buffer> create_buffer(const BufferDesc& desc) = 0;
 
-        virtual void begin_frame() = 0;
-        virtual void end_frame() = 0;
+        [[nodiscard]]
+        virtual RefDeviceResult<BufferView>
+            create_buffer_view(const Util::Ref<Buffer>& buffer,
+                               const BufferViewDesc& desc) = 0;
+
+        [[nodiscard]]
+        virtual RefDeviceResult<RenderPass> create_render_pass(const RenderPassDesc& desc) = 0;
+
+        [[nodiscard]]
+        virtual RefDeviceResult<Framebuffer> create_framebuffer(const Util::Ref<RenderPass>& render_pass,
+                                                                const FramebufferDesc& desc) = 0;
+
+        [[nodiscard]]
+        virtual RefDeviceResult<Sampler> create_sampler(const SamplerDesc& desc) = 0;
+
+        [[nodiscard]]
+        virtual RefDeviceResult<GraphicsPipeline> create_graphics_pipeline(const Util::Ref<RenderPass>& render_pass,
+                                                                           const GraphicsPipelineDesc& desc) = 0;
+
+        virtual void begin_cmd() = 0;
+
+        virtual void bind_texture(u32 slot, const Util::Ref<Texture>& texture) = 0;
+        
+        virtual void begin_render_pass(const Util::Ref<Framebuffer>& framebuffer,
+                                       std::initializer_list<ClearValue> clear_color_values,
+                                       ClearValue clear_depth_stencil_value = ClearValue::depth_stencil_value()) = 0;
+
+        virtual void set_viewport(float x,
+                                  float y,
+                                  float width,
+                                  float height,
+                                  float min_depth,
+                                  float max_depth) = 0;
+
+        virtual void set_scissor_rect(u32 x, u32 y, u32 width, u32 height) = 0;
+
+        virtual void set_blend_constants(float r, float g, float b, float a = 1.0f) = 0;
+
+        virtual void set_blend_constants(float color[4]) = 0;
+        
+        virtual void set_stencil_ref(u32 reference) = 0;
+        
+        virtual void draw(u32 num_vertices, u32 first_vertex) = 0;
+        
+        virtual void draw_indexed(u32 num_indices,
+                                  u32 first_index,
+                                  i32 vertex_offset) = 0;
+        
+        virtual void draw_instanced(u32 num_vertices,
+                                    u32 num_instances,
+                                    u32 first_vertex,
+                                    u32 first_instance) = 0;
+
+        virtual void draw_indexed_instanced(u32 num_indices,
+                                            u32 num_instances,
+                                            u32 first_index,
+                                            i32 vertex_offset,
+                                            u32 first_instance) = 0;
+        
+        virtual void end_render_pass() = 0;
+
+        virtual void end_cmd() = 0;
 
         BackendType type() const;
         const char* name() const;

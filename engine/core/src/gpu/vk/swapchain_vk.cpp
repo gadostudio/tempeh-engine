@@ -1,16 +1,20 @@
-#include "surface_vk.hpp"
+#include "swapchain_vk.hpp"
 #include "device_vk.hpp"
+#include "resource_vk.hpp"
+#include "conv_table_vk.hpp"
 
 namespace Tempeh::GPU
 {
-    SurfaceVK::SurfaceVK(VkSurfaceKHR surface, DeviceVK* device) :
-        Surface(SurfaceDesc{}),
+    SwapChainVK::SwapChainVK(VkSurfaceKHR surface, DeviceVK* device) :
+        SwapChain(SwapChainDesc{}),
         m_parent_device(device),
         m_surface(surface)
     {
         VkCommandPoolCreateInfo cmd_pool_info{};
         cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        cmd_pool_info.flags =
+            VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         cmd_pool_info.queueFamilyIndex = m_parent_device->m_main_queue_index;
 
         if (VULKAN_FAILED(vkCreateCommandPool(
@@ -21,7 +25,7 @@ namespace Tempeh::GPU
         }
     }
 
-    SurfaceVK::~SurfaceVK()
+    SwapChainVK::~SwapChainVK()
     {
         m_parent_device->wait_idle();
         destroy_objs(m_desc.num_images);
@@ -30,13 +34,13 @@ namespace Tempeh::GPU
         vkDestroySwapchainKHR(m_parent_device->m_device, m_swapchain, nullptr);
         vkDestroySurfaceKHR(m_parent_device->m_instance, m_surface, nullptr);
 
-        std::fill(m_cmd_buffers.begin(), m_cmd_buffers.end(), VK_NULL_HANDLE);
+        std::fill(m_cmd_buffers.begin(), m_cmd_buffers.end(), (VkCommandBuffer)VK_NULL_HANDLE);
         m_cmd_pool = VK_NULL_HANDLE;
         m_swapchain = VK_NULL_HANDLE;
         m_surface = VK_NULL_HANDLE;
     }
 
-    DeviceErrorCode SurfaceVK::initialize(const SurfaceDesc& desc)
+    ResultCode SwapChainVK::initialize(const SwapChainDesc& desc)
     {
         // Detect surface capabilities
         VkSurfaceCapabilitiesKHR surface_caps{};
@@ -100,16 +104,14 @@ namespace Tempeh::GPU
             std::vector<VkPresentModeKHR> present_modes;
             u32 num_present_modes;
 
-            vkGetPhysicalDeviceSurfacePresentModesKHR(
-                m_parent_device->m_physical_device,
-                m_surface, &num_present_modes, nullptr);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(m_parent_device->m_physical_device,
+                                                      m_surface, &num_present_modes, nullptr);
 
             present_modes.resize(num_present_modes);
 
-            vkGetPhysicalDeviceSurfacePresentModesKHR(
-                m_parent_device->m_physical_device,
-                m_surface, &num_present_modes,
-                present_modes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(m_parent_device->m_physical_device,
+                                                      m_surface, &num_present_modes,
+                                                      present_modes.data());
 
             bool present_mode_supported = false;
             VkPresentModeKHR mode = desc.vsync ?
@@ -170,8 +172,6 @@ namespace Tempeh::GPU
             vkAllocateCommandBuffers(device, &cmd_buffer_info, m_cmd_buffers.data());
         }
 
-        init_cmd_buffers(num_images);
-
         VkSemaphoreCreateInfo semaphore_info{};
         semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -192,18 +192,30 @@ namespace Tempeh::GPU
                 device, &fence_info, nullptr, &m_wait_fences[i]);
 
             if (VULKAN_FAILED(result)) {
-                return DeviceErrorCode::InternalError;
+                return ResultCode::InternalError;
             }
         }
 
+        m_swapchain_blit_region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        m_swapchain_blit_region.dstSubresource.baseArrayLayer = 0;
+        m_swapchain_blit_region.dstSubresource.layerCount = 1;
+        m_swapchain_blit_region.dstSubresource.mipLevel = 0;
+        m_swapchain_blit_region.dstOffsets[1].x = surface_caps.maxImageExtent.width;
+        m_swapchain_blit_region.dstOffsets[1].y = surface_caps.maxImageExtent.height;
+        m_swapchain_blit_region.dstOffsets[1].z = 1;
+
         m_desc = desc;
-        //m_current_frame = 0;
+
+        if (!m_initialized) {
+            resize(desc.width, desc.height);
+        }
+        
         m_initialized = true;
 
-        return DeviceErrorCode::Ok;
+        return ResultCode::Ok;
     }
 
-    void SurfaceVK::swap_buffer()
+    void SwapChainVK::swap_buffer()
     {
         VkDevice device = m_parent_device->m_device;
 
@@ -212,28 +224,109 @@ namespace Tempeh::GPU
             VK_TRUE, UINT64_MAX);
 
         // Acquire image
-        VkResult result = vkAcquireNextImageKHR(
-            device, m_swapchain, UINT64_MAX,
-            m_image_available_semaphores[m_current_frame],
-            VK_NULL_HANDLE, &m_image_index);
+        VkResult result = vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX,
+                                                m_image_available_semaphores[m_current_frame],
+                                                VK_NULL_HANDLE, &m_image_index);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ||
             result == VK_SUBOPTIMAL_KHR)
         {
             m_parent_device->wait_idle();
             initialize(m_desc);
-            vkAcquireNextImageKHR(
-                device, m_swapchain, UINT64_MAX,
-                m_image_available_semaphores[m_current_frame],
-                VK_NULL_HANDLE, &m_image_index);
+            vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX,
+                                  m_image_available_semaphores[m_current_frame],
+                                  VK_NULL_HANDLE, &m_image_index);
         }
         else if (VULKAN_FAILED(result)) {
             assert(false && "Cannot acquire next image");
         }
 
-        static const VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        VkSubmitInfo submit_info{};
+        VkCommandBuffer current_cmd_buffer = m_cmd_buffers[m_image_index];
+        VkImage current_image = m_images[m_image_index];
+
+        VkCommandBufferBeginInfo begin_info;
+        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin_info.pNext = nullptr;
+        begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        begin_info.pInheritanceInfo = nullptr;
+
+        vkBeginCommandBuffer(current_cmd_buffer, &begin_info);
+
+        TextureVK* backbuffer_texture = m_backbuffers[m_current_frame].get();
+        VkImage backbuffer_image = backbuffer_texture->m_image;
+
+        VkImageSubresourceRange subresource_range;
+        subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresource_range.baseMipLevel = 0;
+        subresource_range.levelCount = 1;
+        subresource_range.baseArrayLayer = 0;
+        subresource_range.layerCount = 1;
+
+        VkImageMemoryBarrier image_barrier[2];
+        VkPipelineStageFlags src_stage = 0;
+        VkPipelineStageFlags dst_stage = 0;
+        VkImageLayout swapchain_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        texture_layout_transition_vk(
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            subresource_range,
+            backbuffer_image,
+            backbuffer_texture->m_last_layout,
+            src_stage,
+            dst_stage,
+            image_barrier[0]);
+
+        texture_layout_transition_vk(
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            subresource_range,
+            m_images[m_image_index],
+            swapchain_image_layout,
+            src_stage,
+            dst_stage,
+            image_barrier[1]);
+
+        vkCmdPipelineBarrier(
+            current_cmd_buffer,
+            src_stage,
+            dst_stage,
+            0, 0, nullptr, 0, nullptr,
+            2, image_barrier);
+
+        vkCmdBlitImage(
+            current_cmd_buffer,
+            backbuffer_image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            current_image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &m_swapchain_blit_region,
+            VK_FILTER_LINEAR);
+        
+        src_stage = VK_PIPELINE_STAGE_NONE;
+        dst_stage = VK_PIPELINE_STAGE_NONE;
+
+        texture_layout_transition_vk(
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            subresource_range,
+            m_images[m_image_index],
+            swapchain_image_layout,
+            src_stage,
+            dst_stage,
+            image_barrier[1]);
+
+        vkCmdPipelineBarrier(
+            current_cmd_buffer,
+            src_stage,
+            dst_stage,
+            0, 0, nullptr, 0, nullptr,
+            1, &image_barrier[1]);
+
+        vkEndCommandBuffer(current_cmd_buffer);
+
+        static const VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+        VkSubmitInfo submit_info;
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pNext = nullptr;
         submit_info.waitSemaphoreCount = 1;
         submit_info.pWaitDstStageMask = wait_stages;
         submit_info.pWaitSemaphores = &m_image_available_semaphores[m_current_frame];
@@ -243,26 +336,27 @@ namespace Tempeh::GPU
         submit_info.pSignalSemaphores = &m_submission_finished_semaphores[m_current_frame];
 
         if (m_images_in_flight[m_image_index] != VK_NULL_HANDLE) {
-            vkWaitForFences(
-                device, 1, &m_images_in_flight[m_image_index],
-                VK_TRUE, UINT64_MAX);
+            vkWaitForFences(device, 1, &m_images_in_flight[m_image_index],
+                            VK_TRUE, UINT64_MAX);
         }
 
         m_images_in_flight[m_image_index] = m_wait_fences[m_current_frame];
 
         vkResetFences(device, 1, &m_wait_fences[m_current_frame]);
 
-        vkQueueSubmit(
-            m_parent_device->m_main_queue, 1,
-            &submit_info, m_wait_fences[m_current_frame]);
+        vkQueueSubmit(m_parent_device->m_main_queue,
+                      1, &submit_info,
+                      m_wait_fences[m_current_frame]);
 
-        VkPresentInfoKHR present_info{};
-        present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        VkPresentInfoKHR present_info;
+        present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present_info.pNext              = nullptr;
         present_info.waitSemaphoreCount = 1;
-        present_info.pWaitSemaphores = &m_submission_finished_semaphores[m_current_frame];
-        present_info.swapchainCount = 1;
-        present_info.pSwapchains = &m_swapchain;
-        present_info.pImageIndices = &m_image_index;
+        present_info.pWaitSemaphores    = &m_submission_finished_semaphores[m_current_frame];
+        present_info.swapchainCount     = 1;
+        present_info.pSwapchains        = &m_swapchain;
+        present_info.pImageIndices      = &m_image_index;
+        present_info.pResults           = nullptr;
 
         result = vkQueuePresentKHR(m_parent_device->m_main_queue, &present_info);
 
@@ -279,115 +373,82 @@ namespace Tempeh::GPU
         m_current_frame = (m_current_frame + 1) % m_desc.num_images;
     }
 
-    void SurfaceVK::resize(u32 width, u32 height)
+    void SwapChainVK::resize(u32 width, u32 height)
     {
+        TextureDesc backbuffer_desc{};
+        backbuffer_desc.label = "Swapchain back buffer";
+        backbuffer_desc.type = TextureType::Texture2D;
+        backbuffer_desc.usage = TextureUsage::ColorAttachment | TextureUsage::TransferSrc;
+        backbuffer_desc.memory_usage = MemoryUsage::Default;
+        backbuffer_desc.format = m_desc.format;
+        backbuffer_desc.width = width;
+        backbuffer_desc.height = height;
+        backbuffer_desc.depth = 1;
+        backbuffer_desc.mip_levels = 1;
+        backbuffer_desc.array_layers = 1;
+        backbuffer_desc.num_samples = 1;
+
+        for (u32 i = 0; i < m_desc.num_images; i++) {
+            m_backbuffers[i] = std::static_pointer_cast<TextureVK>(m_parent_device->create_texture(backbuffer_desc).value());
+        }
+
+        m_swapchain_blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        m_swapchain_blit_region.srcSubresource.baseArrayLayer = 0;
+        m_swapchain_blit_region.srcSubresource.layerCount = 1;
+        m_swapchain_blit_region.srcSubresource.mipLevel = 0;
+        m_swapchain_blit_region.srcOffsets[1].x = width;
+        m_swapchain_blit_region.srcOffsets[1].y = height;
+        m_swapchain_blit_region.srcOffsets[1].z = 1;
+
+        m_desc.width = width;
+        m_desc.height = height;
     }
 
-    void SurfaceVK::attach_window(const std::shared_ptr<Window::Window>& window)
+    u32 SwapChainVK::current_image_index() const
+    {
+        return m_current_frame;
+    }
+
+    Util::Ref<Texture> SwapChainVK::get_swapchain_backbuffer(u32 index) const
+    {
+        assert(index < m_desc.num_images && "Index out of range");
+        return m_backbuffers[index];
+    }
+
+    void SwapChainVK::attach_window(const std::shared_ptr<Window::Window>& window)
     {
         m_attached_window = window;
     }
 
-    void SurfaceVK::destroy_objs(u32 num_images)
+    void SwapChainVK::destroy_objs(u32 num_images)
     {
         for (u32 i = 0; i < num_images; i++) {
             if (m_image_available_semaphores[i] != VK_NULL_HANDLE) {
-                vkDestroySemaphore(
-                    m_parent_device->m_device,
-                    m_image_available_semaphores[i],
-                    nullptr);
+                vkDestroySemaphore(m_parent_device->m_device,
+                                   m_image_available_semaphores[i],
+                                   nullptr);
 
                 m_image_available_semaphores[i] = VK_NULL_HANDLE;
             }
 
             if (m_submission_finished_semaphores[i] != VK_NULL_HANDLE) {
-                vkDestroySemaphore(
-                    m_parent_device->m_device,
-                    m_submission_finished_semaphores[i],
-                    nullptr);
+                vkDestroySemaphore(m_parent_device->m_device,
+                                   m_submission_finished_semaphores[i],
+                                   nullptr);
 
                 m_submission_finished_semaphores[i] = VK_NULL_HANDLE;
             }
 
             if (m_wait_fences[i] != VK_NULL_HANDLE) {
-                vkDestroyFence(
-                    m_parent_device->m_device,
-                    m_wait_fences[i], nullptr);
+                vkDestroyFence(m_parent_device->m_device,
+                               m_wait_fences[i], nullptr);
 
                 m_wait_fences[i] = VK_NULL_HANDLE;
             }
 
-            std::fill(
-                m_images_in_flight.begin(),
-                m_images_in_flight.end(),
-                VK_NULL_HANDLE);
-        }
-    }
-
-    void SurfaceVK::init_cmd_buffers(u32 num_images)
-    {
-        VkDevice device = m_parent_device->m_device;
-        vkResetCommandPool(device, m_cmd_pool, 0);
-
-        VkImageMemoryBarrier image_barrier{};
-        image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_barrier.subresourceRange.baseMipLevel = 0;
-        image_barrier.subresourceRange.levelCount = 1;
-        image_barrier.subresourceRange.baseArrayLayer = 0;
-        image_barrier.subresourceRange.layerCount = 1;
-
-        VkClearColorValue clear_color{};
-        clear_color.float32[0] = 1.0f;
-        clear_color.float32[1] = 0.0f;
-        clear_color.float32[2] = 0.0f;
-        clear_color.float32[3] = 1.0f;
-
-        for (u32 i = 0; i < num_images; i++) {
-            VkCommandBuffer current = m_cmd_buffers[i];
-
-            VkCommandBufferBeginInfo begin_info{};
-            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.flags = 0;
-            begin_info.pInheritanceInfo = nullptr;
-
-            vkBeginCommandBuffer(current, &begin_info);
-
-            // Undefined -> Transfer destination
-            image_barrier.srcAccessMask = 0;
-            image_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            image_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            image_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            image_barrier.image = m_images[i];
-
-            vkCmdPipelineBarrier(
-                current,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                0, 0, nullptr, 0, nullptr, 1,
-                &image_barrier);
-
-            vkCmdClearColorImage(
-                current, m_images[i],
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                &clear_color, 1, &image_barrier.subresourceRange);
-
-            image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            image_barrier.dstAccessMask = 0;
-            image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            image_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            image_barrier.image = m_images[i];
-
-            vkCmdPipelineBarrier(
-                current,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                0, 0, nullptr, 0, nullptr, 1,
-                &image_barrier);
-
-            vkEndCommandBuffer(current);
+            std::fill(m_images_in_flight.begin(),
+                      m_images_in_flight.end(),
+                      VK_NULL_HANDLE);
         }
     }
 }

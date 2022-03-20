@@ -2,6 +2,11 @@
 #define _TEMPEH_UTIL_HPP
 
 #include <string_view>
+#include <tempeh/common/typedefs.hpp>
+
+// Used when a variable is unused. Prevents compiler warning.
+#define TEMPEH_UNREFERENCED(x) \
+    ((void)(x))
 
 template <typename T = u8>
 static inline constexpr T bit(T n)
@@ -13,7 +18,7 @@ template<typename T, typename... Bits>
 static inline constexpr bool bit_match(T bitfield, Bits... bits)
 {
     T b = (bits | ...);
-    return (b & bitfield) == b;
+    return (bitfield & b) == b;
 }
 
 struct Lambda {

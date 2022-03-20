@@ -44,6 +44,9 @@ namespace Tempeh::Window
 
 		glfwSetKeyCallback(window, [](GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mods)
 			{
+				TEMPEH_UNREFERENCED(mods);
+				TEMPEH_UNREFERENCED(scancode);
+
 				const Event::KeyboardKeyCode key_code = keyboard_key_code_from_glfw_key_code(key);
 				const Event::KeyState key_state = key_state_from_glfw_action(action);
 
@@ -61,6 +64,8 @@ namespace Tempeh::Window
 
 		glfwSetMouseButtonCallback(window, [](GLFWwindow* window, i32 button, i32 action, i32 mods)
 			{
+				TEMPEH_UNREFERENCED(mods);
+
 				const Event::MouseKeyCode button_key_code = mouse_key_code_from_glfw_key_code(button);
 				const Event::KeyState key_state = key_state_from_glfw_action(action);
 
@@ -135,6 +140,7 @@ namespace Tempeh::Window
 
 	void WindowGLFW::process_input(Event::InputManager& input_manager)
 	{
+		TEMPEH_UNREFERENCED(input_manager);
 		glfwPollEvents();
 	}
 }

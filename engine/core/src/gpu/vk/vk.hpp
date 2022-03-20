@@ -1,17 +1,34 @@
 #ifndef _TEMPEH_GPU_VK_HPP
 #define _TEMPEH_GPU_VK_HPP
 
-#ifdef WIN32
+#include <tempeh/common/os.hpp>
+
+#ifdef TEMPEH_OS_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
 #define VK_NO_PROTOTYPES
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
 
 #include <vulkan/vulkan.h>
 #include "volk.h"
+#include "vk_mem_alloc.h"
 
 #define VULKAN_FAILED(x) \
     ((x) < VK_SUCCESS)
+
+#include <cassert>
+
+#ifdef NDEBUG
+#define VULKAN_ASSERT(x) \
+    (void)(x)
+#else
+#define VULKAN_ASSERT(x) \
+    assert(x)
+#endif
+
+#define VULKAN_INVALID_QUEUE_SUBMISSION (~0U)
 
 #include <tempeh/gpu/types.hpp>
 #include <vector>
@@ -21,45 +38,16 @@
 
 namespace Tempeh::GPU
 {
-    static inline constexpr DeviceErrorCode parse_error_vk(VkResult result)
-    {
-        switch (result) {
-            case VK_ERROR_OUT_OF_HOST_MEMORY:
-                return DeviceErrorCode::OutOfHostMemory;
-            case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-                return DeviceErrorCode::OutOfDeviceMemory;
-            case VK_ERROR_INITIALIZATION_FAILED:
-                return DeviceErrorCode::InitializationFailed;
-            default:
-                return DeviceErrorCode::InternalError;
-        }
-    }
-
-    static inline constexpr VkFormat convert_format_vk(TextureFormat format)
-    {
-        switch (format) {
-            case TextureFormat::RGBA_8_8_8_8_Uint:
-                return VK_FORMAT_R8G8B8A8_UINT;
-            case TextureFormat::RGBA_8_8_8_8_Unorm:
-                return VK_FORMAT_R8G8B8A8_UNORM;
-            case TextureFormat::RGBA_8_8_8_8_Srgb:
-                return VK_FORMAT_R8G8B8A8_SRGB;
-            case TextureFormat::BGRA_8_8_8_8_Uint:
-                return VK_FORMAT_B8G8R8A8_UINT;
-            case TextureFormat::BGRA_8_8_8_8_Unorm:
-                return VK_FORMAT_B8G8R8A8_UNORM;
-            case TextureFormat::BGRA_8_8_8_8_Srgb:
-                return VK_FORMAT_B8G8R8A8_SRGB;
-            case TextureFormat::RG_32_32_Float:
-                return VK_FORMAT_R32G32_SFLOAT;
-            case TextureFormat::RGBA_32_32_32_32_Float:
-                return VK_FORMAT_R32G32B32A32_SFLOAT;
-            default:
-                break;
-        }
-
-        return VK_FORMAT_UNDEFINED;
-    }
+    // Forward Declarations
+    struct DeviceVK;
+    struct SwapChainVK;
+    struct TextureVK;
+    struct BufferVK;
+    struct BufferViewVK;
+    struct RenderPassVK;
+    struct FramebufferVK;
+    struct SamplerVK;
+    struct GraphicsPipelineVK;
 
     static inline bool find_layer(
         const std::vector<VkLayerProperties>& layers,
