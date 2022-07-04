@@ -2702,7 +2702,7 @@ dependencies = [
 name = "tempeh-window"
 version = "0.1.0"
 dependencies = [
- "raw-window-handle 0.3.3",
+ "raw-window-handle 0.4.3",
  "tempeh-engine",
  "tempeh-math",
 ]

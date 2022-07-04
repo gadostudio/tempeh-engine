@@ -1,5 +1,5 @@
 use tempeh_window::ScreenSize;
-use wgpu::SurfaceConfiguration;
+use wgpu::{RequestAdapterOptions, SurfaceConfiguration};
 
 pub struct State {
     pub(crate) device: wgpu::Device,
@@ -24,9 +24,10 @@ impl State {
         });
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
+            .request_adapter(&RequestAdapterOptions {
                 compatible_surface: Some(&surface),
                 power_preference: wgpu::PowerPreference::LowPower,
+                force_fallback_adapter: false,
             })
             .await
             .unwrap();

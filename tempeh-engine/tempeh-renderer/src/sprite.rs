@@ -1,4 +1,5 @@
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use wgpu::{PrimitiveState, RenderPipelineDescriptor, SamplerBindingType};
 
 use tempeh_window::ScreenSize;
 
@@ -66,10 +67,7 @@ impl SpriteRendererPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler {
-                            filtering: true,
-                            comparison: false,
-                        },
+                        ty: wgpu::BindingType::Sampler(SamplerBindingType::NonFiltering),
                         count: None,
                     },
                 ],
@@ -118,7 +116,7 @@ impl SpriteRendererPipeline {
                 bind_group_layouts: &[&uniform_bind_group_layout, &texture_bind_group_layout],
                 push_constant_ranges: &[],
             });
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
             depth_stencil: None,
@@ -141,15 +139,16 @@ impl SpriteRendererPipeline {
                 entry_point: "main",
                 buffers: &[Vertex::desc()],
             },
-            primitive: wgpu::PrimitiveState {
+            primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
-                clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
                 cull_mode: Some(wgpu::Face::Back),
                 front_face: wgpu::FrontFace::Ccw,
                 strip_index_format: None,
+                unclipped_depth: false,
             },
+            multiview: None,
         });
 
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -169,8 +168,8 @@ impl SpriteRendererPipeline {
 
 impl CommandBufferGenerator for SpriteRendererPipeline {
     fn command_buffer(&self, renderer: &Renderer) {
-        let frame = &renderer.state.surface.get_current_frame().unwrap().output;
-        let view = &frame
+        let frame = renderer.state.surface.get_current_texture().unwrap();
+        let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
         let mut command_encoder = renderer
@@ -186,7 +185,7 @@ impl CommandBufferGenerator for SpriteRendererPipeline {
                         load: wgpu::LoadOp::Clear(renderer.clear_color),
                     },
                     resolve_target: None,
-                    view,
+                    view: &view,
                 }],
                 depth_stencil_attachment: None,
             });
@@ -197,5 +196,6 @@ impl CommandBufferGenerator for SpriteRendererPipeline {
             render_pass.draw(0..VERTICES.len() as u32, 0..1);
         }
         renderer.state.queue.submit(Some(command_encoder.finish()));
+        frame.present();
     }
 }
