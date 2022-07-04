@@ -5,9 +5,9 @@ authors = ["Andra Antariksa <andra.antariksa@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-wgpu = "0.10.1"
-log = "0.4.14"
-raw-window-handle = "0.3.3"
+wgpu = "0.12.0"
+log = "0.4"
+raw-window-handle = "0.3"
 tempeh-window = { version = "0.1.0", path = "../tempeh-window" }
 tempeh-ecs = { version = "0.1.0", path = "../tempeh-ecs" }
 tempeh-math = { version = "0.1.0", path = "../tempeh-math" }
@@ -18,10 +18,10 @@ instant = "0.1" # TODO apply this dependency directly
 async-std = "1.10.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = "0.3.50"
-winit = { version = "0.25.0", features = ["web-sys"] }
+web-sys = "0.3.53"
+#winit = { version = "0.26", features = ["web-sys"] }
 # legion = { version = "0.4.0", default-features = false, features = ["wasm-bindgen"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-winit = "0.25.0"
+winit = "0.26"
 # legion = "0.4.0"

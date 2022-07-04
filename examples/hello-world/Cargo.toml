@@ -19,3 +19,4 @@ tempeh-ecs = { version = "0.1.0", path = "../../tempeh-engine/tempeh-ecs" }
 tempeh-window-winit = { version = "0.1.0", path = "../../tempeh-engine/tempeh-window-winit" }
 tempeh-window = { version = "0.1.0", path = "../../tempeh-engine/tempeh-window" }
 tempeh-log = { version = "0.1.0", path = "../../tempeh-engine/tempeh-log" }
+ndk-glue = "0.6"

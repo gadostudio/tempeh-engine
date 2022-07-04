@@ -98,7 +98,7 @@ async fn main() {
         &window,
         imgui_winit_support::HiDpiMode::Default,
     );
-    imgui_context.set_clipboard_backend(Box::new(Clipboard::new().unwrap()));
+    imgui_context.set_clipboard_backend(Clipboard::new().unwrap());
     imgui_context.set_ini_filename(None);
     {
         let mut style = imgui_context.style_mut();
@@ -257,7 +257,7 @@ async fn main() {
                 imgui_context.io_mut().update_delta_time(now - last_frame);
                 last_frame = now;
 
-                let frame = renderer.surface.get_current_frame().unwrap();
+                let frame = renderer.surface.get_current_texture().unwrap();
                 platform
                     .prepare_frame(imgui_context.io_mut(), &window)
                     .expect("Failed to prepare frame");
@@ -267,25 +267,24 @@ async fn main() {
                     AppState::ProjectSelection => {}
                     AppState::Workspace => {
                         let mut logger = logger::LOG_MESSAGES.lock().unwrap();
-                        let mut log_messages =
-                            logger.iter().fold(ImString::new(""), |mut acc, val| {
-                                if val
-                                    .message
-                                    .to_lowercase()
-                                    .contains(app.ui_state.log_filter.to_str())
-                                {
-                                    acc.push('[');
-                                    acc.push_str(&val.target);
-                                    acc.push_str("] ");
-                                    acc.push_str(&val.message);
-                                    acc.push('\n');
-                                }
-                                acc
-                            });
+                        let mut log_messages = logger.iter().fold(String::new(), |mut acc, val| {
+                            if val
+                                .message
+                                .to_lowercase()
+                                .contains(&app.ui_state.log_filter)
+                            {
+                                acc.push('[');
+                                acc.push_str(&val.target);
+                                acc.push_str("] ");
+                                acc.push_str(&val.message);
+                                acc.push('\n');
+                            }
+                            acc
+                        });
 
                         {
                             if let Some(menu_bar) = imgui_ui.begin_main_menu_bar() {
-                                if let Some(menu) = imgui_ui.begin_menu(im_str!("File"), true) {
+                                if let Some(menu) = imgui_ui.begin_menu("File") {
                                     let mut project_settings = false;
                                     MenuItem::new(im_str!("Project Settings"))
                                         .build_with_ref(&imgui_ui, &mut project_settings);
@@ -312,9 +311,9 @@ async fn main() {
                                     if quit_to_project_menu {
                                         app.add_message(Message::QuiToProjectSelection);
                                     }
-                                    menu.end(&imgui_ui);
+                                    menu.end();
                                 }
-                                if let Some(menu) = imgui_ui.begin_menu(im_str!("Help"), true) {
+                                if let Some(menu) = imgui_ui.begin_menu("Help") {
                                     MenuItem::new(im_str!("About")).build(&imgui_ui);
                                     let mut is_select_repository = false;
                                     MenuItem::new(im_str!("Repository"))
@@ -322,10 +321,10 @@ async fn main() {
                                     if is_select_repository {
                                         webbrowser::open(REPOSITORY_URL).unwrap();
                                     }
-                                    menu.end(&imgui_ui);
+                                    menu.end();
                                 }
 
-                                menu_bar.end(&imgui_ui);
+                                menu_bar.end();
                             }
 
                             if let Some(menu_bar) = imgui_ui.begin_main_menu_bar() {
@@ -334,7 +333,7 @@ async fn main() {
                                 if play {
                                     app.add_message(Message::Play);
                                 }
-                                menu_bar.end(&imgui_ui);
+                                menu_bar.end();
                             }
 
                             let mut w1 = imgui_ui.window_size();
@@ -362,7 +361,7 @@ async fn main() {
                                             {
                                             }
                                         }
-                                        listbox.end(&imgui_ui);
+                                        listbox.end();
                                     }
 
                                     imgui_ui.separator();
@@ -407,7 +406,7 @@ async fn main() {
                                 )
                                 .menu_bar(true)
                                 .build(&imgui_ui, || {
-                                    let mut name = imgui::ImString::from(String::from("sample"));
+                                    let mut name = String::from("sample");
                                     imgui_ui.input_text(im_str!("Name"), &mut name);
 
                                     let mut arr2 = [0f32; 2];
@@ -457,7 +456,7 @@ async fn main() {
                                 }
                                 Image::new(scene_editor.texture_id, scene_editor_size)
                                     .build(&imgui_ui);
-                                window.end(&imgui_ui);
+                                window.end();
                             }
 
                             if let Some(window) = imgui::Window::new(im_str!("##Reports"))
@@ -487,24 +486,24 @@ async fn main() {
                             {
                                 TabBar::new(im_str!("##Tab Bar")).build(&imgui_ui, || {
                                     TabItem::new(im_str!("Log")).build(&imgui_ui, || {
-                                        if imgui_ui.button(im_str!("Clear"), [0.0, 0.0]) {
+                                        if imgui_ui.button(im_str!("Clear")) {
                                             app.add_message(Message::ClearLogger);
                                         }
-                                        imgui_ui.same_line(0.0);
-                                        if imgui_ui.button(im_str!("Copy"), [0.0, 0.0]) {
+                                        imgui_ui.same_line();
+                                        if imgui_ui.button(im_str!("Copy")) {
                                             imgui_ui.set_clipboard_text(&log_messages);
                                         }
-                                        imgui_ui.same_line(0.0);
+                                        imgui_ui.same_line();
                                         imgui_ui
                                             .input_text(
                                                 im_str!("Filter"),
                                                 &mut app.ui_state.log_filter,
                                             )
-                                            .resize_buffer(true)
+                                            // .resize_buffer(true)
                                             .build();
                                         imgui_ui
                                             .input_text_multiline(
-                                                im_str!("##Log"),
+                                                "##Log",
                                                 &mut log_messages,
                                                 [-1f32, -1f32],
                                             )
@@ -523,7 +522,7 @@ async fn main() {
                                             .build();
                                     });
                                 });
-                                window.end(&imgui_ui);
+                                window.end();
                             }
                         }
 
@@ -543,10 +542,7 @@ async fn main() {
                 }
 
                 scene_editor.command_buffer(&renderer);
-                let output_view = frame
-                    .output
-                    .texture
-                    .create_view(&TextureViewDescriptor::default());
+                let output_view = frame.texture.create_view(&TextureViewDescriptor::default());
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: None,
@@ -578,6 +574,7 @@ async fn main() {
                 }
 
                 renderer.state.queue.submit(Some(encoder.finish()));
+                frame.present();
             }
             _ => (),
         }

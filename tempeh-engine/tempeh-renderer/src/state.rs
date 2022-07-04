@@ -210,9 +210,9 @@ impl State {
             // uniform_bind_group,
             // texture_bind_group,
             clear_color: wgpu::Color {
-                r: 0.0,
-                g: 0.0,
-                b: 0.0,
+                r: 0.8,
+                g: 0.8,
+                b: 0.8,
                 a: 1.0,
             },
         }

@@ -19,17 +19,17 @@ impl FileTree {
 
         let mut filetree = FileTree::new();
 
-        while !queue.is_empty() {
-            let current_entry = queue.pop_front().unwrap();
-            for entry in fs::read_dir(current_entry).unwrap() {
-                let entry = entry.unwrap();
-                let path = entry.path();
-                filetree.insert(path.clone());
-                if path.is_dir() && path.file_name().unwrap() != OsStr::new(".git") {
-                    queue.push_back(path);
-                }
-            }
-        }
+        // while !queue.is_empty() {
+        //     let current_entry = queue.pop_front().unwrap();
+        //     for entry in fs::read_dir(current_entry).unwrap() {
+        //         let entry = entry.unwrap();
+        //         let path = entry.path();
+        //         filetree.insert(path.clone());
+        //         if path.is_dir() && path.file_name().unwrap() != OsStr::new(".git") {
+        //             queue.push_back(path);
+        //         }
+        //     }
+        // }
 
         filetree
     }

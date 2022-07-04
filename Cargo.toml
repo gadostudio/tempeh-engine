@@ -37,7 +37,7 @@ tempeh-log = { version = "0.1.0", path = "tempeh-engine/tempeh-log" }
 ndk-glue = { version = "0.3.0", features = ["logger"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = "0.3.50"
+web-sys = "0.3.53"
 
 [package.metadata.android]
 build_targets = ["aarch64-linux-android"] #"armv7-linux-androideabi", , "x86_64-linux-android"

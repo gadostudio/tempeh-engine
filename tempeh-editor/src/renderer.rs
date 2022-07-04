@@ -3,7 +3,7 @@ use core::iter;
 use imgui::{Context, TextureId};
 use imgui_wgpu::{Renderer as RendererImGui, RendererConfig};
 use imgui_wgpu::{Texture as TextureImGui, TextureConfig};
-use wgpu::SurfaceConfiguration;
+use wgpu::{SamplerBindingType, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
 pub(crate) struct WindowSize {
@@ -28,6 +28,7 @@ impl Renderer {
         let adapter = task::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             compatible_surface: Some(&surface),
             power_preference: wgpu::PowerPreference::HighPerformance,
+            force_fallback_adapter: false,
         }));
         let (device, queue) = task::block_on(adapter.unwrap().request_device(
             &wgpu::DeviceDescriptor {
@@ -147,8 +148,7 @@ impl SceneEditorRendererPipeline {
                             binding: 1,
                             visibility: wgpu::ShaderStages::FRAGMENT,
                             ty: wgpu::BindingType::Sampler {
-                                comparison: false,
-                                filtering: true,
+                                0: SamplerBindingType::Filtering,
                             },
                             count: None,
                         },

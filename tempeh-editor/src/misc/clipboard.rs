@@ -19,11 +19,11 @@ impl Clipboard {
 }
 
 impl ClipboardBackend for Clipboard {
-    fn get(&mut self) -> Option<ImString> {
-        self.0.get_contents().ok().map(|text| text.into())
+    fn get(&mut self) -> Option<String> {
+        self.0.get_contents().ok().map(|text| text)
     }
 
-    fn set(&mut self, value: &ImStr) {
-        self.0.set_contents(value.to_string());
+    fn set(&mut self, value: &str) {
+        self.0.set_contents(value.to_string()).unwrap();
     }
 }
