@@ -26,7 +26,7 @@ namespace Tempeh::Event
 
 	void InputManager::process_keyboard_button(KeyboardKeyCode key_code, KeyState key_state)
 	{
-		LOG_INFO("Keyboard - Key {}({}) {}", magic_enum::enum_name(key_code), key_code, key_state == KeyState::Pressed ? "Pressed" : "Released");
+//		LOG_INFO("Keyboard - Key {}({}) {}", magic_enum::enum_name(key_code), key_code, (key_state == KeyState::Pressed) ? "Pressed" : "Released");
 		if (key_state == KeyState::Pressed)
 		{
 

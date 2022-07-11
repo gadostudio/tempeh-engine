@@ -30,15 +30,15 @@ jobs:
           cd external/dawn
           cp scripts/standalone.gclient .gclient
           gclient sync
-      - name: Cache
-        id: cmake-cache
+      - name: Set up cache
+        id: cache-cpm
         uses: actions/cache@v2
         with:
-          path: |
-            build/
-          key: ${{ runner.os }}-master
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
       - name: Create build dir
-        if: steps.cmake-cache.outputs.cache-hit != 'true'
         run: |
           mkdir build
       - name: Build
@@ -47,7 +47,7 @@ jobs:
 
           cd build
           cmake .. -DTEMPEH_ENABLE_TEST=ON
-          cmake --build .
+          cmake -DCPM_SOURCE_CACHE=~/cpm-cache --build .
       - name: Run test
         run: |
           ./build/test/tempeh_core_test

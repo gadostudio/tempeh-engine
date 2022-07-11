@@ -1,33 +1,3 @@
-[submodule "external/glfw"]
-	path = external/glfw
-	url = https://github.com/glfw/glfw.git
-[submodule "external/imgui"]
-	path = external/imgui
-	url = https://github.com/ocornut/imgui.git
-[submodule "external/dawn"]
-	path = external/dawn
-	url = https://dawn.googlesource.com/dawn
-[submodule "external/spdlog"]
-	path = external/spdlog
-	url = https://github.com/gabime/spdlog.git
-[submodule "external/glm"]
-	path = external/glm
-	url = https://github.com/g-truc/glm.git
-[submodule "external/stb"]
-	path = external/stb
-	url = https://github.com/nothings/stb.git
-[submodule "external/entt"]
-	path = external/entt
-	url = https://github.com/skypjack/entt.git
-[submodule "external/googletest"]
-	path = external/googletest
-	url = https://github.com/google/googletest.git
-[submodule "external/sentry-native"]
-	path = external/sentry-native
-	url = https://github.com/getsentry/sentry-native.git
-[submodule "external/magic-enum"]
-	path = external/magic-enum
-	url = https://github.com/Neargye/magic_enum.git
 [submodule "external/Vulkan-Headers"]
 	path = external/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git

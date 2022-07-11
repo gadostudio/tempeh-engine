@@ -5,9 +5,9 @@
 #include <imgui.h>
 #include <iostream>
 #include <tempeh/logger.hpp>
+#include <dawn/utils/WGPUHelpers.h>
 
 #include "render_context.hpp"
-#include <dawn/utils/WGPUHelpers.h>
 #include "../gui/window_menubar_panel.hpp"
 #include <imgui_internal.h>
 
