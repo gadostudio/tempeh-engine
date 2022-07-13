@@ -1,8 +1,8 @@
 #ifndef _TEMPEH_WINDOW_KEYCODE_GLFW_HPP
 #define _TEMPEH_WINDOW_KEYCODE_GLFW_HPP
 
-#include <tempeh/event/event.hpp>
-#include <tempeh/event/key_code.hpp>
+#include <tempeh/input/event.hpp>
+#include <tempeh/input/key_code.hpp>
 
 namespace Tempeh::Window
 {
@@ -142,19 +142,19 @@ namespace Tempeh::Window
 		Menu = 348
 	};
 
-	Event::KeyboardKeyCode keyboard_key_code_from_glfw_key_code(int key)
+	Input::KeyboardKeyCode keyboard_key_code_from_glfw_key_code(int key)
 	{
-		return static_cast<Event::KeyboardKeyCode>(key);
+		return static_cast<Input::KeyboardKeyCode>(key);
 	}
 
-	Event::KeyState key_state_from_glfw_action(int action)
+	Input::KeyState key_state_from_glfw_action(int action)
 	{
-		return static_cast<Event::KeyState>(action);
+		return static_cast<Input::KeyState>(action);
 	}
 
-	Event::MouseKeyCode mouse_key_code_from_glfw_key_code(int key)
+	Input::MouseKeyCode mouse_key_code_from_glfw_key_code(int key)
 	{
-		return static_cast<Event::MouseKeyCode>(key);
+		return static_cast<Input::MouseKeyCode>(key);
 	}
 
 }

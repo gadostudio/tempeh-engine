@@ -1,7 +1,7 @@
 #ifndef _TEMPEH_EVENT_KEY_CODE_HPP
 #define _TEMPEH_EVENT_KEY_CODE_HPP
 
-namespace Tempeh::Event
+namespace Tempeh::Input
 {
 
 	enum MouseKeyCode : u8

@@ -6,7 +6,7 @@
 
 #include <tempeh/logger.hpp>
 
-namespace Tempeh::Log
+namespace Tempeh
 {
 
 	void Logger::init(const char* logger_name)

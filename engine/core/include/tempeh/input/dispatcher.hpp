@@ -5,15 +5,15 @@
 #include <utility>
 #include <functional>
 
-#include <tempeh/event/event.hpp>
+#include <tempeh/input//event.hpp>
 
-namespace Tempeh::Event
+namespace Tempeh::Input
 {
 
 	class Dispatcher
 	{
 	public:
-		using DispatchCallback = std::function<void(const Tempeh::Event::Event&)>;
+		using DispatchCallback = std::function<void(const Tempeh::Input::Event&)>;
 		using DispatchCallbacksWithType = std::vector<std::pair<Type, DispatchCallback>>;
 
 		template<Type T = Type::None>

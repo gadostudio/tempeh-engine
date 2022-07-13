@@ -1,140 +1,123 @@
 #include <stdexcept>
 #include <utility>
 #include <tempeh/logger.hpp>
-#include <tempeh/event/input_manager.hpp>
-
-#include "../event/key_code_glfw.hpp"
-#include "window_glfw.hpp"
+#include <tempeh/input/input_manager.hpp>
+#include <tempeh/input/input_manager.hpp>
+#include <tempeh/window/key_code_glfw.hpp>
+#include <tempeh/window/window_glfw.hpp>
 
 namespace Tempeh::Window
 {
-	WindowGLFW::WindowGLFW(WindowSize size, const std::shared_ptr<Event::InputManager>& input_manager) :
-		shared_state{ input_manager }
-	{
-		if (!glfwInit()) assert(false && "Failed to initialize GLFW");
+    WindowGLFW::WindowGLFW(WindowSize size, SharedPtr<Input::InputManager> input_manager) :
+        shared_state{ std::move(input_manager) }
+    {
+        if (!glfwInit()) assert(false && "Failed to initialize GLFW");
 
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		//glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
+//        glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // TODO
 
-		window = glfwCreateWindow((int)size.width, (int)size.height, "Tempeh window", nullptr, nullptr);
-		if (!window) assert(false && "Error window creation");
+        window = glfwCreateWindow((int)size.width, (int)size.height, "Tempeh window", nullptr, nullptr);
+        if (!window) assert(false && "Error window creation");
 
-		glfwSetErrorCallback([](int error, const char* description)
-			{
-				LOG_ERROR("GLFW error [{}]: {}", error, description);
-				assert(false);
-			});
+        glfwSetErrorCallback([](int error, const char* description)
+        {
+          LOG_ERROR("GLFW error [{}]: {}", error, description);
+          assert(false);
+        });
 
-		glfwSetWindowUserPointer(window, static_cast<void*>(&shared_state));
+        glfwSetWindowUserPointer(window, static_cast<void*>(&shared_state));
 
-		glfwSetWindowSizeCallback(window, [](GLFWwindow* window, i32 width, i32 height)
-			{
-				Event::Event event;
-				event.type = Event::Type::WindowResize;
-				event.inner.window_resize.new_size = Tempeh::Math::uvec2(
-					static_cast<f32>(width),
-					static_cast<f32>(height)
-				);
+        glfwSetWindowSizeCallback(window, [](GLFWwindow* window, i32 width, i32 height)
+        {
+          Input::Event event;
+          event.type = Input::Type::WindowResize;
+          event.inner.window_resize.window_size = WindowSize{
+              static_cast<u32>(width),
+              static_cast<u32>(height)
+          };
 
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+          const WindowGLFWSharedState& shared_state =
+              *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
 
-				shared_state.input_manager->process_event(event);
-			});
+          shared_state.input_manager->process_event(event);
+        });
 
-		glfwSetKeyCallback(window, [](GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mods)
-			{
-				const Event::KeyboardKeyCode key_code = keyboard_key_code_from_glfw_key_code(key);
-				const Event::KeyState key_state = key_state_from_glfw_action(action);
+        glfwSetMouseButtonCallback(window, [](GLFWwindow* window, i32 button, i32 action, i32 mods)
+        {
+          const Input::MouseKeyCode button_key_code = mouse_key_code_from_glfw_key_code(button);
+          const Input::KeyState key_state = key_state_from_glfw_action(action);
 
-				Event::Event event;
-				event.type = Event::Type::KeyboardButtonAct;
-				event.inner.keyboard_button_act.state = key_state;
-				event.inner.keyboard_button_act.key_code = key_code;
+          Input::Event event;
+          event.type = Input::Type::KeyboardButtonAct;
+          event.inner.mouse_button_act.state = key_state;
+          event.inner.mouse_button_act.key_code = button_key_code;
 
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+          const WindowGLFWSharedState& shared_state =
+              *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
 
-				shared_state.input_manager->process_event(event);
-				shared_state.input_manager->process_keyboard_button(key_code, key_state);
-			});
+          shared_state.input_manager->process_event(event);
+          shared_state.input_manager->process_mouse_button(button_key_code, key_state);
+        });
 
-		glfwSetMouseButtonCallback(window, [](GLFWwindow* window, i32 button, i32 action, i32 mods)
-			{
-				const Event::MouseKeyCode button_key_code = mouse_key_code_from_glfw_key_code(button);
-				const Event::KeyState key_state = key_state_from_glfw_action(action);
+        glfwSetCursorPosCallback(window, [](GLFWwindow* window, f64 x, f64 y)
+        {
+          Input::Event event;
+          event.type = Input::Type::MouseMove;
+          event.inner.mouse_move.movement =
+              Tempeh::Math::vec2(static_cast<f32>(x), static_cast<f32>(y));
 
-				Event::Event event;
-				event.type = Event::Type::KeyboardButtonAct;
-				event.inner.mouse_button_act.state = key_state;
-				event.inner.mouse_button_act.key_code = button_key_code;
+          const WindowGLFWSharedState& shared_state =
+              *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
 
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+          shared_state.input_manager->process_event(event);
+          shared_state.input_manager->get_mouse_state_mut().pos = event.inner.mouse_move.movement;
+        });
 
-				shared_state.input_manager->process_event(event);
-				shared_state.input_manager->process_mouse_button(button_key_code, key_state);
-			});
+        glfwSetScrollCallback(window, [](GLFWwindow* window, f64 x_offset, f64 y_offset)
+        {
+          Input::Event event;
+          event.type = Input::Type::MouseMove;
+          event.inner.mouse_scroll.delta =
+              Tempeh::Math::vec2(static_cast<f32>(x_offset), static_cast<f32>(y_offset));
 
-		glfwSetCursorPosCallback(window, [](GLFWwindow* window, f64 x, f64 y)
-			{
-				Event::Event event;
-				event.type = Event::Type::MouseMove;
-				event.inner.mouse_move.movement =
-					Tempeh::Math::vec2(static_cast<f32>(x), static_cast<f32>(y));
+          const WindowGLFWSharedState& shared_state =
+              *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
 
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+          shared_state.input_manager->process_event(event);
+          shared_state.input_manager->get_mouse_state_mut().scroll_offset = event.inner.mouse_scroll.delta;
+        });
 
-				shared_state.input_manager->process_event(event);
-				shared_state.input_manager->get_mouse_state_mut().pos = event.inner.mouse_move.movement;
-			});
+        glfwSetWindowFocusCallback(window, [](GLFWwindow* window, i32 focus)
+        {
+          Input::Event event;
+          event.type = (focus == GLFW_TRUE) ? Input::Type::WindowFocus : Input::Type::WindowLostFocus;
 
-		glfwSetScrollCallback(window, [](GLFWwindow* window, f64 x_offset, f64 y_offset)
-			{
-				Event::Event event;
-				event.type = Event::Type::MouseMove;
-				event.inner.mouse_scroll.delta =
-					Tempeh::Math::vec2(static_cast<f32>(x_offset), static_cast<f32>(y_offset));
+          const WindowGLFWSharedState& shared_state =
+              *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
 
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+          shared_state.input_manager->process_event(event);
+        });
 
-				shared_state.input_manager->process_event(event);
-				shared_state.input_manager->get_mouse_state_mut().scroll_offset = event.inner.mouse_scroll.delta;
-			});
+        glfwSetWindowCloseCallback(window, [](GLFWwindow* window)
+        {
+          Input::Event event;
+          event.type = Input::Type::WindowClose;
 
-		glfwSetWindowFocusCallback(window, [](GLFWwindow* window, i32 focus)
-			{
-				Event::Event event;
-				event.type = (focus == GLFW_TRUE) ? Event::Type::WindowFocus : Event::Type::WindowLostFocus;
+          const WindowGLFWSharedState& shared_state =
+              *static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
 
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
+          shared_state.input_manager->process_event(event);
+        });
+    }
 
-				shared_state.input_manager->process_event(event);
-			});
+    WindowGLFW::~WindowGLFW()
+    {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+    }
 
-		glfwSetWindowCloseCallback(window, [](GLFWwindow* window)
-			{
-				Event::Event event;
-				event.type = Event::Type::WindowClose;
-
-				const WindowGLFWSharedState& shared_state =
-					*static_cast<WindowGLFWSharedState*>(glfwGetWindowUserPointer(window));
-
-				shared_state.input_manager->process_event(event);
-			});
-	}
-
-	WindowGLFW::~WindowGLFW()
-	{
-		glfwDestroyWindow(window);
-		glfwTerminate();
-	}
-
-	void WindowGLFW::process_input(Event::InputManager& input_manager)
-	{
-		glfwPollEvents();
-	}
+    void WindowGLFW::process_input(Input::InputManager& input_manager)
+    {
+        glfwPollEvents();
+    }
 }

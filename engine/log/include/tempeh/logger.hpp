@@ -1,9 +1,12 @@
+#ifndef _TEMPEH_LOGGER
+#define _TEMPEH_LOGGER
+
 #include <vector>
 #include <memory>
 #include <spdlog/async_logger.h>
 #include <spdlog/spdlog.h>
 
-namespace Tempeh::Log
+namespace Tempeh
 {
 
 	class Logger
@@ -18,8 +21,10 @@ namespace Tempeh::Log
 
 }
 
-#define LOG_TRACE(...)    ::Tempeh::Log::Logger::get_logger()->trace(__VA_ARGS__)
-#define LOG_INFO(...)     ::Tempeh::Log::Logger::get_logger()->info(__VA_ARGS__)
-#define LOG_WARN(...)     ::Tempeh::Log::Logger::get_logger()->warn(__VA_ARGS__)
-#define LOG_ERROR(...)    ::Tempeh::Log::Logger::get_logger()->error(__VA_ARGS__)
-#define LOG_CRITICAL(...) ::Tempeh::Log::Logger::get_logger()->critical(__VA_ARGS__)
+#define LOG_TRACE(...)    ::Tempeh::Logger::get_logger()->trace(__VA_ARGS__)
+#define LOG_INFO(...)     ::Tempeh::Logger::get_logger()->info(__VA_ARGS__)
+#define LOG_WARN(...)     ::Tempeh::Logger::get_logger()->warn(__VA_ARGS__)
+#define LOG_ERROR(...)    ::Tempeh::Logger::get_logger()->error(__VA_ARGS__)
+#define LOG_CRITICAL(...) ::Tempeh::Logger::get_logger()->critical(__VA_ARGS__)
+
+#endif

@@ -1,12 +1,13 @@
-#ifndef _TEMPEH_EVENT_EVENT_HPP
-#define _TEMPEH_EVENT_EVENT_HPP
+#ifndef _TEMPEH_CORE_INPUT_EVENT_HPP
+#define _TEMPEH_CORE_INPUT_EVENT_HPP
 
+#include <tempeh/window/util.hpp>
 #include <tempeh/math.hpp>
 #include <tempeh/common/typedefs.hpp>
 #include <tempeh/common/util.hpp>
-#include <tempeh/event/key_code.hpp>
+#include <tempeh/input/key_code.hpp>
 
-namespace Tempeh::Event
+namespace Tempeh::Input
 {
 	enum class Type : u8
 	{
@@ -46,7 +47,7 @@ namespace Tempeh::Event
 	struct WindowFocus {};
 	struct WindowResize
 	{
-		Tempeh::Math::uvec2 new_size;
+		Tempeh::Window::WindowSize window_size;
 	};
 	struct MouseMove
 	{

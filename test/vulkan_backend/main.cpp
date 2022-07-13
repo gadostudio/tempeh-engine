@@ -13,13 +13,13 @@ int main()
     GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
     Util::Ref<GPU::Device> device = GPU::Instance::get_device();
     
-    std::shared_ptr<Event::InputManager> input_manager =
-        std::make_shared<Event::InputManager>();
+    std::shared_ptr<Input::InputManager> input_manager =
+        std::make_shared<Input::InputManager>();
     
     std::shared_ptr<Window::Window> window =
         Window::Window::create(Window::WindowSize{640, 480}, input_manager);
 
-    auto size = window->get_window_size();
+    auto size = window->get_window_inner_size();
     GPU::SurfaceDesc surface_desc;
     surface_desc.format = GPU::TextureFormat::BGRA_8_8_8_8_Unorm;
     surface_desc.width = size.width;

@@ -5,10 +5,12 @@ on:
   pull_request:
 
 jobs:
-  build_ubuntu_x11:
-    name: Build Ubuntu
-    runs-on: ubuntu-latest
-
+  test_and_build:
+    name: "Test and Build"
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ] # , macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -16,7 +18,17 @@ jobs:
       - uses: humbletim/setup-vulkan-sdk@v1.0.3
       - uses: lukka/get-cmake@latest
       - uses: ashutoshvarma/setup-ninja@master
+      - name: Setup Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          Invoke-WebRequest -Uri https://download.mono-project.com/archive/6.12.0/windows-installer/mono-6.12.0.107-x64-0.msi -OutFile mono.msi
+          Start-Process -Verb RunAs msiexec.exe -Wait -ArgumentList '/I mono.msi /quiet'
+
+          $env:DEPOT_TOOLS_WIN_TOOLCHAIN = 0
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          $env:Path += ";$pwd\depot_tools"
       - name: Setup
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt install gnupg ca-certificates
           sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
@@ -27,9 +39,13 @@ jobs:
 
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
           export PATH=$(pwd)/depot_tools:$PATH
-          cd external/dawn
-          cp scripts/standalone.gclient .gclient
-          gclient sync
+      #        TODO
+      #      - name: Set env Linux
+      #        if: matrix.os == 'linux-latest'
+      #        run: echo "MONO_DIR= >> $GITHUB_ENV
+      #      - name: Set env Windows
+      #        if: matrix.os == 'windows-latest'
+      #        run: echo "MONO_DIR=" >> $GITHUB_ENV
       - name: Set up cache
         id: cache-cpm
         uses: actions/cache@v2
@@ -37,61 +53,15 @@ jobs:
           path: ~/cpm-cache
           key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
           restore-keys: |
-            ${{ runner.os }}-cpm-
+            ${{ runner.os }}-cpm
       - name: Create build dir
         run: |
           mkdir build
       - name: Build
         run: |
-          export MONO_PROJECT=/usr/include/mono-2.0/
-
           cd build
           cmake .. -DTEMPEH_ENABLE_TEST=ON
           cmake -DCPM_SOURCE_CACHE=~/cpm-cache --build .
       - name: Run test
         run: |
           ./build/test/tempeh_core_test
-  build_windows:
-    name: Build Windows
-    runs-on: windows-latest
-
-    steps:
-      - uses: ilammy/msvc-dev-cmd@v1
-      - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
-      - uses: humbletim/setup-vulkan-sdk@v1.0.3
-      - uses: lukka/get-cmake@latest
-      - uses: ashutoshvarma/setup-ninja@master
-      - name: Setup
-        run: |
-          Invoke-WebRequest -Uri https://download.mono-project.com/archive/6.12.0/windows-installer/mono-6.12.0.107-x64-0.msi -OutFile mono.msi
-          Start-Process -Verb RunAs msiexec.exe -Wait -ArgumentList '/I mono.msi /quiet'
-
-          $env:DEPOT_TOOLS_WIN_TOOLCHAIN = 0
-          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          $env:Path += ";$pwd\depot_tools"
-          cd external\dawn
-          copy scripts\standalone.gclient .gclient
-          gclient sync
-      - name: Cache
-        id: cmake-cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            build/
-          key: ${{ runner.os }}-master
-      - name: Create build dir
-        if: steps.cmake-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir build
-      - name: Build
-        run: |
-          $env:MONO_INCLUDE_DIR = "C:\Program Files\Mono\include\mono-2.0\"
-
-          cd build
-          cmake .. -DTEMPEH_ENABLE_TEST=ON -G "Ninja"
-          cmake --build .
-      - name: Run test
-        run: |
-          .\build\test\tempeh_core_test.exe

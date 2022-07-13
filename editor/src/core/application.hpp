@@ -5,9 +5,10 @@
 
 #include <memory>
 #include <tempeh/window/window.hpp>
-#include <tempeh/event/input_manager.hpp>
+#include <tempeh/input/input_manager.hpp>
 #include "../renderer/render_context.hpp"
-#include "../renderer/gui.hpp"
+#include "../renderer/gui/renderer.hpp"
+#include "../renderer/renderer.hpp"
 
 namespace TempehEditor::Core
 {
@@ -15,12 +16,10 @@ namespace TempehEditor::Core
 	class Application
 	{
 	private:
-		std::shared_ptr<Tempeh::Event::InputManager> input_manager;
-		std::shared_ptr<Tempeh::Window::Window> window;
-		std::shared_ptr<Renderer::RenderContext> render_context;
-		std::shared_ptr<Renderer::GUI::GUIImGuiRenderer> gui;
-
-		bool is_running = true;
+        SharedPtr<std::mutex> lock;
+        SharedPtr<Tempeh::Input::InputManager> input_manager;
+		SharedPtr<Tempeh::Window::Window> window;
+        SharedPtr<Renderer::Renderer> renderer;
 	public:
 		using ApplicationReturn = int;
 

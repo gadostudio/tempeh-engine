@@ -1,4 +1,4 @@
-add_library(tempeh_common INTERFACE)
+add_library(tempeh_common INTERFACE include/tempeh/common/thread.hpp)
 target_include_directories(
     tempeh_common
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

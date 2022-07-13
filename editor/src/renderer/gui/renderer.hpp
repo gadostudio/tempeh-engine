@@ -7,7 +7,9 @@ namespace TempehEditor::Renderer::GUI {
 	{
 	public:
 		virtual ~GUIRenderer() = default;
-		virtual void render() = 0;
+        virtual void predraw() = 0;
+		virtual void draw() = 0;
+        virtual void postdraw() = 0;
 	};
 
 }

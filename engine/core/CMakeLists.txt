@@ -27,16 +27,12 @@ set(TEMPEH_GPU_SOURCES
     "include/tempeh/gpu/surface.hpp"
     "include/tempeh/gpu/types.hpp"
 
-    "src/gpu/instance.cpp")
+    "src/gpu/instance.cpp" include/tempeh/window/util.hpp)
 
 add_library(tempeh_core STATIC
 	"include/tempeh/window/window.hpp"
-	"src/window/window.cpp"
-	"src/window/window_glfw.cpp"
-
 	"include/tempeh/scripting/mono.hpp"
-	"src/scripting/mono.cpp"
-
+	"include/tempeh/timestep.hpp"
 	"include/tempeh/renderer/camera.hpp"
 	"include/tempeh/renderer/backend/framebuffer.hpp"
 	"include/tempeh/renderer/backend/texture.hpp"
@@ -47,16 +43,19 @@ add_library(tempeh_core STATIC
 	"include/tempeh/renderer/backend/opengl_es/texture.hpp"
 	"include/tempeh/renderer/backend/opengl_es/instance.hpp"
 
+	"src/window/window.cpp"
+	"src/window/window_glfw.cpp"
+	"src/scripting/mono.cpp"
 	"src/renderer/orthogonal_camera.cpp"
 	"src/renderer/perspective_camera.cpp"
-	"src/event/input_manager.cpp"
+	"src/input/input_manager.cpp"
 
     ${TEMPEH_GPU_SOURCES}
     ${TEMPEH_GPU_VULKAN_BACKEND_SOURCES})
 
 target_include_directories(tempeh_core
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
+#	PUBLIC "$ENV{MONO_INCLUDE_DIR}"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/glad/include")
 
 target_compile_definitions(tempeh_core

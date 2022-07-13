@@ -1,13 +1,14 @@
 #include <tempeh/window/window.hpp>
+#include <tempeh/window/window_glfw.hpp>
 
-#include "window_glfw.hpp"
+#include <memory>
 
 namespace Tempeh::Window
 {
-    std::shared_ptr<Window> Window::create(
+    SharedPtr<Window> Window::create(
         WindowSize size,
-        const std::shared_ptr<Event::InputManager>& input_manager)
+        SharedPtr<Input::InputManager> input_manager)
     {
-        return std::make_shared<WindowGLFW>(size, input_manager);
+        return std::make_shared<WindowGLFW>(size, std::move(input_manager));
     }
 }

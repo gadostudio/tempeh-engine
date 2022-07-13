@@ -2,13 +2,12 @@
 
 #include <tempeh/scripting/mono.hpp>
 #include <tempeh/logger.hpp>
-
-#include "renderer/editor_camera.hpp"
+#include <tempeh/telemetry.hpp>
 
 TempehEditor::Core::Application::ApplicationReturn main()
 {
-	Tempeh::Log::Logger logger;
-	logger.init("Tempeh Engine");
+	Tempeh::Logger::init("Tempeh Engine");
+    Tempeh::Telemetry telemetry;
 
 	TempehEditor::Core::Application app;
 	return app.run();

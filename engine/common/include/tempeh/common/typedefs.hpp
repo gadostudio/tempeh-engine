@@ -16,4 +16,15 @@ using f64 = double;
 
 #define INTERFACE
 
+#include <memory>
+
+template<typename T>
+using SharedPtr = std::shared_ptr<T>;
+template<typename T>
+using Box = std::unique_ptr<T>;
+
+#include <thread>
+
+using Thread = std::thread;
+
 #endif
