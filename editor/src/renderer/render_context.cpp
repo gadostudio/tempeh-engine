@@ -11,6 +11,9 @@
 #    define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(TEMPEH_OS_LINUX)
 #    define GLFW_EXPOSE_NATIVE_X11
+#elif defined(TEMPEH_OS_MAC)
+#define GLFW_EXPOSE_NATIVE_COCOA
+#include "glfw_metal_util.hpp"
 #else
 #	error
 #endif
@@ -24,7 +27,11 @@ namespace TempehEditor::Renderer
         window_size(window->get_window_inner_size())
     {
 
+#ifndef TEMPEH_OS_MAC
         wgpu::BackendType backend = wgpu::BackendType::Vulkan;
+#else
+        wgpu::BackendType backend = wgpu::BackendType::Metal;
+#endif
 
         // TODO should be moved before window creation!
         if (backend == wgpu::BackendType::OpenGL || backend == wgpu::BackendType::OpenGLES)
@@ -177,6 +184,8 @@ namespace TempehEditor::Renderer
         desc->display = glfwGetX11Display();
         desc->window = glfwGetX11Window(window);
         return desc;
+#elif defined(TEMPEH_OS_MAC)
+        return SetupWindowAndGetSurfaceDescriptorCocoa(window);
 #else
 #      error
 #endif

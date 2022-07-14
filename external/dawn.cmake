@@ -2,7 +2,8 @@ set(OPTIONS
         "DAWN_ENABLE_D3D12 OFF"
         "DAWN_BUILD_EXAMPLES OFF"
         "TINT_BUILD_TESTS OFF"
-        "TINT_BUILD_DOCS OFF")
+        "TINT_BUILD_DOCS OFF"
+        "TINT_BUILD_SPV_READER ON")
 set(NAME "Dawn")
 
 CPMAddPackage(

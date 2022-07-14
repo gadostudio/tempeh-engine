@@ -3,6 +3,10 @@
 project("tempeh_engine"
         LANGUAGES C CXX)
 
+if(APPLE)
+    enable_language(OBJC)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 
 option(TEMPEH_ENABLE_TEST "Test" OFF)

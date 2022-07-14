@@ -13,7 +13,9 @@ set(TEMPEH_ENGINE_EDITOR_SOURCES
         src/renderer/gui/renderer.hpp
         src/renderer/renderer.hpp
         src/renderer/renderer.cpp
-        src/renderer/gui/imgui_renderer.hpp src/gui/scene/scene.hpp)
+        src/renderer/glfw_metal_util.hpp
+        src/renderer/glfw_metal_util.mm
+        src/renderer/gui/imgui_renderer.hpp src/gui/scene/scene.hpp src/renderer/glfw_metal_util.hpp)
 
 add_executable("tempeh_editor"
         ${TEMPEH_ENGINE_EDITOR_SOURCES}
@@ -30,6 +32,12 @@ target_include_directories("tempeh_editor"
         PUBLIC "${Dawn_SOURCE_DIR}/src"
         PUBLIC "$ENV{MONO_INCLUDE_DIR}"
         PUBLIC ${TEMPEH_COMMON_INCLUDE})
+
+if (APPLE)
+    target_link_libraries("tempeh_editor"
+            PRIVATE "-framework QuartzCore"
+            PRIVATE "-framework Metal")
+endif()
 
 target_link_libraries("tempeh_editor"
         # Private, because anyone ain't gonna touch the editor

@@ -12,7 +12,7 @@
 #   elif TARGET_OS_IPHONE
 #      error "Unimplemented"
 #   elif TARGET_OS_MAC
-#      error "Unimplemented"
+#      define TEMPEH_OS_MAC
 #   else
 #      error "Unknown Apple platform"
 #   endif

@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest] # , macos-latest
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -30,9 +30,9 @@ jobs:
 
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${HOME}\depot_tools"
 
-          echo "${HOME}/depot_tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "${HOME}\depot_tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           # echo "MONO_DIR=" >> $GITHUB_ENV
-      - name: Setup
+      - name: Setup Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt install gnupg ca-certificates
@@ -42,6 +42,13 @@ jobs:
 
           sudo apt install mesa-common-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev libx11-dev mono-devel libxrandr-dev libxcb-xkb-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libcurl4-openssl-dev -y
 
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${HOME}/depot_tools"
+
+          echo "${HOME}/depot_tools" >> $GITHUB_PATH
+          # echo "MONO_DIR=" >> $GITHUB_ENV
+      - name: Setup MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${HOME}/depot_tools"
 
           echo "${HOME}/depot_tools" >> $GITHUB_PATH
