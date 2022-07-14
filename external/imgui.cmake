@@ -16,8 +16,11 @@ if (imgui_ADDED)
             PUBLIC "${imgui_SOURCE_DIR}"
             PUBLIC "${imgui_SOURCE_DIR}/misc/single_include")
     target_link_libraries(imgui
-            dawn_headers
-            glfw)
+            PRIVATE "webgpu_dawn"
+            PRIVATE "dawn_native"
+            PRIVATE "dawn_utils"
+            PRIVATE "dawn_proc"
+            PRIVATE "glfw")
 else ()
     message(FATAL_ERROR "Dependency not added")
 endif ()

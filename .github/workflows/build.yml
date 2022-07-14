@@ -8,13 +8,17 @@ jobs:
   test_and_build:
     name: "Test and Build"
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ] # , macos-latest
+        os: [ubuntu-latest, windows-latest] # , macos-latest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
       - uses: humbletim/setup-vulkan-sdk@v1.0.3
       - uses: lukka/get-cmake@latest
       - uses: ashutoshvarma/setup-ninja@master
@@ -24,9 +28,10 @@ jobs:
           Invoke-WebRequest -Uri https://download.mono-project.com/archive/6.12.0/windows-installer/mono-6.12.0.107-x64-0.msi -OutFile mono.msi
           Start-Process -Verb RunAs msiexec.exe -Wait -ArgumentList '/I mono.msi /quiet'
 
-          $env:DEPOT_TOOLS_WIN_TOOLCHAIN = 0
-          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          $env:Path += ";$pwd\depot_tools"
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${HOME}\depot_tools"
+
+          echo "${HOME}/depot_tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # echo "MONO_DIR=" >> $GITHUB_ENV
       - name: Setup
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -37,15 +42,10 @@ jobs:
 
           sudo apt install mesa-common-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev libx11-dev mono-devel libxrandr-dev libxcb-xkb-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libcurl4-openssl-dev -y
 
-          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          export PATH=$(pwd)/depot_tools:$PATH
-      #        TODO
-      #      - name: Set env Linux
-      #        if: matrix.os == 'linux-latest'
-      #        run: echo "MONO_DIR= >> $GITHUB_ENV
-      #      - name: Set env Windows
-      #        if: matrix.os == 'windows-latest'
-      #        run: echo "MONO_DIR=" >> $GITHUB_ENV
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${HOME}/depot_tools"
+
+          echo "${HOME}/depot_tools" >> $GITHUB_PATH
+          # echo "MONO_DIR=" >> $GITHUB_ENV
       - name: Set up cache
         id: cache-cpm
         uses: actions/cache@v2
@@ -54,14 +54,12 @@ jobs:
           key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
           restore-keys: |
             ${{ runner.os }}-cpm
-      - name: Create build dir
-        run: |
-          mkdir build
       - name: Build
         run: |
+          mkdir build
           cd build
-          cmake .. -DTEMPEH_ENABLE_TEST=ON
-          cmake -DCPM_SOURCE_CACHE=~/cpm-cache --build .
+          cmake -DTEMPEH_ENABLE_TEST=ON ..
+          cmake --build .
       - name: Run test
         run: |
           ./build/test/tempeh_core_test
