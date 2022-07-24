@@ -14,19 +14,19 @@ namespace TempehEditor::Renderer
     class Renderer
     {
     private:
-        SharedPtr<Tempeh::Window::Window> window;
-        SharedPtr<Tempeh::Input::InputManager> m_input_manager;
-        SharedPtr<RenderContext> render_context;
+        Rc<Tempeh::Window::Window> window;
+        Rc<Tempeh::Input::InputManager> m_input_manager;
+        Rc<RenderContext> render_context;
         Box<GUI::GUIRenderer> gui_renderer;
     public:
         explicit Renderer(
-            SharedPtr<Tempeh::Window::Window> window,
-            SharedPtr<Tempeh::Input::InputManager> input_manager);
+            Rc<Tempeh::Window::Window> window,
+            Rc<Tempeh::Input::InputManager> input_manager);
         ~Renderer();
 
         void render();
         void process(Tempeh::Input::InputManager& input_manager);
-        [[nodiscard]] SharedPtr<RenderContext> get_render_context() const
+        [[nodiscard]] Rc<RenderContext> get_render_context() const
         {
             return render_context;
         }

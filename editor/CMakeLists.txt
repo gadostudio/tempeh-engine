@@ -13,7 +13,7 @@ set(TEMPEH_ENGINE_EDITOR_SOURCES
         src/renderer/gui/renderer.hpp
         src/renderer/renderer.hpp
         src/renderer/renderer.cpp
-        src/renderer/gui/imgui_renderer.hpp src/gui/scene/scene.hpp)
+        src/renderer/gui/imgui_renderer.hpp src/gui/scene/scene.hpp src/gui/scene/project_selection_scene.cpp src/gui/scene/project_selection_scene.hpp src/gui/scene/scene_manager.hpp src/gui/scene/scene_manager.cpp)
 
 add_executable("tempeh_editor"
         ${TEMPEH_ENGINE_EDITOR_SOURCES}

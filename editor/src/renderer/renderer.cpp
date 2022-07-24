@@ -9,8 +9,8 @@
 namespace TempehEditor::Renderer
 {
     Renderer::Renderer(
-        SharedPtr<Tempeh::Window::Window> window,
-        SharedPtr<Tempeh::Input::InputManager> input_manager) :
+        Rc<Tempeh::Window::Window> window,
+        Rc<Tempeh::Input::InputManager> input_manager) :
         window(std::move(window)),
         m_input_manager(std::move(input_manager)),
         render_context(std::make_shared<RenderContext>(this->window)),

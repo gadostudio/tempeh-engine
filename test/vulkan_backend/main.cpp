@@ -9,7 +9,7 @@ using namespace Tempeh;
 
 int main()
 {
-    Log::Logger::init("test");
+    Logger::init("test");
     GPU::Instance::initialize(GPU::BackendType::Vulkan, true);
     Util::Ref<GPU::Device> device = GPU::Instance::get_device();
     

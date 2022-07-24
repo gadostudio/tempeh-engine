@@ -3,6 +3,10 @@
 #include <memory>
 #include <tempeh/logger.hpp>
 #include <tempeh/window/window.hpp>
+#ifdef TEMPEH_OS_ANDROID
+#include <android/native_window_jni.h>
+#include <android/asset_manager_jni.h>
+#endif
 
 namespace TempehEditor::Core
 {
@@ -18,6 +22,12 @@ namespace TempehEditor::Core
 
     Application::~Application() = default;
 
+#ifdef TEMPEH_OS_ANDROID
+    void Application::frame()
+    {
+
+    }
+#else
     Application::ApplicationReturn Application::run()
     {
         while (!window->is_need_to_close())
@@ -30,5 +40,6 @@ namespace TempehEditor::Core
         }
         return APPLICATION_RETURN_SUCCESS;
     }
+#endif
 
 }

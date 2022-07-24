@@ -21,9 +21,9 @@ namespace TempehEditor::Renderer
 
 		Tempeh::Window::WindowSize window_size;
 
-//		SharedPtr<GUI::GUIImGuiRenderer> gui_renderer;
+//		Rc<GUI::GUIImGuiRenderer> gui_renderer;
 	public:
-		explicit RenderContext(SharedPtr<Tempeh::Window::Window> window);
+		explicit RenderContext(Rc<Tempeh::Window::Window> window);
 		std::unique_ptr<wgpu::ChainedStruct> get_surface_descriptor(GLFWwindow* window) const;
 		[[nodiscard]] const wgpu::Device& get_device() const { return device; }
 		[[nodiscard]] const wgpu::SwapChain& get_swap_chain() const { return main_swap_chain; }

@@ -9,24 +9,27 @@
 #include "../renderer/render_context.hpp"
 #include "../renderer/gui/renderer.hpp"
 #include "../renderer/renderer.hpp"
+#ifdef TEMPEH_OS_ANDROID
+#include <android/native_window_jni.h>
+#include <android/asset_manager_jni.h>
+#endif
 
 namespace TempehEditor::Core
 {
 
-	class Application
-	{
-	private:
-        SharedPtr<std::mutex> lock;
-        SharedPtr<Tempeh::Input::InputManager> input_manager;
-		SharedPtr<Tempeh::Window::Window> window;
-        SharedPtr<Renderer::Renderer> renderer;
-	public:
-		using ApplicationReturn = int;
+    class Application
+    {
+    private:
+        Rc<Tempeh::Input::InputManager> input_manager;
+        Rc<Tempeh::Window::Window> window;
+        Rc<Renderer::Renderer> renderer;
+    public:
+        using ApplicationReturn = int;
 
-		Application();
-		~Application();
-		ApplicationReturn run();
-	};
+        Application();
+        ~Application();
+        ApplicationReturn run();
+    };
 
 }
 #endif // _TEMPEH_EDITOR_APPLICATION

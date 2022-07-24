@@ -5,6 +5,11 @@ set(OPTIONS
         "TINT_BUILD_DOCS OFF")
 set(NAME "Dawn")
 
+if (ANDROID)
+    set(GLFW_BUILD_X11 OFF)
+    set(GLFW_BUILD_WAYLAND OFF)
+endif ()
+
 CPMAddPackage(
         NAME "${NAME}"
         GIT_REPOSITORY "https://dawn.googlesource.com/dawn"

@@ -18,11 +18,11 @@ namespace TempehEditor::Renderer::GUI
     class GUIImGuiRenderer : public GUIRenderer
     {
     private:
-        SharedPtr<TempehEditor::Renderer::RenderContext> render_context;
+        Rc<TempehEditor::Renderer::RenderContext> render_context;
     public:
         GUIImGuiRenderer(
-            SharedPtr<Tempeh::Window::Window> window,
-            SharedPtr<TempehEditor::Renderer::RenderContext> render_context);
+            Rc<Tempeh::Window::Window> window,
+            Rc<TempehEditor::Renderer::RenderContext> render_context);
 
         void predraw() override;
         void draw() override;

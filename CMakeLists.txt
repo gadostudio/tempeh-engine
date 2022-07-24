@@ -1,9 +1,28 @@
-﻿cmake_minimum_required(VERSION 3.16)
+﻿cmake_minimum_required(VERSION 3.10)
 
 project("tempeh_engine"
         LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
+find_program(SCCACHE "sccache")
+if (SCCACHE)
+    set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE}")
+    if (MSVC)
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+            string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+            string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+        elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+            string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+            string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+        elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+            string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+            string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+        endif ()
+    endif ()
+endif ()
 
 option(TEMPEH_ENABLE_TEST "Test" OFF)
 
@@ -48,9 +67,20 @@ else (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Cl
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 endif ()
 
+#find_program(SCCACHE_FOUND sccache)
+#if (SCCACHE_FOUND)
+#    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE sccache)
+#    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK sccache)
+#endif ()
+
 add_subdirectory("engine")
-add_subdirectory("editor")
-add_subdirectory("test/vulkan_backend")
+#add_subdirectory("test/vulkan_backend")
+add_subdirectory("sample")
+if (ANDROID)
+    add_subdirectory("platform/android/bridge")
+else ()
+    add_subdirectory("editor")
+endif ()
 
 if (TEMPEH_ENABLE_TEST)
     add_subdirectory("test")

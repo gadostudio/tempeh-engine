@@ -19,7 +19,7 @@ using f64 = double;
 #include <memory>
 
 template<typename T>
-using SharedPtr = std::shared_ptr<T>;
+using Rc = std::shared_ptr<T>;
 template<typename T>
 using Box = std::unique_ptr<T>;
 

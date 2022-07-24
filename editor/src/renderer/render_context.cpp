@@ -20,7 +20,7 @@
 namespace TempehEditor::Renderer
 {
 
-    RenderContext::RenderContext(SharedPtr<Tempeh::Window::Window> window) :
+    RenderContext::RenderContext(Rc<Tempeh::Window::Window> window) :
         window_size(window->get_window_inner_size())
     {
 
@@ -192,7 +192,7 @@ namespace TempehEditor::Renderer
     }
 
 //	void RenderContext::frame_start(
-//        SharedPtr<Tempeh::Window::Window> window,
+//        Rc<Tempeh::Window::Window> window,
 //		Tempeh::Input::InputManager& input_manager
 //        )
 //	{

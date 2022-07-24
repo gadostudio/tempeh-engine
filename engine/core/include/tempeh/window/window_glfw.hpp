@@ -1,6 +1,7 @@
 #ifndef _TEMPEH_CORE_WINDOW_WINDOWGLFW_HPP
 #define _TEMPEH_CORE_WINDOW_WINDOWGLFW_HPP
 
+#include <tempeh/common.hpp>
 #include <GLFW/glfw3.h>
 #include <memory>
 
@@ -12,7 +13,7 @@ namespace Tempeh::Window
 {
     struct WindowGLFWSharedState
     {
-        SharedPtr<Input::InputManager> input_manager;
+        Rc<Input::InputManager> input_manager;
     };
 
     class WindowGLFW : public Window
@@ -21,7 +22,7 @@ namespace Tempeh::Window
         GLFWwindow* window;
         WindowGLFWSharedState shared_state;
     public:
-        WindowGLFW(WindowSize size, SharedPtr<Input::InputManager> input_manager);
+        WindowGLFW(WindowSize size, Rc<Input::InputManager> input_manager);
         ~WindowGLFW();
 
         void process_input(Input::InputManager& input_manager) override;

@@ -1,5 +1,5 @@
-#include <stdexcept>
 #include <utility>
+#include <tempeh/common.hpp>
 #include <tempeh/logger.hpp>
 #include <tempeh/input/input_manager.hpp>
 #include <tempeh/input/input_manager.hpp>
@@ -8,7 +8,7 @@
 
 namespace Tempeh::Window
 {
-    WindowGLFW::WindowGLFW(WindowSize size, SharedPtr<Input::InputManager> input_manager) :
+    WindowGLFW::WindowGLFW(WindowSize size, Rc<Input::InputManager> input_manager) :
         shared_state{ std::move(input_manager) }
     {
         if (!glfwInit()) assert(false && "Failed to initialize GLFW");

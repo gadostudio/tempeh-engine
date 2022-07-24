@@ -13,8 +13,8 @@ namespace TempehEditor::Renderer::GUI
 {
 
     GUIImGuiRenderer::GUIImGuiRenderer(
-        SharedPtr<Tempeh::Window::Window> window,
-        SharedPtr<TempehEditor::Renderer::RenderContext> render_context) :
+        Rc<Tempeh::Window::Window> window,
+        Rc<TempehEditor::Renderer::RenderContext> render_context) :
         render_context(render_context)
     {
         IMGUI_CHECKVERSION();

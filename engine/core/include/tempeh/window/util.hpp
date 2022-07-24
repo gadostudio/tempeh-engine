@@ -14,7 +14,8 @@ namespace Tempeh::Window
     struct WindowPosition
     {
         // Signed integer, to support dual-monitor setup
-        i32 x, y;
+        i32 x;
+        i32 y;
     };
 }
 
