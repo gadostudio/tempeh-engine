@@ -20,6 +20,9 @@ members = [
 
     "tempeh-editor",
 
+    "tempeh-lib/tempeh-mono",
+    "tempeh-lib/tempeh-mono-sys",
+
     "examples/hello-world"
 ]
 
