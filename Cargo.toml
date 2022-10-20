@@ -20,6 +20,8 @@ members = [
 
     "tempeh-editor",
 
+    "tempeh-lib/tempeh-mono",
+    "tempeh-lib/tempeh-mono-sys",
     "tempeh-lib/tempeh-miniaudio",
     "tempeh-lib/tempeh-miniaudio-sys",
 

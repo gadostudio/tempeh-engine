@@ -1,2 +1,31 @@
 /target
 *.spv
+
+.idea
+*.iml
+.gradle
+.idea/
+out/
+bin/
+build/
+gen/
+deps/
+exampleProject
+testData
+.DS_Store
+/pretty_printers_tests/target
+/native-helper/target
+/attributes-info/target
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
